@@ -6,6 +6,7 @@ import { getPost, isLikedByUser, toggleLike, addCommentToPost, getComments } fro
 import { getUserProfile } from '../firebase/users'
 import Avatar from '../components/Avatar'
 import Icon from '../components/Icon'
+import VerifiedBadge from '../components/VerifiedBadge'
 import toast from 'react-hot-toast'
 
 export default function PostDetailPage() {
@@ -117,7 +118,10 @@ export default function PostDetailPage() {
         <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
           <Avatar src={author?.photoURL} name={author?.name} size="lg" />
           <div>
-            <div className="font-semibold">{author?.name}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
+              {author?.name}
+              {author?.isVerified && <VerifiedBadge size={16} />}
+            </div>
             <div className="text-sm text-muted">@{handle}</div>
           </div>
         </div>
@@ -206,10 +210,13 @@ export default function PostDetailPage() {
               <Avatar src={cAuthor?.photoURL} name={cAuthor?.name} size="sm" />
               <div className="comment-body">
                 <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
-                  <span className="font-semibold text-sm">{cAuthor?.name ?? 'Unknown'}</span>
-                  <span className="text-xs text-muted">@{cAuthor?.username ?? '...'}</span>
-                  {cTime && <span className="text-xs text-muted" style={{ marginLeft: 'auto' }}>{formatDistanceToNow(cTime, { addSuffix: true })}</span>}
-                </div>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }} className="font-semibold text-sm">
+                      {cAuthor?.name ?? 'Unknown'}
+                      {cAuthor?.isVerified && <VerifiedBadge size={12} />}
+                    </span>
+                    <span className="text-xs text-muted">@{cAuthor?.username ?? '...'}</span>
+                    {cTime && <span className="text-xs text-muted" style={{ marginLeft: 'auto' }}>{formatDistanceToNow(cTime, { addSuffix: true })}</span>}
+                  </div>
                 <p className="comment-text">{comment.text}</p>
               </div>
             </div>

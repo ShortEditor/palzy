@@ -6,6 +6,7 @@ import { batchCheckLikes } from '../firebase/posts'
 import { useAuth } from '../contexts/AuthContext'
 import PostCard from '../components/PostCard'
 import Avatar from '../components/Avatar'
+import VerifiedBadge from '../components/VerifiedBadge'
 import { Link } from 'react-router-dom'
 import Icon from '../components/Icon'
 
@@ -117,7 +118,10 @@ export default function ExplorePage() {
                 >
                   <Avatar src={user.photoURL} name={user.name} size="md" />
                   <div>
-                    <div className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{user.name}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--text-primary)' }} className="font-semibold text-sm">
+                      {user.name}
+                      {user.isVerified && <VerifiedBadge size={13} />}
+                    </div>
                     <div className="text-xs text-muted">@{user.username} · {user.branch} {user.year}</div>
                   </div>
                 </Link>

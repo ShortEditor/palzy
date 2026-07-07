@@ -3,10 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { getUserByUsername, updateUserProfile } from '../firebase/users'
 import { getUserPosts, batchCheckLikes } from '../firebase/posts'
+import { isFollowing, followUser, unfollowUser } from '../firebase/follows'
 import { uploadImage } from '../utils/cloudinary'
 import PostCard from '../components/PostCard'
 import Avatar from '../components/Avatar'
 import Icon from '../components/Icon'
+import VerifiedBadge from '../components/VerifiedBadge'
+import FollowButton from '../components/FollowButton'
 import toast from 'react-hot-toast'
 
 const BRANCHES = ['CSE', 'ECE']
@@ -36,6 +39,7 @@ export default function ProfilePage() {
   const [saving, setSaving]         = useState(false)
 
   const isOwn = currentUser && userProfile?.username === username
+  const [followState, setFollowState] = useState(false)
 
   // ─── Load profile ─────────────────────────────────────────
   useEffect(() => {
@@ -44,9 +48,14 @@ export default function ProfilePage() {
     setCursor(null)
     setHasMore(true)
 
-    getUserByUsername(username).then(p => {
+    getUserByUsername(username).then(async p => {
       if (!p) { setNotFound(true); setLoading(false); return }
       setProfile(p)
+      // Check follow state for non-own profiles
+      if (currentUser && currentUser.uid !== p.uid) {
+        const state = await isFollowing(currentUser.uid, p.uid)
+        setFollowState(state)
+      }
       setLoading(false)
     })
   }, [username])
@@ -134,7 +143,10 @@ export default function ProfilePage() {
         <button className="btn btn-ghost btn-icon" onClick={() => navigate(-1)} aria-label="Go back">
           <Icon name="arrow_left" size={20} />
         </button>
-        <h1>{profile.name}</h1>
+        <h1 style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {profile.name}
+          {profile.isVerified && <VerifiedBadge size={18} />}
+        </h1>
       </div>
 
       {/* Banner */}
@@ -153,9 +165,36 @@ export default function ProfilePage() {
           )}
         </div>
 
-        <div className="profile-name" style={{ marginTop: 'var(--space-3)' }}>{profile.name}</div>
+        <div className="profile-name" style={{ marginTop: 'var(--space-3)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          {profile.name}
+          {profile.isVerified && <VerifiedBadge size={20} />}
+        </div>
         <div className="profile-handle">@{profile.username}</div>
         {profile.bio && <p className="profile-bio">{profile.bio}</p>}
+
+        {/* Follower / Following counts */}
+        <div style={{ display: 'flex', gap: 'var(--space-5)', marginTop: 'var(--space-3)', fontSize: 'var(--font-size-sm)' }}>
+          <span><strong style={{ color: 'var(--text-primary)' }}>{profile.followerCount ?? 0}</strong> <span style={{ color: 'var(--text-muted)' }}>Followers</span></span>
+          <span><strong style={{ color: 'var(--text-primary)' }}>{profile.followingCount ?? 0}</strong> <span style={{ color: 'var(--text-muted)' }}>Following</span></span>
+        </div>
+
+        {/* Follow button for non-own profiles */}
+        {!isOwn && (
+          <div style={{ marginTop: 'var(--space-3)' }}>
+            <FollowButton
+              targetUid={profile.uid}
+              initialState={followState}
+              onToggle={followed => {
+                setFollowState(followed)
+                setProfile(prev => ({
+                  ...prev,
+                  followerCount: (prev.followerCount ?? 0) + (followed ? 1 : -1)
+                }))
+              }}
+              size="md"
+            />
+          </div>
+        )}
 
         <div className="profile-meta-row">
           {profile.branch && (

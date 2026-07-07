@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import Icon from './Icon'
 import Avatar from './Avatar'
 import SuggestionsSidebar from './SuggestionsSidebar'
+import VerifiedBadge from './VerifiedBadge'
 import toast from 'react-hot-toast'
 
 export default function AppShell({ children }) {
@@ -71,7 +72,10 @@ export default function AppShell({ children }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-3)', borderRadius: 'var(--radius-lg)', background: 'var(--bg-elevated)' }}>
             <Avatar src={userProfile.photoURL} name={userProfile.name} size="md" />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="truncate font-semibold text-sm">{userProfile.name}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} className="truncate font-semibold text-sm">
+                <span className="truncate">{userProfile.name}</span>
+                {userProfile.isVerified && <VerifiedBadge size={13} />}
+              </div>
               <div className="truncate text-xs text-muted">@{userProfile.username}</div>
             </div>
             <button id="btn-logout" className="btn btn-ghost btn-icon" onClick={handleLogout} title="Logout" aria-label="Logout">
