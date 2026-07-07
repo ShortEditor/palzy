@@ -1,5 +1,13 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
+import {
+  onAuthStateChanged,
+  signInWithPopup,
+  signOut,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+  updateProfile,
+} from 'firebase/auth'
 import { auth, googleProvider } from '../firebase/config'
 import { getUserProfile } from '../firebase/users'
 
@@ -24,16 +32,38 @@ export function AuthProvider({ children }) {
     return unsub
   }, [])
 
+  // ── Google sign-in ────────────────────────────────────────
   async function signInWithGoogle() {
     await signInWithPopup(auth, googleProvider)
   }
 
+  // ── Email sign-up ─────────────────────────────────────────
+  async function signUpWithEmail(email, password, displayName) {
+    const cred = await createUserWithEmailAndPassword(auth, email, password)
+    // Set display name on the Firebase Auth user object
+    if (displayName) {
+      await updateProfile(cred.user, { displayName })
+    }
+    return cred.user
+  }
+
+  // ── Email sign-in ─────────────────────────────────────────
+  async function signInWithEmail(email, password) {
+    await signInWithEmailAndPassword(auth, email, password)
+  }
+
+  // ── Forgot password ───────────────────────────────────────
+  async function resetPassword(email) {
+    await sendPasswordResetEmail(auth, email)
+  }
+
+  // ── Logout ────────────────────────────────────────────────
   async function logout() {
     await signOut(auth)
     setUserProfile(null)
   }
 
-  // Call this after creating/updating the profile to refresh local state
+  // ── Refresh local profile cache ───────────────────────────
   async function refreshProfile() {
     if (!currentUser) return
     const profile = await getUserProfile(currentUser.uid)
@@ -41,7 +71,17 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ currentUser, userProfile, loading, signInWithGoogle, logout, refreshProfile }}>
+    <AuthContext.Provider value={{
+      currentUser,
+      userProfile,
+      loading,
+      signInWithGoogle,
+      signUpWithEmail,
+      signInWithEmail,
+      resetPassword,
+      logout,
+      refreshProfile,
+    }}>
       {children}
     </AuthContext.Provider>
   )
