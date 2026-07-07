@@ -33,6 +33,12 @@ export default function FeedPage() {
   const [loadingMore, setLoadingMore] = useState(false)
 
   const loaderRef = useRef(null)
+  const authorMapRef = useRef(authorMap)
+
+  // Keep ref in sync
+  useEffect(() => {
+    authorMapRef.current = authorMap
+  }, [authorMap])
 
   // ─── Fetch a page of posts ──────────────────────────────────
   const fetchPosts = useCallback(async (cur = null, prepend = false) => {
@@ -41,7 +47,7 @@ export default function FeedPage() {
       const { posts: newPosts, nextCursor, hasMore: more } = await getFeedPosts(cur)
 
       // Fetch any authors we haven't loaded yet
-      const missingUids = [...new Set(newPosts.map(p => p.authorId))].filter(uid => !authorMap[uid])
+      const missingUids = [...new Set(newPosts.map(p => p.authorId))].filter(uid => !authorMapRef.current[uid])
       const profiles = await Promise.all(missingUids.map(uid => getUserProfile(uid)))
       const newAuthorMap = {}
       profiles.forEach((p, i) => { if (p) newAuthorMap[missingUids[i]] = p })
@@ -51,7 +57,7 @@ export default function FeedPage() {
 
       setAuthorMap(prev => ({ ...prev, ...newAuthorMap }))
       setLikeMap(prev => ({ ...prev, ...newLikeMap }))
-      setPosts(prev => prepend ? [...newPosts, ...prev] : [...prev, ...newPosts])
+      setPosts(prev => cur ? (prepend ? [...newPosts, ...prev] : [...prev, ...newPosts]) : newPosts)
       setCursor(nextCursor)
       setHasMore(more)
     } catch (err) {
@@ -60,7 +66,7 @@ export default function FeedPage() {
       setLoading(false)
       setLoadingMore(false)
     }
-  }, [currentUser.uid, authorMap])
+  }, [currentUser.uid])
 
   // Initial load
   useEffect(() => { fetchPosts(null) }, [])  // eslint-disable-line react-hooks/exhaustive-deps
@@ -124,11 +130,11 @@ export default function FeedPage() {
           <div ref={loaderRef} style={{ height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {loadingMore && <div className="spinner" />}
             {!hasMore && posts.length > 0 && (
-              <p style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)', padding: 'var(--space-4)' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)', padding: 'var(--space-4)', width: '100%' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', padding: 'var(--space-6)' }}>
                   <Icon name="leaf" size={14} /> You've seen everything — go touch some grass
                 </div>
-              </p>
+              </div>
             )}
           </div>
         </>
