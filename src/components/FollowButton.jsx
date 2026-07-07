@@ -64,19 +64,28 @@ export default function FollowButton({ targetUid, initialState, onToggle, size =
     }
   }
 
+  const [hovered, setHovered] = useState(false)
+
   const btnSize = size === 'sm' ? 'btn-sm' : ''
+
+  // When following + hovered → show "Unfollow" in red
+  const isUnfollowHover = following && hovered && !loading && !checking
 
   return (
     <button
       id={`btn-follow-${targetUid}`}
-      className={`btn ${following ? 'btn-outline' : 'btn-primary'} ${btnSize}`}
+      className={`btn ${isUnfollowHover ? 'btn-danger' : following ? 'btn-outline' : 'btn-primary'} ${btnSize}`}
       onClick={handleToggle}
       disabled={loading || checking}
-      style={{ minWidth: 88, transition: 'all var(--dur-fast)' }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{ minWidth: 92, transition: 'all var(--dur-fast)' }}
     >
       {(loading || checking)
         ? <div className="spinner" style={{ width: 12, height: 12, borderWidth: 2 }} />
-        : following ? 'Following' : 'Follow'
+        : isUnfollowHover
+          ? 'Unfollow'
+          : following ? 'Following' : 'Follow'
       }
     </button>
   )
