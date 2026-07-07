@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { getFollowerProfiles, getFollowingProfiles } from '../firebase/follows'
+import { useAuth } from '../contexts/AuthContext'
+import { getFollowerProfiles, getFollowingProfiles, getFollowingIds } from '../firebase/follows'
 import Avatar from './Avatar'
 import VerifiedBadge from './VerifiedBadge'
 import FollowButton from './FollowButton'
@@ -15,9 +16,19 @@ import Icon from './Icon'
  *   onClose  – callback to close modal
  */
 export default function FollowListModal({ uid, tab: initialTab, onClose }) {
-  const [tab, setTab]           = useState(initialTab)
-  const [users, setUsers]       = useState([])
-  const [loading, setLoading]   = useState(true)
+  const { currentUser } = useAuth()
+  const [tab, setTab]             = useState(initialTab)
+  const [users, setUsers]         = useState([])
+  const [loading, setLoading]     = useState(true)
+  const [myFollowing, setMyFollowing] = useState(new Set()) // IDs I follow
+
+  // Load current user's following set once
+  useEffect(() => {
+    if (!currentUser) return
+    getFollowingIds(currentUser.uid)
+      .then(ids => setMyFollowing(new Set(ids)))
+      .catch(console.error)
+  }, [currentUser])
 
   useEffect(() => {
     setLoading(true)
@@ -140,7 +151,18 @@ export default function FollowListModal({ uid, tab: initialTab, onClose }) {
                   </div>
                 </Link>
 
-                <FollowButton targetUid={user.uid} initialState={false} size="sm" />
+                <FollowButton
+                  targetUid={user.uid}
+                  initialState={myFollowing.has(user.uid)}
+                  onToggle={followed => {
+                    setMyFollowing(prev => {
+                      const next = new Set(prev)
+                      followed ? next.add(user.uid) : next.delete(user.uid)
+                      return next
+                    })
+                  }}
+                  size="sm"
+                />
               </div>
             ))
           )}
