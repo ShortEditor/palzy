@@ -37,6 +37,8 @@ export default function ProfilePage() {
   const [editYear, setEditYear]     = useState('')
   const [editAvatar, setEditAvatar] = useState(null)
   const [editAvatarPreview, setEditAvatarPreview] = useState('')
+  const [editBanner, setEditBanner] = useState(null)
+  const [editBannerPreview, setEditBannerPreview] = useState('')
   const [saving, setSaving]         = useState(false)
 
   const isOwn = currentUser && userProfile?.username === username
@@ -87,6 +89,9 @@ export default function ProfilePage() {
     setEditBranch(profile.branch ?? '')
     setEditYear(profile.year ?? '')
     setEditAvatarPreview(profile.photoURL ?? '')
+    setEditBannerPreview(profile.bannerURL ?? '')
+    setEditAvatar(null)
+    setEditBanner(null)
     setEditing(true)
   }
 
@@ -97,14 +102,23 @@ export default function ProfilePage() {
     setEditAvatarPreview(URL.createObjectURL(file))
   }
 
+  function handleEditBannerChange(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setEditBanner(file)
+    setEditBannerPreview(URL.createObjectURL(file))
+  }
+
   async function handleSave() {
     setSaving(true)
     try {
-      let photoURL = profile.photoURL
-      if (editAvatar) photoURL = await uploadImage(editAvatar, 'avatars')
-      await updateUserProfile(profile.uid, { bio: editBio, branch: editBranch, year: editYear, photoURL })
+      let photoURL  = profile.photoURL
+      let bannerURL = profile.bannerURL
+      if (editAvatar) photoURL  = await uploadImage(editAvatar, 'avatars')
+      if (editBanner) bannerURL = await uploadImage(editBanner, 'banners')
+      await updateUserProfile(profile.uid, { bio: editBio, branch: editBranch, year: editYear, photoURL, bannerURL })
       if (isOwn) await refreshProfile()
-      setProfile(prev => ({ ...prev, bio: editBio, branch: editBranch, year: editYear, photoURL }))
+      setProfile(prev => ({ ...prev, bio: editBio, branch: editBranch, year: editYear, photoURL, bannerURL }))
       setEditing(false)
       toast.success('Profile updated!')
     } catch {
@@ -151,8 +165,31 @@ export default function ProfilePage() {
         </h1>
       </div>
 
-      {/* Banner */}
-      <div className="profile-banner" />
+      {/* Banner — clickable if own profile */}
+      <div
+        className="profile-banner"
+        style={{
+          backgroundImage: profile.bannerURL ? `url(${profile.bannerURL})` : undefined,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          position: 'relative',
+          cursor: isOwn ? 'pointer' : 'default',
+        }}
+        onClick={() => isOwn && setEditing(true)}
+        title={isOwn ? 'Click to change banner' : ''}
+      >
+        {isOwn && (
+          <div style={{
+            position: 'absolute', bottom: 8, right: 12,
+            background: 'rgba(0,0,0,0.55)', borderRadius: 'var(--radius-md)',
+            padding: '4px 10px', fontSize: 'var(--font-size-xs)',
+            color: '#fff', display: 'flex', alignItems: 'center', gap: 4,
+            backdropFilter: 'blur(4px)',
+          }}>
+            <Icon name="pencil" size={11} /> Change banner
+          </div>
+        )}
+      </div>
 
       {/* Profile info */}
       <div className="profile-info">
@@ -266,6 +303,34 @@ export default function ProfilePage() {
               <button className="btn btn-ghost btn-icon" onClick={() => setEditing(false)} aria-label="Close"><Icon name="close" size={18} /></button>
             </div>
             <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+              {/* Banner upload */}
+              <div className="form-group">
+                <label className="form-label">Cover Banner</label>
+                <label
+                  htmlFor="edit-banner"
+                  style={{
+                    display: 'block', width: '100%', height: 100,
+                    borderRadius: 'var(--radius-md)', overflow: 'hidden',
+                    cursor: 'pointer', position: 'relative',
+                    background: editBannerPreview
+                      ? `url(${editBannerPreview}) center/cover`
+                      : 'linear-gradient(135deg, var(--brand-primary), var(--brand-accent))',
+                    border: '1.5px dashed var(--border-normal)',
+                  }}
+                >
+                  <div style={{
+                    position: 'absolute', inset: 0, display: 'flex',
+                    alignItems: 'center', justifyContent: 'center',
+                    background: 'rgba(0,0,0,0.35)',
+                    color: '#fff', fontSize: 'var(--font-size-xs)', gap: 6,
+                  }}>
+                    <Icon name="image" size={16} />
+                    {editBannerPreview ? 'Change banner' : 'Upload banner image'}
+                  </div>
+                </label>
+                <input id="edit-banner" type="file" accept="image/*" style={{ display: 'none' }} onChange={handleEditBannerChange} />
+              </div>
+
               {/* Avatar */}
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-3)' }}>
                 <label htmlFor="edit-avatar" style={{ cursor: 'pointer', position: 'relative' }}>
