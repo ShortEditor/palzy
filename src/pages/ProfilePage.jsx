@@ -10,6 +10,7 @@ import Avatar from '../components/Avatar'
 import Icon from '../components/Icon'
 import VerifiedBadge from '../components/VerifiedBadge'
 import FollowButton from '../components/FollowButton'
+import FollowListModal from '../components/FollowListModal'
 import toast from 'react-hot-toast'
 
 const BRANCHES = ['CSE', 'ECE']
@@ -40,6 +41,7 @@ export default function ProfilePage() {
 
   const isOwn = currentUser && userProfile?.username === username
   const [followState, setFollowState] = useState(false)
+  const [followModal, setFollowModal] = useState(null) // 'followers' | 'following' | null
 
   // ─── Load profile ─────────────────────────────────────────
   useEffect(() => {
@@ -172,10 +174,24 @@ export default function ProfilePage() {
         <div className="profile-handle">@{profile.username}</div>
         {profile.bio && <p className="profile-bio">{profile.bio}</p>}
 
-        {/* Follower / Following counts */}
+        {/* Follower / Following counts — clickable to open list */}
         <div style={{ display: 'flex', gap: 'var(--space-5)', marginTop: 'var(--space-3)', fontSize: 'var(--font-size-sm)' }}>
-          <span><strong style={{ color: 'var(--text-primary)' }}>{profile.followerCount ?? 0}</strong> <span style={{ color: 'var(--text-muted)' }}>Followers</span></span>
-          <span><strong style={{ color: 'var(--text-primary)' }}>{profile.followingCount ?? 0}</strong> <span style={{ color: 'var(--text-muted)' }}>Following</span></span>
+          <button
+            className="btn btn-ghost"
+            style={{ padding: 0, fontWeight: 'normal', fontSize: 'var(--font-size-sm)' }}
+            onClick={() => setFollowModal('followers')}
+          >
+            <strong style={{ color: 'var(--text-primary)' }}>{profile.followerCount ?? 0}</strong>&nbsp;
+            <span style={{ color: 'var(--text-muted)' }}>Followers</span>
+          </button>
+          <button
+            className="btn btn-ghost"
+            style={{ padding: 0, fontWeight: 'normal', fontSize: 'var(--font-size-sm)' }}
+            onClick={() => setFollowModal('following')}
+          >
+            <strong style={{ color: 'var(--text-primary)' }}>{profile.followingCount ?? 0}</strong>&nbsp;
+            <span style={{ color: 'var(--text-muted)' }}>Following</span>
+          </button>
         </div>
 
         {/* Follow button for non-own profiles */}
@@ -293,6 +309,14 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
+      )}
+      {/* Followers / Following modal */}
+      {followModal && profile && (
+        <FollowListModal
+          uid={profile.uid}
+          tab={followModal}
+          onClose={() => setFollowModal(null)}
+        />
       )}
     </div>
   )

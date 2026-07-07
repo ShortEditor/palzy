@@ -64,6 +64,26 @@ export async function getFollowerIds(uid) {
   return snap.docs.map(d => d.data().followerId)
 }
 
+// ─── Get full profiles of followers ──────────────────────────
+export async function getFollowerProfiles(uid) {
+  const ids = await getFollowerIds(uid)
+  if (!ids.length) return []
+  const profiles = await Promise.all(ids.map(id => getDoc(doc(db, 'users', id))))
+  return profiles
+    .filter(s => s.exists())
+    .map(s => ({ uid: s.id, ...s.data() }))
+}
+
+// ─── Get full profiles of people this user follows ───────────
+export async function getFollowingProfiles(uid) {
+  const ids = await getFollowingIds(uid)
+  if (!ids.length) return []
+  const profiles = await Promise.all(ids.map(id => getDoc(doc(db, 'users', id))))
+  return profiles
+    .filter(s => s.exists())
+    .map(s => ({ uid: s.id, ...s.data() }))
+}
+
 // ─── Suggest people to follow ─────────────────────────────────
 // Returns up to `count` users from the same branch, excluding self + already following
 export async function getSuggestions(currentUid, branch, count = 6) {
