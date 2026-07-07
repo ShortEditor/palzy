@@ -104,8 +104,8 @@ export default function FollowListModal({ uid, tab: initialTab, onClose }) {
             ))
           ) : users.length === 0 ? (
             <div style={{ padding: 'var(--space-10)', textAlign: 'center' }}>
-              <div style={{ fontSize: '2rem', marginBottom: 'var(--space-3)' }}>
-                {tab === 'followers' ? '👥' : '🔭'}
+              <div style={{ fontSize: '2.5rem', marginBottom: 'var(--space-3)', color: 'var(--text-muted)' }}>
+                <Icon name={tab === 'followers' ? 'users' : 'telescope'} size={40} />
               </div>
               <div style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)' }}>
                 {tab === 'followers' ? 'No followers yet.' : 'Not following anyone yet.'}

@@ -32,7 +32,7 @@ export default function AppShell({ children }) {
       {/* ── Left Sidebar (desktop) ──────────────────────────── */}
       <aside className="sidebar">
         <div className="sidebar-logo">
-          <span style={{ fontSize: '1.5rem' }}>🎓</span>
+          <Icon name="graduationCap" size={24} style={{ color: 'var(--brand-primary)' }} />
           <span className="sidebar-logo-text">Palzy</span>
         </div>
 
@@ -62,7 +62,7 @@ export default function AppShell({ children }) {
             className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
             style={{ color: 'var(--brand-red)', marginBottom: 'var(--space-1)' }}
           >
-            <span className="nav-item-icon">⚡</span>
+            <span className="nav-item-icon"><Icon name="zap" size={20} /></span>
             Admin Panel
           </NavLink>
         )}
@@ -91,8 +91,9 @@ export default function AppShell({ children }) {
 
           {/* Mobile topbar */}
           <header className="topbar">
-            <span style={{ fontSize: '1.2rem', fontWeight: 800, background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-accent))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              🎓 Palzy
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 800, background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-accent))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              <Icon name="graduationCap" size={20} style={{ color: 'var(--brand-primary)' }} />
+              Palzy
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
               {userProfile && (

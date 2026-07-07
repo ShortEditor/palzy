@@ -4,6 +4,7 @@ import { getFeedPosts, batchCheckLikes } from '../firebase/posts'
 import { getUserProfile } from '../firebase/users'
 import CreatePost from '../components/CreatePost'
 import PostCard from '../components/PostCard'
+import Icon from '../components/Icon'
 
 const SKELETON_COUNT = 5
 
@@ -103,7 +104,7 @@ export default function FeedPage() {
         Array.from({ length: SKELETON_COUNT }, (_, i) => <PostSkeleton key={i} />)
       ) : posts.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state-icon">🌟</div>
+          <div className="empty-state-icon"><Icon name="sparkles" size={40} /></div>
           <div className="empty-state-title">Nothing here yet</div>
           <div className="empty-state-body">Be the first to post something — your batchmates are waiting!</div>
         </div>
@@ -124,7 +125,9 @@ export default function FeedPage() {
             {loadingMore && <div className="spinner" />}
             {!hasMore && posts.length > 0 && (
               <p style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)', padding: 'var(--space-4)' }}>
-                You've seen everything — go touch some grass 🌿
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', padding: 'var(--space-6)' }}>
+                  <Icon name="leaf" size={14} /> You've seen everything — go touch some grass
+                </div>
               </p>
             )}
           </div>

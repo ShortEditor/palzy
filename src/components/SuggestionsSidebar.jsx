@@ -48,7 +48,9 @@ export default function SuggestionsSidebar() {
           fontWeight: 700,
           fontSize: 'var(--font-size-base)',
         }}>
-          🎓 People you may know
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Icon name="users" size={15} /> People you may know
+          </span>
         </div>
 
         {loading ? (
@@ -63,7 +65,7 @@ export default function SuggestionsSidebar() {
           ))
         ) : suggestions.length === 0 ? (
           <div style={{ padding: 'var(--space-5)', color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', textAlign: 'center' }}>
-            You're following everyone! 🎉
+            <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Icon name="check" size={13} /> You're following everyone!</span>
           </div>
         ) : (
           suggestions.map(user => (
@@ -123,7 +125,7 @@ export default function SuggestionsSidebar() {
             <span key={l} style={{ cursor: 'pointer' }}>{l}</span>
           ))}
         </div>
-        <div style={{ marginTop: 'var(--space-2)' }}>© 2026 Palzy · Made for college ✌️</div>
+        <div style={{ marginTop: 'var(--space-2)' }}>© 2026 Palzy · Made for college</div>
       </div>
     </aside>
   )

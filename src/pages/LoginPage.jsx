@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import Icon from '../components/Icon'
 import toast from 'react-hot-toast'
 
 /* ── Tiny helpers ─────────────────────────────────────────── */
@@ -117,7 +118,7 @@ export default function LoginPage() {
 
         {/* Logo */}
         <div className="auth-logo">
-          <div className="auth-logo-icon">🎓</div>
+          <div className="auth-logo-icon"><Icon name="graduationCap" size={32} /></div>
           <h1 className="auth-title">Palzy</h1>
           <p className="auth-subtitle">The social feed for your college crowd.</p>
         </div>
@@ -195,7 +196,7 @@ export default function LoginPage() {
                   style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '1rem' }}
                   aria-label={showPass ? 'Hide password' : 'Show password'}
                 >
-                  {showPass ? '🙈' : '👁️'}
+                  {showPass ? <Icon name="close" size={16} /> : <Icon name="info" size={16} />}
                 </button>
               </div>
             </div>
@@ -276,7 +277,7 @@ export default function LoginPage() {
                   style={{ position: 'absolute', right: '0.75rem', top: showPass || !suPassword ? '50%' : '35%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '1rem' }}
                   aria-label={showPass ? 'Hide password' : 'Show password'}
                 >
-                  {showPass ? '🙈' : '👁️'}
+                  {showPass ? <Icon name="close" size={16} /> : <Icon name="info" size={16} />}
                 </button>
               </div>
               <PasswordStrength password={suPassword} />
@@ -329,7 +330,7 @@ export default function LoginPage() {
         {tab === 'forgot' && (
           <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
             <div style={{ textAlign: 'center', marginBottom: 'var(--space-2)' }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: 'var(--space-3)' }}>🔑</div>
+              <div style={{ marginBottom: 'var(--space-3)', color: 'var(--text-muted)' }}><Icon name="logout" size={36} /></div>
               <div style={{ fontWeight: 700, fontSize: 'var(--font-size-xl)', marginBottom: 'var(--space-2)', color: 'var(--text-primary)' }}>Forgot Password?</div>
               <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)' }}>Enter your email and we'll send a reset link.</div>
             </div>

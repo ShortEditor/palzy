@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getAdminStats } from '../../firebase/admin'
 import { Link } from 'react-router-dom'
+import Icon from '../../components/Icon'
 
 function StatCard({ label, value, icon, color, to }) {
   const card = (
@@ -24,7 +25,7 @@ function StatCard({ label, value, icon, color, to }) {
       {/* Glow blob */}
       <div style={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, borderRadius: '50%', background: color, opacity: 0.12, filter: 'blur(20px)' }} />
 
-      <div style={{ fontSize: '2rem' }}>{icon}</div>
+      <div style={{ color, marginBottom: 'var(--space-1)' }}><Icon name={icon} size={28} /></div>
       <div style={{ fontSize: 'var(--font-size-3xl)', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>
         {value ?? <div className="skeleton" style={{ width: 60, height: 36, borderRadius: 4 }} />}
       </div>
@@ -58,25 +59,25 @@ export default function AdminDashboard() {
 
       {/* Stat cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-5)', marginBottom: 'var(--space-10)' }}>
-        <StatCard label="Total Users"   icon="👥" value={loading ? null : stats?.totalUsers}   color="var(--brand-primary)" to="/admin/users" />
-        <StatCard label="Total Posts"   icon="📝" value={loading ? null : stats?.totalPosts}   color="var(--brand-accent)"  to="/admin/posts" />
-        <StatCard label="Open Reports"  icon="🚩" value={loading ? null : stats?.totalReports} color="var(--brand-red)"     to="/admin/reports" />
+        <StatCard label="Total Users"   icon="users"   value={loading ? null : stats?.totalUsers}   color="var(--brand-primary)" to="/admin/users" />
+        <StatCard label="Total Posts"   icon="image"   value={loading ? null : stats?.totalPosts}   color="var(--brand-accent)"  to="/admin/posts" />
+        <StatCard label="Open Reports"  icon="flag"    value={loading ? null : stats?.totalReports} color="var(--brand-red)"     to="/admin/reports" />
       </div>
 
       {/* Quick actions */}
       <div style={{ marginBottom: 'var(--space-6)' }}>
         <h2 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 700, marginBottom: 'var(--space-4)' }}>Quick Actions</h2>
         <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
-          <Link to="/admin/users"   className="btn btn-outline"><span>👥</span> Manage Users</Link>
-          <Link to="/admin/posts"   className="btn btn-outline"><span>📝</span> Manage Posts</Link>
-          <Link to="/admin/reports" className="btn btn-danger" ><span>🚩</span> Review Reports</Link>
-          <Link to="/"             className="btn btn-ghost"  ><span>🎓</span> Go to Feed</Link>
+          <Link to="/admin/users"   className="btn btn-outline"><Icon name="users"         size={15} /> Manage Users</Link>
+          <Link to="/admin/posts"   className="btn btn-outline"><Icon name="image"         size={15} /> Manage Posts</Link>
+          <Link to="/admin/reports" className="btn btn-danger" ><Icon name="flag"          size={15} /> Review Reports</Link>
+          <Link to="/"             className="btn btn-ghost"  ><Icon name="home"          size={15} /> Go to Feed</Link>
         </div>
       </div>
 
       {/* How to make someone admin */}
       <div style={{ background: 'rgba(108,99,255,0.08)', border: '1px solid var(--border-brand)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)' }}>
-        <div style={{ fontWeight: 700, marginBottom: 'var(--space-2)', color: 'var(--text-brand)' }}>💡 How to grant admin access</div>
+        <div style={{ fontWeight: 700, marginBottom: 'var(--space-2)', color: 'var(--text-brand)', display: 'flex', alignItems: 'center', gap: 6 }}><Icon name="info" size={14} /> How to grant admin access</div>
         <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', lineHeight: 1.7 }}>
           Open <strong style={{ color: 'var(--text-primary)' }}>Firebase Console → Firestore → users → {'{uid}'}</strong> and add the field:<br />
           <code style={{ background: 'var(--bg-elevated)', padding: '2px 8px', borderRadius: 4, color: 'var(--brand-primary-dim)', fontFamily: 'monospace' }}>isAdmin: true</code> (boolean)

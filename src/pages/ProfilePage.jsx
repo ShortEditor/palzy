@@ -145,7 +145,7 @@ export default function ProfilePage() {
         <h1>Profile</h1>
       </div>
       <div className="empty-state" style={{ marginTop: 'var(--space-12)' }}>
-        <div className="empty-state-icon">👻</div>
+        <div className="empty-state-icon" style={{ color: 'var(--text-muted)' }}><Icon name="ghost" size={40} /></div>
         <div className="empty-state-title">User not found</div>
         <div className="empty-state-body">@{username} doesn't exist yet.</div>
       </div>
@@ -272,7 +272,7 @@ export default function ProfilePage() {
         <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-8)' }}><div className="spinner" /></div>
       ) : posts.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state-icon">🖊️</div>
+          <div className="empty-state-icon" style={{ color: 'var(--text-muted)' }}><Icon name="pencil" size={40} /></div>
           <div className="empty-state-body">{isOwn ? "You haven't posted anything yet." : `@${username} hasn't posted yet.`}</div>
         </div>
       ) : (

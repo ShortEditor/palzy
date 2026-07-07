@@ -101,7 +101,7 @@ export default function ExplorePage() {
       {/* Results */}
       {!searched ? (
         <div className="empty-state">
-          <div className="empty-state-icon">🔍</div>
+          <div className="empty-state-icon" style={{ color: 'var(--text-muted)' }}><Icon name="search" size={40} /></div>
           <div className="empty-state-title">Find your batchmates</div>
           <div className="empty-state-body">Search by username or keyword to find posts and people.</div>
         </div>
@@ -146,7 +146,7 @@ export default function ExplorePage() {
 
           {results.length === 0 && posts.length === 0 && (
             <div className="empty-state">
-              <div className="empty-state-icon">😶</div>
+              <div className="empty-state-icon" style={{ color: 'var(--text-muted)' }}><Icon name="info" size={36} /></div>
               <div className="empty-state-title">No results</div>
               <div className="empty-state-body">Try a different search term.</div>
             </div>

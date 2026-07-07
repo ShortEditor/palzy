@@ -41,7 +41,7 @@ export default function AdminLayout() {
         {/* Brand */}
         <div style={{ padding: 'var(--space-3) var(--space-4)', marginBottom: 'var(--space-4)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 4 }}>
-            <span style={{ fontSize: '1.3rem' }}>🎓</span>
+            <Icon name="graduationCap" size={20} style={{ color: 'var(--brand-primary)' }} />
             <span style={{ fontWeight: 800, fontSize: 'var(--font-size-lg)', background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-accent))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
               Palzy
             </span>
@@ -52,7 +52,7 @@ export default function AdminLayout() {
             borderRadius: 'var(--radius-full)', padding: '2px 10px',
             fontSize: 'var(--font-size-xs)', fontWeight: 700, letterSpacing: '0.05em',
           }}>
-            ⚡ Admin Panel
+            <Icon name="zap" size={12} /> Admin Panel
           </div>
         </div>
 

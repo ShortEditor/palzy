@@ -189,7 +189,7 @@ export default function PostCard({ post, authorProfile, isLiked: initialLiked = 
               style={{ marginLeft: 'auto', color: 'var(--text-muted)' }}
               title="Report post"
             >
-              🚩
+              <Icon name="flag" size={16} />
             </button>
           )}
         </div>
@@ -210,7 +210,7 @@ export default function PostCard({ post, authorProfile, isLiked: initialLiked = 
               animation: 'fadeIn var(--dur-fast)',
             }}
           >
-            <div style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)', color: 'var(--text-primary)' }}>🚩 Report this post</div>
+            <div style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}><Icon name="flag" size={14} /> Report this post</div>
             <select
               id={`report-reason-${post.id}`}
               className="form-input"

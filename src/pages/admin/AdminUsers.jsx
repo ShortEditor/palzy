@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { getAdminUsers, setUserBanned, setUserVerified, setUserAdmin } from '../../firebase/admin'
 import Avatar from '../../components/Avatar'
 import VerifiedBadge from '../../components/VerifiedBadge'
+import Icon from '../../components/Icon'
 import toast from 'react-hot-toast'
 import { formatDistanceToNow } from 'date-fns'
 
@@ -142,7 +143,7 @@ export default function AdminUsers() {
                           </div>
                           <div style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)' }}>@{user.username}</div>
                         </div>
-                        {user.isAdmin && <span className="badge badge-brand" style={{ fontSize: '0.6rem' }}>⚡Admin</span>}
+                        {user.isAdmin && <span className="badge badge-brand" style={{ fontSize: '0.6rem', display: 'inline-flex', alignItems: 'center', gap: 2 }}><Icon name="zap" size={9} />Admin</span>}
                       </div>
                     </td>
                     {/* Branch / Year */}
@@ -167,18 +168,20 @@ export default function AdminUsers() {
                     <td style={{ padding: 'var(--space-3) var(--space-4)' }}>
                       <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
 
-                        {/* 💠 Blue tick */}
+                        {/* Blue tick */}
                         <button
                           id={`admin-btn-verify-${user.uid}`}
                           className={`btn btn-sm ${user.isVerified ? 'btn-outline' : 'btn-outline'}`}
                           onClick={() => handleVerify(user.uid, !!user.isVerified)}
                           disabled={actionUid === user.uid}
                           title={user.isVerified ? 'Remove blue tick' : 'Grant blue tick'}
-                          style={{ color: user.isVerified ? '#1D9BF0' : 'var(--text-muted)' }}
+                          style={{ color: user.isVerified ? '#1D9BF0' : 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                         >
                           {actionUid === user.uid
                             ? <div className="spinner" style={{ width: 12, height: 12, borderWidth: 2 }} />
-                            : user.isVerified ? '✔️ Verified' : '🞤 Verify'
+                            : user.isVerified
+                              ? <><Icon name="badgeCheck" size={12} /> Verified</>
+                              : <><Icon name="check" size={12} /> Verify</>
                           }
                         </button>
 
@@ -201,9 +204,10 @@ export default function AdminUsers() {
                           onClick={() => handleAdminToggle(user.uid, !!user.isAdmin)}
                           disabled={actionUid === user.uid}
                           title={user.isAdmin ? 'Revoke admin' : 'Make admin'}
-                          style={{ color: user.isAdmin ? 'var(--brand-red)' : 'var(--text-muted)', fontSize: '0.7rem' }}
+                          style={{ color: user.isAdmin ? 'var(--brand-red)' : 'var(--text-muted)', fontSize: '0.7rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                         >
-                          {user.isAdmin ? '⚡ Revoke Admin' : '⚡ Make Admin'}
+                          <Icon name="zap" size={11} />
+                          {user.isAdmin ? 'Revoke Admin' : 'Make Admin'}
                         </button>
 
                       </div>
