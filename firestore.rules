@@ -28,6 +28,11 @@ service cloud.firestore {
         && !('isVerified' in request.resource.data.diff(resource.data).affectedKeys())
         && !('banned'     in request.resource.data.diff(resource.data).affectedKeys());
 
+      // Any logged-in user can update follower/following counters (needed for follow system)
+      allow update: if isAuth()
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['followerCount', 'followingCount']);
+
       // Admin can update anything
       allow update: if isAdmin();
     }

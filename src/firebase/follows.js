@@ -17,21 +17,31 @@ import { db } from './config'
 // ─── Follow a user ────────────────────────────────────────────
 export async function followUser(followerId, followeeId) {
   const followId = `${followerId}_${followeeId}`
+  // Write the follow document first
   await setDoc(doc(db, 'follows', followId), {
     followerId,
     followeeId,
     createdAt: serverTimestamp(),
   })
-  // Increment counters
-  await updateDoc(doc(db, 'users', followerId), { followingCount: increment(1) })
-  await updateDoc(doc(db, 'users', followeeId), { followerCount:  increment(1) })
+  // Increment counters — these may fail if rules are not yet deployed,
+  // so we catch individually and don't block the follow from succeeding
+  try {
+    await updateDoc(doc(db, 'users', followerId), { followingCount: increment(1) })
+  } catch {}
+  try {
+    await updateDoc(doc(db, 'users', followeeId), { followerCount: increment(1) })
+  } catch {}
 }
 
 // ─── Unfollow a user ──────────────────────────────────────────
 export async function unfollowUser(followerId, followeeId) {
   await deleteDoc(doc(db, 'follows', `${followerId}_${followeeId}`))
-  await updateDoc(doc(db, 'users', followerId), { followingCount: increment(-1) })
-  await updateDoc(doc(db, 'users', followeeId), { followerCount:  increment(-1) })
+  try {
+    await updateDoc(doc(db, 'users', followerId), { followingCount: increment(-1) })
+  } catch {}
+  try {
+    await updateDoc(doc(db, 'users', followeeId), { followerCount: increment(-1) })
+  } catch {}
 }
 
 // ─── Check if you follow someone ─────────────────────────────
