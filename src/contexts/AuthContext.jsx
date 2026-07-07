@@ -70,10 +70,13 @@ export function AuthProvider({ children }) {
     setUserProfile(profile)
   }
 
+  const isAdmin = userProfile?.isAdmin === true
+
   return (
     <AuthContext.Provider value={{
       currentUser,
       userProfile,
+      isAdmin,
       loading,
       signInWithGoogle,
       signUpWithEmail,

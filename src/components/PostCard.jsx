@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { formatDistanceToNow } from 'date-fns'
 import { useAuth } from '../contexts/AuthContext'
 import { toggleLike, deletePost } from '../firebase/posts'
+import { reportPost } from '../firebase/admin'
 import Avatar from './Avatar'
 import Icon from './Icon'
 import toast from 'react-hot-toast'
@@ -15,6 +16,9 @@ export default function PostCard({ post, authorProfile, isLiked: initialLiked = 
   const [likeCount, setLikeCount] = useState(post.likeCount ?? 0)
   const [liking, setLiking]       = useState(false)
   const [deleting, setDeleting]   = useState(false)
+  const [reporting, setReporting] = useState(false)   // modal open
+  const [reportReason, setReportReason] = useState('')
+  const [submittingReport, setSubmittingReport] = useState(false)
 
   const isOwner = currentUser?.uid === post.authorId
 
@@ -53,6 +57,23 @@ export default function PostCard({ post, authorProfile, isLiked: initialLiked = 
     } catch {
       toast.error('Could not delete post.')
       setDeleting(false)
+    }
+  }
+
+  async function handleReport(e) {
+    e.stopPropagation()
+    if (!reportReason) { toast.error('Pick a reason first.'); return }
+    setSubmittingReport(true)
+    try {
+      const ok = await reportPost(post.id, currentUser.uid, reportReason)
+      if (ok) toast.success('Report submitted. Thanks! 🚩')
+      else    toast('You already reported this post.')
+      setReporting(false)
+      setReportReason('')
+    } catch {
+      toast.error('Could not submit report.')
+    } finally {
+      setSubmittingReport(false)
     }
   }
 
@@ -146,7 +167,69 @@ export default function PostCard({ post, authorProfile, isLiked: initialLiked = 
               {deleting ? <div className="spinner" style={{ width: 14, height: 14 }} /> : <Icon name="trash" size={16} />}
             </button>
           )}
+
+          {/* Report (non-owner posts) */}
+          {!isOwner && (
+            <button
+              id={`btn-report-${post.id}`}
+              className="post-action-btn"
+              onClick={e => { e.stopPropagation(); setReporting(true) }}
+              aria-label="Report post"
+              style={{ marginLeft: 'auto', color: 'var(--text-muted)' }}
+              title="Report post"
+            >
+              🚩
+            </button>
+          )}
         </div>
+
+        {/* ── Report modal ────────────────────────────────── */}
+        {reporting && (
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              marginTop: 'var(--space-3)',
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border-normal)',
+              borderRadius: 'var(--radius-lg)',
+              padding: 'var(--space-4)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 'var(--space-3)',
+              animation: 'fadeIn var(--dur-fast)',
+            }}
+          >
+            <div style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)', color: 'var(--text-primary)' }}>🚩 Report this post</div>
+            <select
+              id={`report-reason-${post.id}`}
+              className="form-input"
+              value={reportReason}
+              onChange={e => setReportReason(e.target.value)}
+              style={{ fontSize: 'var(--font-size-sm)' }}
+            >
+              <option value="">Select a reason…</option>
+              {['Spam', 'Harassment', 'Inappropriate content', 'Misinformation', 'Other'].map(r => (
+                <option key={r} value={r}>{r}</option>
+              ))}
+            </select>
+            <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+              <button
+                id={`btn-submit-report-${post.id}`}
+                className="btn btn-danger btn-sm"
+                onClick={handleReport}
+                disabled={submittingReport || !reportReason}
+              >
+                {submittingReport ? <div className="spinner" style={{ width: 12, height: 12, borderWidth: 2 }} /> : 'Submit Report'}
+              </button>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={e => { e.stopPropagation(); setReporting(false); setReportReason('') }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </article>
   )

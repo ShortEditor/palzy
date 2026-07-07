@@ -5,7 +5,7 @@ import Avatar from './Avatar'
 import toast from 'react-hot-toast'
 
 export default function AppShell({ children }) {
-  const { userProfile, logout } = useAuth()
+  const { userProfile, isAdmin, logout } = useAuth()
   const navigate = useNavigate()
 
   async function handleLogout() {
@@ -43,6 +43,18 @@ export default function AppShell({ children }) {
 
         {/* Spacer */}
         <div style={{ flex: 1 }} />
+
+        {/* Admin panel link — only for admins */}
+        {isAdmin && (
+          <NavLink
+            to="/admin"
+            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+            style={{ color: 'var(--brand-red)', marginBottom: 'var(--space-1)' }}
+          >
+            <span className="nav-item-icon">⚡</span>
+            Admin Panel
+          </NavLink>
+        )}
 
         {/* User info + logout */}
         {userProfile && (
