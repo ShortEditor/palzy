@@ -5,6 +5,7 @@ import { getSuggestions } from '../firebase/follows'
 import FollowButton from './FollowButton'
 import VerifiedBadge from './VerifiedBadge'
 import Avatar from './Avatar'
+import Icon from './Icon'
 
 export default function SuggestionsSidebar() {
   const { currentUser, userProfile } = useAuth()
