@@ -6,6 +6,8 @@ import { toggleLike, deletePost } from '../firebase/posts'
 import { reportPost } from '../firebase/admin'
 import Avatar from './Avatar'
 import Icon from './Icon'
+import VerifiedBadge from './VerifiedBadge'
+import FollowButton from './FollowButton'
 import toast from 'react-hot-toast'
 
 export default function PostCard({ post, authorProfile, isLiked: initialLiked = false, onDelete }) {
@@ -105,17 +107,26 @@ export default function PostCard({ post, authorProfile, isLiked: initialLiked = 
 
       <div className="post-card-body">
         {/* Meta row */}
-        <div className="post-meta">
-          <Link
-            to={`/u/${handle}`}
-            onClick={e => e.stopPropagation()}
-            className="post-author-name"
-            style={{ color: 'var(--text-primary)', textDecoration: 'none' }}
-          >
-            {displayName}
-          </Link>
+        <div className="post-meta" style={{ flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0 }}>
+            <Link
+              to={`/u/${handle}`}
+              onClick={e => e.stopPropagation()}
+              className="post-author-name"
+              style={{ color: 'var(--text-primary)', textDecoration: 'none' }}
+            >
+              {displayName}
+            </Link>
+            {authorProfile?.isVerified && <VerifiedBadge size={14} />}
+          </div>
           <span className="post-author-handle">@{handle}</span>
           <span className="post-timestamp" title={createdAt?.toLocaleString()}>{timeAgo}</span>
+          {/* Inline follow button — show for non-owner posts */}
+          {!isOwner && (
+            <span onClick={e => e.stopPropagation()} style={{ marginLeft: 'auto' }}>
+              <FollowButton targetUid={post.authorId} initialState={false} size="sm" />
+            </span>
+          )}
         </div>
 
         {/* Post text */}

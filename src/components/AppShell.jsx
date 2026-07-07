@@ -1,12 +1,17 @@
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import Icon from './Icon'
 import Avatar from './Avatar'
+import SuggestionsSidebar from './SuggestionsSidebar'
 import toast from 'react-hot-toast'
 
 export default function AppShell({ children }) {
   const { userProfile, isAdmin, logout } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+
+  // Only show suggestions sidebar on the home feed
+  const showSuggestions = location.pathname === '/'
 
   async function handleLogout() {
     await logout()
@@ -15,14 +20,15 @@ export default function AppShell({ children }) {
   }
 
   const navItems = [
-    { to: '/',         icon: 'home',   label: 'Home' },
-    { to: '/explore',  icon: 'search', label: 'Explore' },
+    { to: '/',        icon: 'home',   label: 'Home'    },
+    { to: '/explore', icon: 'search', label: 'Explore' },
     { to: `/u/${userProfile?.username}`, icon: 'user', label: 'Profile' },
   ]
 
   return (
-    <div className="app-shell">
-      {/* ── Sidebar (desktop) ── */}
+    <div style={{ display: 'flex', minHeight: '100dvh' }}>
+
+      {/* ── Left Sidebar (desktop) ──────────────────────────── */}
       <aside className="sidebar">
         <div className="sidebar-logo">
           <span style={{ fontSize: '1.5rem' }}>🎓</span>
@@ -37,14 +43,18 @@ export default function AppShell({ children }) {
         ))}
 
         {/* Compose button */}
-        <button id="btn-compose-sidebar" className="btn btn-primary" style={{ marginTop: 'var(--space-4)', width: '100%' }} onClick={() => navigate('/')}>
+        <button
+          id="btn-compose-sidebar"
+          className="btn btn-primary"
+          style={{ marginTop: 'var(--space-4)', width: '100%' }}
+          onClick={() => navigate('/')}
+        >
           <Icon name="plus" size={18} /> Post
         </button>
 
-        {/* Spacer */}
         <div style={{ flex: 1 }} />
 
-        {/* Admin panel link — only for admins */}
+        {/* Admin link — only for admins */}
         {isAdmin && (
           <NavLink
             to="/admin"
@@ -56,7 +66,7 @@ export default function AppShell({ children }) {
           </NavLink>
         )}
 
-        {/* User info + logout */}
+        {/* User strip + logout */}
         {userProfile && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-3)', borderRadius: 'var(--radius-lg)', background: 'var(--bg-elevated)' }}>
             <Avatar src={userProfile.photoURL} name={userProfile.name} size="md" />
@@ -71,36 +81,64 @@ export default function AppShell({ children }) {
         )}
       </aside>
 
-      {/* ── Main content ── */}
-      <main className="main-content">
-        {/* Mobile topbar */}
-        <header className="topbar">
-          <span style={{ fontSize: '1.2rem', fontWeight: 800, background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-accent))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            🎓 Palzy
-          </span>
-          {userProfile && (
-            <NavLink to={`/u/${userProfile.username}`}>
-              <Avatar src={userProfile.photoURL} name={userProfile.name} size="sm" />
-            </NavLink>
-          )}
-        </header>
+      {/* ── Main + Right ────────────────────────────────────── */}
+      <div style={{ flex: 1, display: 'flex', minWidth: 0 }}>
+        <main className="main-content" style={{ flex: 1, minWidth: 0 }}>
 
-        {children}
+          {/* Mobile topbar */}
+          <header className="topbar">
+            <span style={{ fontSize: '1.2rem', fontWeight: 800, background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-accent))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              🎓 Palzy
+            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+              {userProfile && (
+                <NavLink to={`/u/${userProfile.username}`}>
+                  <Avatar src={userProfile.photoURL} name={userProfile.name} size="sm" />
+                </NavLink>
+              )}
+              {/* Mobile logout */}
+              <button
+                id="btn-logout-mobile"
+                className="btn btn-ghost btn-icon"
+                onClick={handleLogout}
+                title="Logout"
+                aria-label="Logout"
+                style={{ padding: 'var(--space-2)' }}
+              >
+                <Icon name="logout" size={18} />
+              </button>
+            </div>
+          </header>
 
-        {/* Mobile bottom nav */}
-        <nav className="bottom-nav" aria-label="Mobile navigation">
-          {navItems.map(({ to, icon, label }) => (
-            <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
-              <Icon name={icon} size={24} />
-              <span>{label}</span>
-            </NavLink>
-          ))}
-          <button id="btn-compose-mobile" className="bottom-nav-item" onClick={() => navigate('/')} style={{ color: 'var(--brand-primary)' }}>
-            <Icon name="plus" size={24} />
-            <span>Post</span>
-          </button>
-        </nav>
-      </main>
+          {children}
+
+          {/* Mobile bottom nav */}
+          <nav className="bottom-nav" aria-label="Mobile navigation">
+            {navItems.map(({ to, icon, label }) => (
+              <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+                <Icon name={icon} size={24} />
+                <span>{label}</span>
+              </NavLink>
+            ))}
+            <button
+              id="btn-compose-mobile"
+              className="bottom-nav-item"
+              onClick={() => navigate('/')}
+              style={{ color: 'var(--brand-primary)' }}
+            >
+              <Icon name="plus" size={24} />
+              <span>Post</span>
+            </button>
+          </nav>
+        </main>
+
+        {/* ── Right sidebar: suggestions (desktop only) ──────── */}
+        {showSuggestions && (
+          <div className="suggestions-col">
+            <SuggestionsSidebar />
+          </div>
+        )}
+      </div>
     </div>
   )
 }

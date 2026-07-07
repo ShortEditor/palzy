@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { getAdminUsers, setUserBanned } from '../../firebase/admin'
+import { getAdminUsers, setUserBanned, setUserVerified, setUserAdmin } from '../../firebase/admin'
 import Avatar from '../../components/Avatar'
+import VerifiedBadge from '../../components/VerifiedBadge'
 import toast from 'react-hot-toast'
 import { formatDistanceToNow } from 'date-fns'
 
@@ -36,6 +37,33 @@ export default function AdminUsers() {
       await setUserBanned(uid, !currentlyBanned)
       setUsers(prev => prev.map(u => u.uid === uid ? { ...u, banned: !currentlyBanned } : u))
       toast.success(currentlyBanned ? 'User unbanned.' : 'User banned.')
+    } catch {
+      toast.error('Action failed.')
+    } finally {
+      setActionUid(null)
+    }
+  }
+
+  async function handleVerify(uid, currentlyVerified) {
+    setActionUid(uid)
+    try {
+      await setUserVerified(uid, !currentlyVerified)
+      setUsers(prev => prev.map(u => u.uid === uid ? { ...u, isVerified: !currentlyVerified } : u))
+      toast.success(currentlyVerified ? 'Blue tick removed.' : '✅ Blue tick granted!')
+    } catch {
+      toast.error('Action failed.')
+    } finally {
+      setActionUid(null)
+    }
+  }
+
+  async function handleAdminToggle(uid, currentlyAdmin) {
+    if (!window.confirm(currentlyAdmin ? 'Revoke admin access?' : 'Grant admin access to this user?')) return
+    setActionUid(uid)
+    try {
+      await setUserAdmin(uid, !currentlyAdmin)
+      setUsers(prev => prev.map(u => u.uid === uid ? { ...u, isAdmin: !currentlyAdmin } : u))
+      toast.success(currentlyAdmin ? 'Admin access revoked.' : '⚡ Admin access granted!')
     } catch {
       toast.error('Action failed.')
     } finally {
@@ -108,10 +136,13 @@ export default function AdminUsers() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                         <Avatar src={user.photoURL} name={user.name} size="sm" />
                         <div>
-                          <div style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)' }}>{user.name}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600, fontSize: 'var(--font-size-sm)' }}>
+                            {user.name}
+                            {user.isVerified && <VerifiedBadge size={13} />}
+                          </div>
                           <div style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)' }}>@{user.username}</div>
                         </div>
-                        {user.isAdmin && <span className="badge badge-brand" style={{ fontSize: '0.6rem' }}>Admin</span>}
+                        {user.isAdmin && <span className="badge badge-brand" style={{ fontSize: '0.6rem' }}>⚡Admin</span>}
                       </div>
                     </td>
                     {/* Branch / Year */}
@@ -134,19 +165,48 @@ export default function AdminUsers() {
                     </td>
                     {/* Actions */}
                     <td style={{ padding: 'var(--space-3) var(--space-4)' }}>
-                      {!user.isAdmin && (
+                      <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+
+                        {/* 💠 Blue tick */}
                         <button
-                          id={`admin-btn-ban-${user.uid}`}
-                          className={`btn btn-sm ${user.banned ? 'btn-outline' : 'btn-danger'}`}
-                          onClick={() => handleBan(user.uid, user.banned)}
+                          id={`admin-btn-verify-${user.uid}`}
+                          className={`btn btn-sm ${user.isVerified ? 'btn-outline' : 'btn-outline'}`}
+                          onClick={() => handleVerify(user.uid, !!user.isVerified)}
                           disabled={actionUid === user.uid}
+                          title={user.isVerified ? 'Remove blue tick' : 'Grant blue tick'}
+                          style={{ color: user.isVerified ? '#1D9BF0' : 'var(--text-muted)' }}
                         >
                           {actionUid === user.uid
                             ? <div className="spinner" style={{ width: 12, height: 12, borderWidth: 2 }} />
-                            : user.banned ? 'Unban' : 'Ban'
+                            : user.isVerified ? '✔️ Verified' : '🞤 Verify'
                           }
                         </button>
-                      )}
+
+                        {/* Ban / Unban */}
+                        {!user.isAdmin && (
+                          <button
+                            id={`admin-btn-ban-${user.uid}`}
+                            className={`btn btn-sm ${user.banned ? 'btn-outline' : 'btn-danger'}`}
+                            onClick={() => handleBan(user.uid, user.banned)}
+                            disabled={actionUid === user.uid}
+                          >
+                            {user.banned ? 'Unban' : 'Ban'}
+                          </button>
+                        )}
+
+                        {/* Grant / Revoke admin */}
+                        <button
+                          id={`admin-btn-admin-${user.uid}`}
+                          className="btn btn-sm btn-ghost"
+                          onClick={() => handleAdminToggle(user.uid, !!user.isAdmin)}
+                          disabled={actionUid === user.uid}
+                          title={user.isAdmin ? 'Revoke admin' : 'Make admin'}
+                          style={{ color: user.isAdmin ? 'var(--brand-red)' : 'var(--text-muted)', fontSize: '0.7rem' }}
+                        >
+                          {user.isAdmin ? '⚡ Revoke Admin' : '⚡ Make Admin'}
+                        </button>
+
+                      </div>
                     </td>
                   </tr>
                 )

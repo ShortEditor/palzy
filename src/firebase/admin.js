@@ -22,6 +22,16 @@ export async function checkIsAdmin(uid) {
   return snap.exists() ? (snap.data().isAdmin === true) : false
 }
 
+// ─── Grant / Revoke blue tick (verified) ─────────────────────
+export async function setUserVerified(uid, verified) {
+  await updateDoc(doc(db, 'users', uid), { isVerified: verified })
+}
+
+// ─── Grant / Revoke admin privileges ─────────────────────────
+export async function setUserAdmin(uid, isAdmin) {
+  await updateDoc(doc(db, 'users', uid), { isAdmin })
+}
+
 // ─── Dashboard stats ─────────────────────────────────────────
 export async function getAdminStats() {
   const [usersSnap, postsSnap, reportsSnap] = await Promise.all([
