@@ -14,19 +14,29 @@ import { getUserProfile } from '../firebase/users'
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
-  const [currentUser, setCurrentUser]   = useState(null)
-  const [userProfile, setUserProfile]   = useState(null)
-  const [loading, setLoading]           = useState(true)
+  const [currentUser, setCurrentUser]     = useState(null)
+  const [userProfile, setUserProfile]     = useState(null)
+  // loading = true until BOTH firebase auth state AND firestore profile are resolved
+  const [loading, setLoading]             = useState(true)
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user)
+
       if (user) {
-        const profile = await getUserProfile(user.uid)
-        setUserProfile(profile)
+        try {
+          // Wait for the Firestore profile before marking loading = false
+          const profile = await getUserProfile(user.uid)
+          setUserProfile(profile)
+        } catch (err) {
+          console.error('Failed to load user profile:', err)
+          setUserProfile(null)
+        }
       } else {
         setUserProfile(null)
       }
+
+      // Only mark done AFTER profile fetch completes (or is skipped for logged-out)
       setLoading(false)
     })
     return unsub
@@ -35,12 +45,12 @@ export function AuthProvider({ children }) {
   // ── Google sign-in ────────────────────────────────────────
   async function signInWithGoogle() {
     await signInWithPopup(auth, googleProvider)
+    // onAuthStateChanged will fire and load profile automatically
   }
 
   // ── Email sign-up ─────────────────────────────────────────
   async function signUpWithEmail(email, password, displayName) {
     const cred = await createUserWithEmailAndPassword(auth, email, password)
-    // Set display name on the Firebase Auth user object
     if (displayName) {
       await updateProfile(cred.user, { displayName })
     }
@@ -50,6 +60,7 @@ export function AuthProvider({ children }) {
   // ── Email sign-in ─────────────────────────────────────────
   async function signInWithEmail(email, password) {
     await signInWithEmailAndPassword(auth, email, password)
+    // onAuthStateChanged will fire and load profile automatically
   }
 
   // ── Forgot password ───────────────────────────────────────
@@ -63,7 +74,7 @@ export function AuthProvider({ children }) {
     setUserProfile(null)
   }
 
-  // ── Refresh local profile cache ───────────────────────────
+  // ── Refresh local profile cache (call after editing profile) ──
   async function refreshProfile() {
     if (!currentUser) return
     const profile = await getUserProfile(currentUser.uid)

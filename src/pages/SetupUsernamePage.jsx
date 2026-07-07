@@ -12,8 +12,13 @@ const YEARS    = ['1st Year', '2nd Year', '3rd Year']
 const USERNAME_RE = /^[a-z0-9_]{3,20}$/
 
 export default function SetupUsernamePage() {
-  const { currentUser, refreshProfile } = useAuth()
+  const { currentUser, userProfile, refreshProfile } = useAuth()
   const navigate = useNavigate()
+
+  // Already has a profile? Don't show setup again — go straight to feed
+  useEffect(() => {
+    if (userProfile) navigate('/', { replace: true })
+  }, [userProfile, navigate])
 
   const [username, setUsername]       = useState('')
   const [branch, setBranch]           = useState('')
