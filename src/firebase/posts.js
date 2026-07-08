@@ -150,3 +150,9 @@ export async function getComments(postId) {
   const snap = await getDocs(q)
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
 }
+
+// ─── Delete a comment ─────────────────────────────────────────
+export async function deleteComment(postId, commentId) {
+  await deleteDoc(doc(db, 'posts', postId, 'comments', commentId))
+  await updateDoc(doc(db, 'posts', postId), { commentCount: increment(-1) })
+}

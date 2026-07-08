@@ -11,6 +11,7 @@ import Icon from '../components/Icon'
 import VerifiedBadge from '../components/VerifiedBadge'
 import FollowButton from '../components/FollowButton'
 import FollowListModal from '../components/FollowListModal'
+import ImageCropModal from '../components/ImageCropModal'
 import toast from 'react-hot-toast'
 
 const BRANCHES = ['CSE', 'ECE']
@@ -40,6 +41,10 @@ export default function ProfilePage() {
   const [editBanner, setEditBanner] = useState(null)
   const [editBannerPreview, setEditBannerPreview] = useState('')
   const [saving, setSaving]         = useState(false)
+
+  // Crop modal
+  const [cropTarget, setCropTarget] = useState(null) // 'avatar' | 'banner' | null
+  const [rawCropSrc, setRawCropSrc] = useState('')   // object URL of the raw picked image
 
   const isOwn = currentUser && userProfile?.username === username
   const [followState, setFollowState] = useState(false)
@@ -106,15 +111,36 @@ export default function ProfilePage() {
   function handleEditAvatarChange(e) {
     const file = e.target.files?.[0]
     if (!file) return
-    setEditAvatar(file)
-    setEditAvatarPreview(URL.createObjectURL(file))
+    setRawCropSrc(URL.createObjectURL(file))
+    setCropTarget('avatar')
+    // Reset input so the same file can be re-selected
+    e.target.value = ''
   }
 
   function handleEditBannerChange(e) {
     const file = e.target.files?.[0]
     if (!file) return
-    setEditBanner(file)
-    setEditBannerPreview(URL.createObjectURL(file))
+    setRawCropSrc(URL.createObjectURL(file))
+    setCropTarget('banner')
+    e.target.value = ''
+  }
+
+  function handleCropDone(croppedFile) {
+    const preview = URL.createObjectURL(croppedFile)
+    if (cropTarget === 'avatar') {
+      setEditAvatar(croppedFile)
+      setEditAvatarPreview(preview)
+    } else {
+      setEditBanner(croppedFile)
+      setEditBannerPreview(preview)
+    }
+    setCropTarget(null)
+    setRawCropSrc('')
+  }
+
+  function handleCropCancel() {
+    setCropTarget(null)
+    setRawCropSrc('')
   }
 
   async function handleSave() {
@@ -382,6 +408,18 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Image Crop Modal */}
+      {cropTarget && rawCropSrc && (
+        <ImageCropModal
+          imageSrc={rawCropSrc}
+          aspect={cropTarget === 'avatar' ? 1 : 3}
+          cropShape={cropTarget === 'avatar' ? 'round' : 'rect'}
+          title={cropTarget === 'avatar' ? 'Crop Profile Photo' : 'Crop Cover Banner'}
+          onCrop={handleCropDone}
+          onCancel={handleCropCancel}
+        />
       )}
       {/* Followers / Following modal */}
       {followModal && profile && (
