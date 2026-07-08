@@ -139,6 +139,17 @@ export default function PostCard({ post, authorProfile, isLiked: initialLiked = 
           </div>
         )}
 
+        {/* Quote Card badge */}
+        {post.type === 'quote' && (
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 4,
+            fontSize: 'var(--font-size-xs)', color: 'var(--brand-primary-dim)',
+            fontWeight: 600, marginTop: 'var(--space-1)',
+          }}>
+            <span style={{ fontSize: 11 }}>✦</span> Quote Card
+          </div>
+        )}
+
         {/* Action bar */}
         <div className="post-actions" onClick={e => e.stopPropagation()}>
           {/* Like */}

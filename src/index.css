@@ -1272,3 +1272,11 @@ input, textarea, select {
     font-size: var(--font-size-xl);
   }
 }
+
+/* ─── Quote Card Editor ────────────────────────────────────────────── */
+@media (max-width: 680px) {
+  .quote-editor-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+

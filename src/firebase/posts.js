@@ -20,12 +20,14 @@ import { db } from './config'
 const POSTS_PER_PAGE = 15
 
 // ─── Create a new post ───────────────────────────────────────
-export async function createPost({ authorId, content, imageURL = null }) {
+export async function createPost({ authorId, content, imageURL = null, quoteMetadata = null }) {
+  const type = quoteMetadata ? 'quote' : (imageURL ? 'image' : 'text')
   const postRef = await addDoc(collection(db, 'posts'), {
     authorId,
-    type: imageURL ? 'image' : 'text',
-    content: content.trim(),
+    type,
+    content: content?.trim() ?? '',
     imageURL,
+    ...(quoteMetadata ? { quoteMetadata } : {}),
     likeCount: 0,
     commentCount: 0,
     createdAt: serverTimestamp(),
