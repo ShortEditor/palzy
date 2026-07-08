@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { getUserByUsername, updateUserProfile } from '../firebase/users'
 import { getUserPosts, batchCheckLikes } from '../firebase/posts'
-import { isFollowing, followUser, unfollowUser } from '../firebase/follows'
+import { isFollowing, followUser, unfollowUser, syncFollowCounts } from '../firebase/follows'
 import { uploadImage } from '../utils/cloudinary'
 import PostCard from '../components/PostCard'
 import Avatar from '../components/Avatar'
@@ -54,6 +54,14 @@ export default function ProfilePage() {
 
     getUserByUsername(username).then(async p => {
       if (!p) { setNotFound(true); setLoading(false); return }
+      
+      // Fetch fresh, accurate follow counts and heal database if they drifted
+      const syncedCounts = await syncFollowCounts(p.uid)
+      if (syncedCounts) {
+        p.followerCount = syncedCounts.followerCount
+        p.followingCount = syncedCounts.followingCount
+      }
+      
       setProfile(p)
       // Check follow state for non-own profiles
       if (currentUser && currentUser.uid !== p.uid) {

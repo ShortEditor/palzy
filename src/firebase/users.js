@@ -43,7 +43,13 @@ export async function getUserProfile(uid) {
 
 // ─── Update profile fields ───────────────────────────────────
 export async function updateUserProfile(uid, updates) {
-  await updateDoc(doc(db, 'users', uid), updates)
+  const cleanUpdates = {}
+  Object.keys(updates).forEach(key => {
+    if (updates[key] !== undefined) {
+      cleanUpdates[key] = updates[key]
+    }
+  })
+  await updateDoc(doc(db, 'users', uid), cleanUpdates)
 }
 
 // ─── Get user by username ────────────────────────────────────

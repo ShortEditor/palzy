@@ -11,6 +11,7 @@ import {
   serverTimestamp,
   updateDoc,
   increment,
+  getCountFromServer,
 } from 'firebase/firestore'
 import { db } from './config'
 
@@ -117,3 +118,39 @@ export async function getSuggestions(currentUid, branch, count = 6) {
     .sort(() => Math.random() - 0.5)
     .slice(0, count)
 }
+
+// ─── Sync Follow/Following Counts (Self-Healing) ──────────────
+export async function syncFollowCounts(uid) {
+  try {
+    const followerQuery = query(collection(db, 'follows'), where('followeeId', '==', uid))
+    const followingQuery = query(collection(db, 'follows'), where('followerId', '==', uid))
+    
+    const [followerSnap, followingSnap] = await Promise.all([
+      getCountFromServer(followerQuery),
+      getCountFromServer(followingQuery)
+    ])
+    
+    const actualFollowerCount = followerSnap.data().count
+    const actualFollowingCount = followingSnap.data().count
+    
+    // Get current user profile
+    const userDocRef = doc(db, 'users', uid)
+    const userSnap = await getDoc(userDocRef)
+    
+    if (userSnap.exists()) {
+      const userData = userSnap.data()
+      if (userData.followerCount !== actualFollowerCount || userData.followingCount !== actualFollowingCount) {
+        await updateDoc(userDocRef, {
+          followerCount: actualFollowerCount,
+          followingCount: actualFollowingCount
+        })
+        console.log(`Synced follow counts for ${uid}: Followers=${actualFollowerCount}, Following=${actualFollowingCount}`)
+      }
+    }
+    return { followerCount: actualFollowerCount, followingCount: actualFollowingCount }
+  } catch (err) {
+    console.error('Error syncing follow counts:', err)
+    return null
+  }
+}
+
