@@ -4,6 +4,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { useAuth } from '../contexts/AuthContext'
 import { toggleLike, deletePost } from '../firebase/posts'
 import { reportPost } from '../firebase/admin'
+import { shareToStory, canNativeShare } from '../utils/shareUtils'
 import Avatar from './Avatar'
 import Icon from './Icon'
 import VerifiedBadge from './VerifiedBadge'
@@ -18,6 +19,7 @@ export default function PostCard({ post, authorProfile, isLiked: initialLiked = 
   const [likeCount, setLikeCount] = useState(post.likeCount ?? 0)
   const [liking, setLiking]       = useState(false)
   const [deleting, setDeleting]   = useState(false)
+  const [sharing, setSharing]     = useState(false)
   const [reporting, setReporting] = useState(false)   // modal open
   const [reportReason, setReportReason] = useState('')
   const [submittingReport, setSubmittingReport] = useState(false)
@@ -76,6 +78,29 @@ export default function PostCard({ post, authorProfile, isLiked: initialLiked = 
       toast.error('Could not submit report.')
     } finally {
       setSubmittingReport(false)
+    }
+  }
+
+  async function handleShare(e) {
+    e.stopPropagation()
+    if (!post.imageURL || sharing) return
+    setSharing(true)
+    try {
+      const result = await shareToStory(post.imageURL, post.content)
+      if (result === 'shared') {
+        toast.success('Shared! Select Instagram → Story 📲')
+      } else if (result === 'downloaded') {
+        toast.success(
+          canNativeShare()
+            ? 'Image saved! Open Instagram → + → Story'
+            : 'Image downloaded! Open Instagram → + → Story',
+          { duration: 5000 }
+        )
+      }
+    } catch (err) {
+      toast.error('Could not share image.')
+    } finally {
+      setSharing(false)
     }
   }
 
@@ -175,6 +200,23 @@ export default function PostCard({ post, authorProfile, isLiked: initialLiked = 
             <Icon name="comment" size={18} />
             <span>{post.commentCount > 0 ? post.commentCount : ''}</span>
           </button>
+
+          {/* Share to Story — only on image/quote posts */}
+          {post.imageURL && (
+            <button
+              id={`btn-share-${post.id}`}
+              className="post-action-btn"
+              onClick={handleShare}
+              disabled={sharing}
+              aria-label="Share to Instagram Story"
+              title={canNativeShare() ? 'Share to Story' : 'Download for Story'}
+            >
+              {sharing
+                ? <div className="spinner" style={{ width: 14, height: 14 }} />
+                : <Icon name="share" size={18} />
+              }
+            </button>
+          )}
 
           {/* Delete (own posts) */}
           {isOwner && (
