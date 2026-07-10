@@ -100,7 +100,6 @@ export default function SuggestionsSidebar() {
 
               <FollowButton
                 targetUid={user.uid}
-                initialState={false}
                 onToggle={(followed) => { if (followed) handleFollowed(user.uid) }}
               />
             </div>

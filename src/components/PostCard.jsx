@@ -152,7 +152,7 @@ export default function PostCard({ post, authorProfile, isLiked: initialLiked = 
           {/* Inline follow button — show for non-owner posts */}
           {!isOwner && (
             <span onClick={e => e.stopPropagation()} style={{ marginLeft: 'auto' }}>
-              <FollowButton targetUid={post.authorId} initialState={false} size="sm" />
+              <FollowButton targetUid={post.authorId} size="sm" />
             </span>
           )}
         </div>
