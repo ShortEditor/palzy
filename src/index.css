@@ -1,6 +1,7 @@
 /* ============================================================
-   Palzy — Neo-Vibe Design System  v3
-   Clay morphism · M3 palette · Geist + Be Vietnam Pro
+   Palzy — Neo-Vibe Design System  v4
+   Clay morphism · M3 palette · Geist + Be Vietnam Pro + Baloo 2
+   Vibrant sticker cards · Blob avatars · 3D press buttons
    Light default · Dark Neo-Vibe via [data-theme="dark"]
    ============================================================ */
 
@@ -12,24 +13,34 @@
    ============================================================ */
 :root {
   /* Neo-Vibe brand palette */
-  --brand-primary:       #7c4dff;   /* deeper violet for light */
+  --brand-primary:       #7c4dff;   /* violet */
   --brand-primary-dim:   #9d79ff;
   --brand-primary-glow:  rgba(124, 77, 255, 0.18);
-  --brand-primary-cont:  #a078ff;   /* container / button gradient start */
-  --brand-accent:        #0bc5de;   /* secondary = cyan */
-  --brand-tertiary:      #e91e8c;   /* tertiary = pink */
+  --brand-primary-cont:  #a078ff;
+  --brand-accent:        #0bc5de;   /* cyan */
+  --brand-tertiary:      #e91e8c;   /* pink */
+
+  /* Vibrant accent palette (from concept) */
+  --vibe-coral:   #FF6B6B;
+  --vibe-blue:    #4D6FFF;
+  --vibe-yellow:  #FFC93C;
+  --vibe-mint:    #2FD895;
+  --vibe-lav:     #B69CFF;
+  --vibe-coral-shadow: #d94f4f;
+  --vibe-blue-shadow:  #3852cc;
+
   --brand-green:         #22c55e;
   --brand-yellow:        #f59e0b;
   --brand-red:           #ef4444;
 
   /* Light surfaces */
-  --bg-base:     #f0f0f5;
+  --bg-base:     #F5F1FF;  /* lavender tinted white */
   --bg-surface:  #ffffff;
   --bg-elevated: #ffffff;
   --bg-card:     #ffffff;
-  --bg-input:    #ebebf2;
-  --bg-hover:    rgba(124, 77, 255, 0.06);
-  --bg-active:   rgba(124, 77, 255, 0.12);
+  --bg-input:    #EDE8FB;
+  --bg-hover:    rgba(77, 111, 255, 0.06);
+  --bg-active:   rgba(77, 111, 255, 0.12);
 
   /* Light borders */
   --border-subtle: rgba(0, 0, 0, 0.07);
@@ -57,6 +68,7 @@
   /* Typography */
   --font-sans:    'Be Vietnam Pro', 'Inter', system-ui, -apple-system, sans-serif;
   --font-display: 'Geist', 'Inter', system-ui, sans-serif;
+  --font-fun:     'Baloo 2', 'Geist', system-ui, sans-serif; /* playful headings */
   --font-size-xs:   0.75rem;
   --font-size-sm:   0.875rem;
   --font-size-base: 1rem;
@@ -103,9 +115,18 @@
   --brand-primary:       #d0bcff;   /* soft lavender */
   --brand-primary-dim:   #e8dcff;
   --brand-primary-glow:  rgba(208, 188, 255, 0.22);
-  --brand-primary-cont:  #a078ff;   /* richer violet for buttons */
-  --brand-accent:        #4cd7f6;   /* cyan */
-  --brand-tertiary:      #ffafd3;   /* pink */
+  --brand-primary-cont:  #a078ff;
+  --brand-accent:        #4cd7f6;
+  --brand-tertiary:      #ffafd3;
+
+  /* Vibrant accents stay vivid in dark too */
+  --vibe-coral:   #FF6B6B;
+  --vibe-blue:    #6B8FFF;
+  --vibe-yellow:  #FFC93C;
+  --vibe-mint:    #2FD895;
+  --vibe-lav:     #C8AEFF;
+  --vibe-coral-shadow: #b03030;
+  --vibe-blue-shadow:  #2a3d99;
 
   --bg-base:     #131314;           /* darkest */
   --bg-surface:  #1c1b1c;
@@ -152,6 +173,16 @@ body {
   min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Ambient background blobs (vibrant concept) */
+  background-image:
+    radial-gradient(circle at 18% 8%,  rgba(182,156,255,.18), transparent 40%),
+    radial-gradient(circle at 85% 15%, rgba(255,201,60,.12),  transparent 35%);
+}
+
+[data-theme="dark"] body {
+  background-image:
+    radial-gradient(circle at 18% 8%,  rgba(160,120,255,.20), transparent 40%),
+    radial-gradient(circle at 85% 15%, rgba(76,215,246,.10),  transparent 35%);
 }
 
 img, video { max-width: 100%; display: block; }
@@ -208,8 +239,15 @@ body, .clay-card, .clay-input, .sidebar, .topbar, .bottom-nav, .page-header,
 .sr-only   { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
 .truncate  { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* Neo-Vibe specific utilities */
+/* Neo-Vibe + Vibrant concept utilities */
 .font-display { font-family: var(--font-display); }
+.font-fun     { font-family: var(--font-fun); }
+
+/* Vibrant color utilities */
+.text-coral  { color: var(--vibe-coral); }
+.text-vibe-blue { color: var(--vibe-blue); }
+.text-mint   { color: var(--vibe-mint); }
+.text-yellow { color: var(--vibe-yellow); }
 
 .gradient-text {
   background: linear-gradient(135deg, var(--brand-primary), var(--brand-accent));
@@ -273,16 +311,24 @@ body, .clay-card, .clay-input, .sidebar, .topbar, .bottom-nav, .page-header,
 .btn:active { transform: scale(0.95) !important; }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--brand-primary-cont), var(--brand-accent));
+  background: linear-gradient(135deg, var(--vibe-coral), #ff8e6b);
   color: #fff;
-  box-shadow: 0 2px 12px rgba(160, 120, 255, 0.40),
-              inset 1px 1px 0 rgba(255,255,255,0.30);
+  /* 3D press shadow from concept */
+  box-shadow: 0 5px 0 var(--vibe-coral-shadow),
+              0 8px 20px rgba(255, 107, 107, 0.30),
+              inset 1px 1px 0 rgba(255,255,255,0.25);
+  font-family: var(--font-fun);
 }
 .btn-primary:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 10px 28px rgba(160, 120, 255, 0.45),
-              inset 1px 1px 0 rgba(255,255,255,0.35);
+  transform: translateY(-3px) !important;
+  box-shadow: 0 8px 0 var(--vibe-coral-shadow),
+              0 16px 28px rgba(255, 107, 107, 0.40),
+              inset 1px 1px 0 rgba(255,255,255,0.30);
   text-decoration: none;
+}
+.btn-primary:active {
+  transform: translateY(2px) !important;
+  box-shadow: 0 2px 0 var(--vibe-coral-shadow) !important;
 }
 
 .btn-outline {
@@ -385,14 +431,16 @@ body, .clay-card, .clay-input, .sidebar, .topbar, .bottom-nav, .page-header,
 .form-hint  { font-size: var(--font-size-xs); color: var(--text-muted); }
 
 /* ============================================================
-   Avatar
+   Avatar — organic blob shape (concept signature)
    ============================================================ */
 .avatar {
-  border-radius: var(--radius-full);
+  /* Organic squircle blob */
+  border-radius: 45% 55% 60% 40% / 55% 45% 55% 45%;
   overflow: hidden;
-  background: linear-gradient(135deg, var(--brand-primary-cont), var(--brand-accent));
+  background: linear-gradient(135deg, var(--brand-primary-cont), var(--vibe-lav));
   display: flex; align-items: center; justify-content: center;
   font-weight: 700; color: #fff; flex-shrink: 0;
+  box-shadow: 0 3px 8px rgba(36,27,47,.12);
 }
 .avatar img    { width: 100%; height: 100%; object-fit: cover; }
 .avatar-sm     { width: 32px;  height: 32px;  font-size: 0.75rem; }
@@ -401,11 +449,11 @@ body, .clay-card, .clay-input, .sidebar, .topbar, .bottom-nav, .page-header,
 .avatar-xl     { width: 80px;  height: 80px;  font-size: 1.75rem; }
 .avatar-2xl    { width: 100px; height: 100px; font-size: 2rem; }
 
-/* Gradient ring for breakout avatar (post cards) */
+/* Gradient ring for breakout avatar */
 .avatar-ring {
-  padding: 2px;
-  background: linear-gradient(135deg, var(--brand-tertiary), var(--brand-primary-cont));
-  border-radius: var(--radius-full);
+  padding: 2.5px;
+  background: linear-gradient(135deg, var(--vibe-coral), var(--vibe-lav));
+  border-radius: 45% 55% 60% 40% / 55% 45% 55% 45%;
   flex-shrink: 0;
 }
 .avatar-ring .avatar { border: 2px solid var(--bg-card); }
@@ -555,21 +603,24 @@ body, .clay-card, .clay-input, .sidebar, .topbar, .bottom-nav, .page-header,
 }
 
 .sidebar-logo-icon {
-  width: 38px; height: 38px;
-  border-radius: var(--radius-md);
-  background: linear-gradient(135deg, var(--brand-primary-cont), var(--brand-accent));
+  width: 40px; height: 40px;
+  border-radius: 14px 10px 14px 10px;   /* concept's squircle badge */
+  background: linear-gradient(135deg, var(--vibe-coral), var(--vibe-lav));
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(160, 120, 255, 0.4),
-              inset 1px 1px 0 rgba(255,255,255,0.3);
+  box-shadow: 0 4px 0 rgba(36,27,47,.18),
+              0 8px 16px rgba(255,107,107,0.30);
+  transform: rotate(-4deg);             /* playful tilt */
+  transition: transform var(--dur-base) var(--ease-spring) !important;
 }
+.sidebar-logo-icon:hover { transform: rotate(0deg); }
 
 .sidebar-logo-text {
-  font-family: var(--font-display);
+  font-family: var(--font-fun);
   font-size: var(--font-size-xl);
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  background: linear-gradient(135deg, var(--brand-primary), var(--brand-accent));
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--vibe-coral), var(--vibe-lav));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -597,10 +648,12 @@ body, .clay-card, .clay-input, .sidebar, .topbar, .bottom-nav, .page-header,
 }
 
 .nav-item.active {
-  background: linear-gradient(135deg, var(--brand-accent), var(--brand-primary-cont));
+  background: linear-gradient(135deg, var(--vibe-blue), var(--vibe-lav));
   color: #fff;
   font-weight: 700;
-  box-shadow: 0 4px 16px rgba(76, 215, 246, 0.25),
+  font-family: var(--font-fun);
+  box-shadow: 0 4px 0 var(--vibe-blue-shadow),
+              0 8px 20px rgba(77,111,255,0.30),
               inset 1px 1px 0 rgba(255,255,255,0.2);
 }
 
@@ -746,31 +799,37 @@ body, .clay-card, .clay-input, .sidebar, .topbar, .bottom-nav, .page-header,
 .page-header h1 {
   font-size: var(--font-size-lg);
   font-weight: 800;
-  font-family: var(--font-display);
-  letter-spacing: -0.02em;
+  font-family: var(--font-fun);
+  letter-spacing: -0.01em;
   color: var(--text-primary);
 }
 
 /* ============================================================
-   Post Card — Neo-Vibe clay style
+   Post Card — Sticker style (tilted + clay)
    ============================================================ */
 .post-card {
+  position: relative;
   padding: var(--space-5) var(--space-5) var(--space-4);
   margin: 0 var(--space-4) var(--space-5);
   border-radius: var(--radius-post);
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
-  box-shadow: var(--shadow-clay);
+  box-shadow: 0 4px 16px rgba(36,27,47,.08), var(--shadow-clay);
   cursor: pointer;
   display: flex;
   gap: var(--space-3);
+  /* alternating tilt — sticker feel */
   transition: box-shadow 0.38s var(--ease-spring), transform 0.38s var(--ease-spring) !important;
   animation: fadeIn var(--dur-base) var(--ease-out);
 }
 
+/* Alternating tilt on odd/even */
+.post-card:nth-child(odd)  { transform: rotate(-0.4deg); }
+.post-card:nth-child(even) { transform: rotate( 0.3deg); }
+
 .post-card:hover {
-  transform: translateY(-3px) scale(1.008);
-  box-shadow: var(--shadow-clay-hover);
+  transform: rotate(0deg) translateY(-4px) scale(1.010) !important;
+  box-shadow: 0 12px 32px rgba(36,27,47,.14), var(--shadow-clay-hover);
 }
 
 .post-card-body { flex: 1; min-width: 0; }
@@ -815,11 +874,11 @@ body, .clay-card, .clay-input, .sidebar, .topbar, .bottom-nav, .page-header,
 }
 .post-card:hover .post-image img { transform: scale(1.02); }
 
-/* Post actions — pill row */
+/* Post actions — vibrant pill row */
 .post-actions {
   display: flex; align-items: center; gap: var(--space-1);
   margin-top: var(--space-3);
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-2);
   background: var(--bg-input);
   border-radius: var(--radius-full);
   border: 1px solid var(--border-subtle);
@@ -827,20 +886,42 @@ body, .clay-card, .clay-input, .sidebar, .topbar, .bottom-nav, .page-header,
 
 .post-action-btn {
   display: flex; align-items: center; gap: 6px;
-  padding: 6px 12px;
+  padding: 6px 14px;
   border-radius: var(--radius-full);
   font-size: var(--font-size-sm);
+  font-weight: 600;
   color: var(--text-muted);
   background: none; border: none; cursor: pointer;
   transition: all var(--dur-fast) var(--ease-spring) !important;
-  font-family: var(--font-sans);
+  font-family: var(--font-fun);
   user-select: none;
 }
 
-.post-action-btn:hover { color: var(--brand-primary); transform: scale(1.08); }
-.post-action-btn.liked { color: var(--brand-tertiary); }
-.post-action-btn.liked:hover { color: var(--brand-tertiary); }
+/* Each action gets a specific vibrant hover color */
+.post-action-btn:nth-child(1):hover { background: rgba(255,107,107,0.12); color: var(--vibe-coral); transform: scale(1.06); }
+.post-action-btn:nth-child(2):hover { background: rgba(77,111,255,0.10);  color: var(--vibe-blue);  transform: scale(1.06); }
+.post-action-btn:nth-child(3):hover { background: rgba(47,216,149,0.10);  color: var(--vibe-mint);  transform: scale(1.06); }
+.post-action-btn:hover { transform: scale(1.06); }
+.post-action-btn.liked { color: var(--vibe-coral); background: rgba(255,107,107,0.10); }
+.post-action-btn.liked:hover { color: var(--vibe-coral); }
 .post-action-btn.liked svg { animation: heartBeat 0.4s ease; }
+
+/* ── Tag chip — floating label on post cards ── */
+.tag-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px 20px 20px 4px;
+  font-size: 11px; font-weight: 700;
+  font-family: var(--font-fun);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+.tag-chip-coral  { background: var(--vibe-coral); }
+.tag-chip-mint   { background: var(--vibe-mint); color: #1a4a35; }
+.tag-chip-blue   { background: var(--vibe-blue); }
+.tag-chip-yellow { background: var(--vibe-yellow); color: #5a4000; }
 
 /* ============================================================
    Create Post
