@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { getSuggestions } from '../firebase/follows'
+import { getRecommendations } from '../firebase/follows'
 import FollowButton from './FollowButton'
 import VerifiedBadge from './VerifiedBadge'
 import Avatar from './Avatar'
@@ -14,14 +14,13 @@ export default function SuggestionsSidebar() {
 
   useEffect(() => {
     if (!currentUser) return
-    getSuggestions(currentUser.uid, userProfile?.branch, 6)
+    getRecommendations(currentUser.uid, 6)
       .then(setSuggestions)
       .catch(console.error)
       .finally(() => setLoading(false))
-  }, [currentUser, userProfile?.branch])
+  }, [currentUser])
 
   function handleFollowed(uid) {
-    // Remove from suggestions after following
     setSuggestions(prev => prev.filter(u => u.uid !== uid))
   }
 
@@ -40,13 +39,15 @@ export default function SuggestionsSidebar() {
       <div style={{
         background: 'var(--bg-card)',
         border: '1px solid var(--border-subtle)',
-        borderRadius: 'var(--radius-lg)',
+        borderRadius: 'var(--radius-card)',
         overflow: 'hidden',
+        boxShadow: 'var(--shadow-clay)',
       }}>
         <div style={{
           padding: 'var(--space-4) var(--space-5)',
           borderBottom: '1px solid var(--border-subtle)',
           fontWeight: 700,
+          fontFamily: 'var(--font-display)',
           fontSize: 'var(--font-size-base)',
         }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -66,7 +67,7 @@ export default function SuggestionsSidebar() {
           ))
         ) : suggestions.length === 0 ? (
           <div style={{ padding: 'var(--space-5)', color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', textAlign: 'center' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Icon name="check" size={13} /> You're following everyone!</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Icon name="check" size={13} /> You're all caught up!</span>
           </div>
         ) : (
           suggestions.map(user => (
@@ -76,25 +77,53 @@ export default function SuggestionsSidebar() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 'var(--space-3)',
-                padding: 'var(--space-3) var(--space-5)',
+                padding: 'var(--space-3) var(--space-4)',
                 borderBottom: '1px solid var(--border-subtle)',
                 transition: 'background var(--dur-fast)',
               }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
               onMouseLeave={e => e.currentTarget.style.background = ''}
             >
-              <Link to={`/u/${user.username}`} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flex: 1, minWidth: 0, textDecoration: 'none' }}>
-                <Avatar src={user.photoURL} name={user.name} size="sm" />
+              <Link to={`/u/${user.username}`} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flex: 1, minWidth: 0, textDecoration: 'none' }}>
+                {/* Avatar with ring */}
+                <div className="avatar-ring" style={{ flexShrink: 0 }}>
+                  <Avatar src={user.photoURL} name={user.name} size="sm" />
+                </div>
+
                 <div style={{ minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 100 }}>
+                    <span style={{ fontWeight: 700, fontFamily: 'var(--font-display)', fontSize: 'var(--font-size-sm)', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 90 }}>
                       {user.name}
                     </span>
-                    {user.isVerified && <VerifiedBadge size={13} />}
+                    {user.isVerified && <VerifiedBadge size={12} />}
                   </div>
-                  <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    @{user.username} · {user.branch}
-                  </div>
+
+                  {/* Mutuals line */}
+                  {user.mutualCount > 0 ? (
+                    <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--brand-accent)', display: 'flex', alignItems: 'center', gap: 3, marginTop: 1 }}>
+                      {/* Tiny mutual avatar stacks */}
+                      <div style={{ display: 'flex', marginRight: 2 }}>
+                        {user.mutualSamples?.slice(0, 2).map(m => (
+                          <div key={m.uid} style={{
+                            width: 14, height: 14, borderRadius: '50%', overflow: 'hidden',
+                            border: '1.5px solid var(--bg-card)',
+                            marginLeft: -4, firstChild: { marginLeft: 0 },
+                            background: 'var(--bg-input)', flexShrink: 0,
+                          }}>
+                            {m.photoURL
+                              ? <img src={m.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              : <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg,var(--brand-primary-cont),var(--brand-accent))', display:'flex', alignItems:'center', justifyContent:'center', fontSize: 6, color:'#fff', fontWeight:700 }}>{m.name?.[0]}</div>
+                            }
+                          </div>
+                        ))}
+                      </div>
+                      {user.mutualCount} mutual{user.mutualCount !== 1 ? 's' : ''}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      @{user.username}
+                    </div>
+                  )}
                 </div>
               </Link>
 
@@ -109,11 +138,11 @@ export default function SuggestionsSidebar() {
         {suggestions.length > 0 && (
           <Link
             to="/explore"
-            style={{ display: 'block', padding: 'var(--space-3) var(--space-5)', color: 'var(--text-brand)', fontSize: 'var(--font-size-sm)', textDecoration: 'none', fontWeight: 500 }}
-            onMouseEnter={e => e.target.style.color = 'var(--brand-primary)'}
+            style={{ display: 'block', padding: 'var(--space-3) var(--space-5)', color: 'var(--text-brand)', fontSize: 'var(--font-size-sm)', textDecoration: 'none', fontWeight: 600, fontFamily: 'var(--font-display)' }}
+            onMouseEnter={e => e.target.style.color = 'var(--brand-accent)'}
             onMouseLeave={e => e.target.style.color = 'var(--text-brand)'}
           >
-            Show more →
+            See all recommendations →
           </Link>
         )}
       </div>

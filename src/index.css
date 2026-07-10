@@ -1085,13 +1085,17 @@ body, .clay-card, .clay-input, .sidebar, .topbar, .bottom-nav, .page-header,
   .topbar  { display: flex !important; }
   .bottom-nav { display: flex !important; }
 
+  /* Remove padding-top — topbar is sticky (in flow), not fixed */
+  .main-content { padding-top: 0; }
+
   .feed-column {
     border-left: none; border-right: none;
     padding-bottom: 110px; /* clearance for floating pill */
     max-width: 100%;
   }
 
-  .main-content { padding-top: var(--topbar-h); }
+  /* page-header sticks below topbar on mobile */
+  .page-header { top: var(--topbar-h); }
 
   /* On mobile, cards go full-width (no margin) */
   .post-card {

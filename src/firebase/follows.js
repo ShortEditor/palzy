@@ -85,7 +85,7 @@ export async function getFollowingProfiles(uid) {
     .map(s => ({ uid: s.id, ...s.data() }))
 }
 
-// ─── Suggest people to follow ─────────────────────────────────
+// ─── Suggest people to follow (branch-based fallback) ─────────
 // Returns up to `count` users from the same branch, excluding self + already following
 export async function getSuggestions(currentUid, branch, count = 6) {
   // Get who we already follow
@@ -117,6 +117,106 @@ export async function getSuggestions(currentUid, branch, count = 6) {
   return users
     .sort(() => Math.random() - 0.5)
     .slice(0, count)
+}
+
+// ─── Friend Recommendation Engine ────────────────────────────
+// Friends-of-friends: scores candidates by mutual connection count
+// Returns array of { uid, name, username, photoURL, ...profile, mutualCount, mutualSamples }
+export async function getRecommendations(currentUid, count = 10) {
+  // 1. Who does the current user follow?
+  const myFollowingIds = await getFollowingIds(currentUid)
+  const exclude = new Set([currentUid, ...myFollowingIds])
+
+  if (myFollowingIds.length === 0) {
+    // New user — fall back to recent users
+    const snap = await getDocs(query(collection(db, 'users'), limit(count + 5)))
+    return snap.docs
+      .map(d => ({ uid: d.id, ...d.data(), mutualCount: 0, mutualSamples: [] }))
+      .filter(u => !exclude.has(u.uid))
+      .slice(0, count)
+  }
+
+  // 2. For each person I follow, get who THEY follow (friends-of-friends)
+  const candidateScore = {}  // uid → mutual count
+  const candidateMutuals = {} // uid → [mutual uid, ...]
+
+  const followingLists = await Promise.all(
+    myFollowingIds.slice(0, 15).map(uid => getFollowingIds(uid)) // cap at 15 to limit reads
+  )
+
+  followingLists.forEach((friendsFollowing, i) => {
+    const mutualUid = myFollowingIds[i]
+    friendsFollowing.forEach(candidateUid => {
+      if (exclude.has(candidateUid)) return // already following or self
+      candidateScore[candidateUid] = (candidateScore[candidateUid] ?? 0) + 1
+      if (!candidateMutuals[candidateUid]) candidateMutuals[candidateUid] = []
+      if (!candidateMutuals[candidateUid].includes(mutualUid)) {
+        candidateMutuals[candidateUid].push(mutualUid)
+      }
+    })
+  })
+
+  // 3. Sort candidates by mutual count
+  const sortedCandidates = Object.entries(candidateScore)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, count + 5)
+    .map(([uid]) => uid)
+
+  if (sortedCandidates.length === 0) {
+    // Fallback: same-branch suggestions
+    const snap = await getDocs(query(collection(db, 'users'), limit(count + 5)))
+    return snap.docs
+      .map(d => ({ uid: d.id, ...d.data(), mutualCount: 0, mutualSamples: [] }))
+      .filter(u => !exclude.has(u.uid))
+      .slice(0, count)
+  }
+
+  // 4. Fetch profiles for sorted candidates
+  const profileDocs = await Promise.all(
+    sortedCandidates.map(uid => getDoc(doc(db, 'users', uid)))
+  )
+
+  // 5. Fetch sample mutual profiles (up to 2 per candidate for display)
+  const results = []
+  for (const snap of profileDocs) {
+    if (!snap.exists()) continue
+    const uid = snap.id
+    const mutualUids = (candidateMutuals[uid] ?? []).slice(0, 2)
+    const mutualProfileDocs = await Promise.all(
+      mutualUids.map(muid => getDoc(doc(db, 'users', muid)))
+    )
+    const mutualSamples = mutualProfileDocs
+      .filter(s => s.exists())
+      .map(s => ({ uid: s.id, ...s.data() }))
+
+    results.push({
+      uid,
+      ...snap.data(),
+      mutualCount: candidateScore[uid] ?? 0,
+      mutualSamples,
+    })
+  }
+
+  return results.slice(0, count)
+}
+
+// ─── Get mutual followers between two users ───────────────────
+// Returns profiles of users that BOTH currentUid and targetUid follow
+export async function getMutuals(currentUid, targetUid) {
+  if (!currentUid || !targetUid || currentUid === targetUid) return []
+  const [myFollowing, theirFollowers] = await Promise.all([
+    getFollowingIds(currentUid),
+    getFollowerIds(targetUid),
+  ])
+  const mySet = new Set(myFollowing)
+  const mutualIds = theirFollowers.filter(uid => mySet.has(uid))
+  if (mutualIds.length === 0) return []
+  const profileDocs = await Promise.all(
+    mutualIds.slice(0, 3).map(uid => getDoc(doc(db, 'users', uid)))
+  )
+  return profileDocs
+    .filter(s => s.exists())
+    .map(s => ({ uid: s.id, ...s.data() }))
 }
 
 // ─── Sync Follow/Following Counts (Self-Healing) ──────────────
