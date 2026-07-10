@@ -162,7 +162,12 @@
 /* ============================================================
    Base
    ============================================================ */
-html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+/* Extra safety — some browsers add default margins */
+html {
+  margin: 0; padding: 0;
+  scroll-behavior: smooth; -webkit-text-size-adjust: 100%;
+  background-color: var(--bg-base);
+}
 
 body {
   font-family: var(--font-sans);
@@ -173,10 +178,17 @@ body {
   min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  margin: 0; padding: 0;
   /* Ambient background blobs (vibrant concept) */
   background-image:
     radial-gradient(circle at 18% 8%,  rgba(182,156,255,.18), transparent 40%),
     radial-gradient(circle at 85% 15%, rgba(255,201,60,.12),  transparent 35%);
+}
+
+#root {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
 }
 
 [data-theme="dark"] body {
@@ -1159,33 +1171,43 @@ body, .clay-card, .clay-input, .sidebar, .topbar, .bottom-nav, .page-header,
 }
 
 /* ============================================================
-   Responsive
+   Responsive — Mobile
    ============================================================ */
 @media (max-width: 900px) {
-  .sidebar { display: none; }
-  .topbar  { display: flex !important; }
+  .sidebar    { display: none; }
+  .topbar     { display: flex !important; }
   .bottom-nav { display: flex !important; }
 
-  /* Remove padding-top — topbar is sticky (in flow), not fixed */
-  .main-content { padding-top: 0; }
+  /* Fixed topbar: out of flow, guaranteed at top:0, no sticky quirks */
+  .topbar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0; right: 0;
+    width: 100%;
+    z-index: 200;
+  }
 
+  /* main-content has no padding — topbar is out of flow */
+  .main-content { padding-top: 0; margin-top: 0; }
+
+  /* Push content below the fixed topbar */
   .feed-column {
+    padding-top: var(--topbar-h);
     border-left: none; border-right: none;
-    padding-bottom: 110px; /* clearance for floating pill */
+    padding-bottom: 110px;
     max-width: 100%;
   }
 
-  /* page-header sticks below topbar on mobile */
+  /* page-header sticks just below the fixed topbar */
   .page-header { top: var(--topbar-h); }
 
-  /* On mobile, cards go full-width (no margin) */
+  /* Cards full-width, no rotation on mobile (too small for sticker effect) */
   .post-card {
     margin-inline: 0;
     border-radius: 0;
+    transform: none !important;
   }
-
-  /* But keep clay shadow effect */
-  .post-card:hover { transform: none; }
+  .post-card:hover { transform: none !important; }
 }
 
 @media (max-width: 600px) {
