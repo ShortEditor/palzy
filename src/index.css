@@ -203,6 +203,42 @@ a:hover { text-decoration: underline; }
 button { font-family: var(--font-sans); cursor: pointer; border: none; background: none; }
 input, textarea, select { font-family: var(--font-sans); font-size: var(--font-size-base); }
 
+/* ── Content Protection ──────────────────────────────────────────
+   Prevents right-click save, long-press download (iOS/Android),
+   and drag-to-save without breaking normal tap/click interactions.
+────────────────────────────────────────────────────────────────── */
+
+/* Kill iOS long-press "Save Image" / "Open in new tab" sheet */
+img, video,
+.post-image img,
+.post-image video,
+.reel-bg,
+.avatar img {
+  -webkit-touch-callout: none !important;  /* iOS Safari */
+  -webkit-user-drag: none !important;      /* prevent drag-to-save */
+  user-drag: none !important;
+  pointer-events: auto;                    /* keep tap/click working */
+}
+
+/* Prevent text selection on cards (feels native) */
+.post-card,
+.reel-card,
+.post-image {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Re-enable text selection in actual text content */
+.post-text,
+.reel-caption,
+.comment-text,
+.post-author-name,
+input, textarea {
+  -webkit-user-select: text !important;
+  user-select: text !important;
+}
+
+
 /* Smooth theme transitions */
 body, .clay-card, .clay-input, .sidebar, .topbar, .bottom-nav, .page-header,
 .post-card, .feed-column, .modal-box, .form-input, .create-post-bar,

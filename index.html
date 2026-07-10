@@ -11,6 +11,40 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Geist:wght@400;500;600;700;800;900&family=Be+Vietnam+Pro:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <title>Palzy</title>
+
+    <!-- ── Content Protection ────────────────────────────────────────
+         Disables right-click, image drag-to-save, and iOS long-press
+         download sheet. Does NOT block normal page interaction.
+    ─────────────────────────────────────────────────────────────── -->
+    <script>
+      (function () {
+        // Allow on localhost for dev convenience
+        if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') return;
+
+        // Block right-click context menu
+        document.addEventListener('contextmenu', function (e) {
+          if (e.target.tagName === 'IMG' ||
+              e.target.tagName === 'VIDEO' ||
+              e.target.closest('.reel-card, .post-image, .post-card')) {
+            e.preventDefault();
+          }
+        }, true);
+
+        // Block drag-start on media (drag-to-save trick)
+        document.addEventListener('dragstart', function (e) {
+          if (e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO') {
+            e.preventDefault();
+          }
+        }, true);
+
+        // Block keyboard shortcuts for saving (Ctrl+S / Cmd+S)
+        document.addEventListener('keydown', function (e) {
+          if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+          }
+        }, true);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
