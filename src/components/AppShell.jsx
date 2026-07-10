@@ -24,6 +24,7 @@ export default function AppShell({ children }) {
   const navItems = [
     { to: '/',        icon: 'home',   label: 'Home'    },
     { to: '/explore', icon: 'search', label: 'Explore' },
+    { to: '/reels',   icon: 'play',   label: 'Reels'   },
     { to: `/u/${userProfile?.username}`, icon: 'user', label: 'Profile' },
   ]
 
