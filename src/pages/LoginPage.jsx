@@ -120,18 +120,19 @@ export default function LoginPage() {
         <div className="auth-logo">
           <div className="auth-logo-icon"><Icon name="graduationCap" size={32} /></div>
           <h1 className="auth-title">Palzy</h1>
-          <p className="auth-subtitle">The social feed for your college crowd.</p>
+          <p className="auth-subtitle">Your campus. Your vibe. Connect with your crowd.</p>
         </div>
 
         {/* Tab switcher */}
         {tab !== 'forgot' && (
           <div style={{
             display: 'flex',
-            background: 'var(--bg-elevated)',
+            background: 'var(--bg-input)',
             borderRadius: 'var(--radius-full)',
-            padding: 3,
+            padding: 4,
             marginBottom: 'var(--space-6)',
             gap: 2,
+            boxShadow: 'inset 2px 2px 5px rgba(0,0,0,0.08)',
           }}>
             {[['signin', 'Sign In'], ['signup', 'Sign Up']].map(([key, label]) => (
               <button
@@ -140,17 +141,22 @@ export default function LoginPage() {
                 onClick={() => setTab(key)}
                 style={{
                   flex: 1,
-                  padding: '0.5rem',
+                  padding: '0.55rem',
                   borderRadius: 'var(--radius-full)',
                   border: 'none',
                   cursor: 'pointer',
-                  fontFamily: 'var(--font-sans)',
+                  fontFamily: 'var(--font-display)',
                   fontSize: 'var(--font-size-sm)',
-                  fontWeight: 600,
+                  fontWeight: 700,
+                  letterSpacing: '0.01em',
                   transition: 'all var(--dur-fast)',
-                  background: tab === key ? 'var(--brand-primary)' : 'transparent',
+                  background: tab === key
+                    ? 'linear-gradient(135deg, var(--brand-primary-cont), var(--brand-accent))'
+                    : 'transparent',
                   color: tab === key ? '#fff' : 'var(--text-secondary)',
-                  boxShadow: tab === key ? '0 2px 8px rgba(108,99,255,0.35)' : 'none',
+                  boxShadow: tab === key
+                    ? '0 4px 14px rgba(76,215,246,0.30), inset 1px 1px 0 rgba(255,255,255,0.2)'
+                    : 'none',
                 }}
               >
                 {label}
@@ -201,8 +207,8 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <button id="btn-signin-email" type="submit" className="btn btn-primary btn-lg" disabled={loading} style={{ width: '100%' }}>
-              {loading ? <><div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> Signing in…</> : 'Sign In'}
+            <button id="btn-signin-email" type="submit" className="btn btn-primary btn-lg" disabled={loading} style={{ width: '100%', fontFamily: 'var(--font-display)', letterSpacing: '-0.01em' }}>
+              {loading ? <><div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> Signing in…</> : 'Jump In →'}
             </button>
 
             <button type="button" onClick={() => setTab('forgot')} style={{ background: 'none', border: 'none', color: 'var(--text-brand)', fontSize: 'var(--font-size-xs)', cursor: 'pointer', textAlign: 'center', fontFamily: 'var(--font-sans)' }}>
@@ -305,9 +311,9 @@ export default function LoginPage() {
               type="submit"
               className="btn btn-primary btn-lg"
               disabled={loading || (suConfirm && suConfirm !== suPassword)}
-              style={{ width: '100%' }}
+              style={{ width: '100%', fontFamily: 'var(--font-display)', letterSpacing: '-0.01em' }}
             >
-              {loading ? <><div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> Creating account…</> : 'Create Account'}
+              {loading ? <><div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> Creating account…</> : 'Join the Vibe →'}
             </button>
 
             <div className="divider-text">or</div>

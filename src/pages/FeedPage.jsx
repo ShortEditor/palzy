@@ -10,12 +10,21 @@ const SKELETON_COUNT = 5
 
 function PostSkeleton() {
   return (
-    <div style={{ padding: 'var(--space-5)', borderBottom: '1px solid var(--border-subtle)', display: 'flex', gap: 'var(--space-3)' }}>
-      <div className="skeleton" style={{ width: 40, height: 40, borderRadius: '50%', flexShrink: 0 }} />
+    <div style={{
+      margin: 'var(--space-4) var(--space-4) var(--space-5)',
+      padding: 'var(--space-5)',
+      borderRadius: 'var(--radius-post)',
+      background: 'var(--bg-card)',
+      border: '1px solid var(--border-subtle)',
+      boxShadow: 'var(--shadow-clay)',
+      display: 'flex', gap: 'var(--space-3)',
+    }}>
+      <div className="skeleton" style={{ width: 44, height: 44, borderRadius: '50%', flexShrink: 0 }} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-        <div className="skeleton" style={{ height: 14, width: '40%', borderRadius: 4 }} />
-        <div className="skeleton" style={{ height: 14, width: '90%', borderRadius: 4 }} />
-        <div className="skeleton" style={{ height: 14, width: '75%', borderRadius: 4 }} />
+        <div className="skeleton" style={{ height: 14, width: '40%', borderRadius: 6 }} />
+        <div className="skeleton" style={{ height: 14, width: '90%', borderRadius: 6 }} />
+        <div className="skeleton" style={{ height: 14, width: '70%', borderRadius: 6 }} />
+        <div className="skeleton" style={{ height: 140, width: '100%', borderRadius: 20, marginTop: 8 }} />
       </div>
     </div>
   )

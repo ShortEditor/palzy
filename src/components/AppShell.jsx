@@ -55,14 +55,23 @@ export default function AppShell({ children }) {
           </NavLink>
         ))}
 
-        {/* Compose button */}
+        {/* Post Vibe CTA */}
         <button
           id="btn-compose-sidebar"
           className="btn btn-primary"
-          style={{ marginTop: 'var(--space-4)', width: '100%', borderRadius: 'var(--radius-xl)' }}
+          style={{
+            marginTop: 'var(--space-4)',
+            width: '100%',
+            borderRadius: 'var(--radius-full)',
+            fontFamily: 'var(--font-display)',
+            fontSize: 'var(--font-size-base)',
+            fontWeight: 700,
+            letterSpacing: '-0.01em',
+            padding: '0.8rem 1.5rem',
+          }}
           onClick={() => navigate('/')}
         >
-          <Icon name="plus" size={18} /> Post
+          <Icon name="plus" size={18} /> Post Vibe
         </button>
 
         <div style={{ flex: 1 }} />

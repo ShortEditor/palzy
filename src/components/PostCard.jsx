@@ -121,13 +121,16 @@ export default function PostCard({ post, authorProfile, isLiked: initialLiked = 
       onKeyDown={e => { if (e.key === 'Enter') goToPost() }}
       aria-label={`Post by @${handle}`}
     >
-      {/* Avatar */}
+      {/* Avatar with gradient ring */}
       <Link
         to={`/u/${handle}`}
         onClick={e => e.stopPropagation()}
         aria-label={`View @${handle}'s profile`}
+        style={{ textDecoration: 'none', flexShrink: 0 }}
       >
-        <Avatar src={photoURL} name={displayName} size="md" />
+        <div className="avatar-ring">
+          <Avatar src={photoURL} name={displayName} size="md" />
+        </div>
       </Link>
 
       <div className="post-card-body">
@@ -138,7 +141,7 @@ export default function PostCard({ post, authorProfile, isLiked: initialLiked = 
               to={`/u/${handle}`}
               onClick={e => e.stopPropagation()}
               className="post-author-name"
-              style={{ color: 'var(--text-primary)', textDecoration: 'none' }}
+              style={{ color: 'var(--text-primary)', textDecoration: 'none', fontFamily: 'var(--font-display)' }}
             >
               {displayName}
             </Link>
@@ -185,6 +188,7 @@ export default function PostCard({ post, authorProfile, isLiked: initialLiked = 
             disabled={liking}
             aria-label={liked ? 'Unlike post' : 'Like post'}
             aria-pressed={liked}
+            style={{ color: liked ? 'var(--brand-tertiary)' : undefined }}
           >
             <Icon name={liked ? 'heartFilled' : 'heart'} size={18} fill={liked} />
             <span>{likeCount > 0 ? likeCount : ''}</span>
@@ -196,6 +200,7 @@ export default function PostCard({ post, authorProfile, isLiked: initialLiked = 
             className="post-action-btn"
             onClick={() => navigate(`/post/${post.id}`)}
             aria-label="View comments"
+            style={{ '--hover-color': 'var(--brand-accent)' }}
           >
             <Icon name="comment" size={18} />
             <span>{post.commentCount > 0 ? post.commentCount : ''}</span>

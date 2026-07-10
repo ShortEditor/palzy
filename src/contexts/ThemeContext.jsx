@@ -4,8 +4,8 @@ const ThemeContext = createContext(null)
 
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => {
-    // Default: light
-    return localStorage.getItem('palzy-theme') || 'light'
+    // Default: dark (Neo-Vibe)
+    return localStorage.getItem('palzy-theme') || 'dark'
   })
 
   useEffect(() => {
