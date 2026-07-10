@@ -104,6 +104,29 @@ export default function PostCard({ post, authorProfile, isLiked: initialLiked = 
     }
   }
 
+  // Owner-only: direct download of the image
+  async function handleDownload(e) {
+    e.stopPropagation()
+    if (!post.imageURL || sharing) return
+    setSharing(true)
+    try {
+      const resp = await fetch(post.imageURL)
+      const blob = await resp.blob()
+      const ext  = blob.type.includes('png') ? 'png' : 'jpg'
+      const url  = URL.createObjectURL(blob)
+      const a    = document.createElement('a')
+      a.href     = url
+      a.download = `palzy-post-${post.id}.${ext}`
+      a.click()
+      URL.revokeObjectURL(url)
+      toast.success('Image downloaded! ✓')
+    } catch {
+      toast.error('Could not download image.')
+    } finally {
+      setSharing(false)
+    }
+  }
+
   function goToPost(e) {
     navigate(`/post/${post.id}`)
   }
@@ -206,19 +229,37 @@ export default function PostCard({ post, authorProfile, isLiked: initialLiked = 
             <span>{post.commentCount > 0 ? post.commentCount : ''}</span>
           </button>
 
-          {/* Share to Story — only on image/quote posts */}
-          {post.imageURL && (
+          {/* Share to Story — only visible to post owner */}
+          {post.imageURL && isOwner && (
             <button
               id={`btn-share-${post.id}`}
               className="post-action-btn"
               onClick={handleShare}
               disabled={sharing}
               aria-label="Share to Instagram Story"
-              title={canNativeShare() ? 'Share to Story' : 'Download for Story'}
+              title={canNativeShare() ? 'Share to Story' : 'Share for Story'}
             >
               {sharing
                 ? <div className="spinner" style={{ width: 14, height: 14 }} />
                 : <Icon name="share" size={18} />
+              }
+            </button>
+          )}
+
+          {/* Download — owner only */}
+          {post.imageURL && isOwner && (
+            <button
+              id={`btn-download-${post.id}`}
+              className="post-action-btn"
+              onClick={handleDownload}
+              disabled={sharing}
+              aria-label="Download image"
+              title="Download your image"
+              style={{ color: 'var(--vibe-mint)' }}
+            >
+              {sharing
+                ? <div className="spinner" style={{ width: 14, height: 14 }} />
+                : <Icon name="download" size={18} />
               }
             </button>
           )}

@@ -202,11 +202,14 @@ export function renderQuoteCard(canvas, { text, attribution, templateId, fontId,
     _drawMinimal(ctx, text, attribution, tmpl, fontBase, inner, PAD, W, H)
   }
 
-  // Watermark
-  ctx.font = `500 28px "Inter", sans-serif`
+  // Watermark — Baloo 2 font, 75% opacity
+  const prevAlpha = ctx.globalAlpha
+  ctx.globalAlpha = 0.75
+  ctx.font = `600 30px "Baloo 2", "Inter", sans-serif`
   ctx.fillStyle = tmpl.mutedColor
   ctx.textAlign = 'center'
-  ctx.fillText('palzy', W / 2, H - 48)
+  ctx.fillText('palzy', W / 2, H - 44)
+  ctx.globalAlpha = prevAlpha
 }
 
 // ─── Layout Drawers (all accept W, H) ────────────────────────────────────────
