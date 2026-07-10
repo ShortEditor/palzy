@@ -186,6 +186,7 @@ export function renderQuoteCard(canvas, { text, attribution, templateId, fontId,
 
   // 1. Draw background (pass W, H so gradients/patterns adapt)
   tmpl.bg(ctx, W, H)
+  _addNoise(ctx, W, H)
 
   const PAD   = Math.round(W * 0.093)  // ~100px at 1080w, scales with width
   const inner = W - PAD * 2
@@ -310,3 +311,40 @@ function _drawMinimal(ctx, text, attribution, tmpl, fontBase, inner, PAD, W, H) 
     ctx.fillText(`— ${attribution}`, PAD + 18, y + 70)
   }
 }
+
+/**
+ * Generates a subtle monochrome grain/noise pattern and overlays it.
+ * This breaks up color banding in canvas linear/radial gradients.
+ */
+function _addNoise(ctx, W, H) {
+  try {
+    const noiseCanvas = document.createElement('canvas')
+    noiseCanvas.width = 128
+    noiseCanvas.height = 128
+    const nCtx = noiseCanvas.getContext('2d')
+    const imgData = nCtx.createImageData(128, 128)
+    const data = imgData.data
+    
+    for (let i = 0; i < data.length; i += 4) {
+      // Extremely subtle monochrome grain
+      const val = (Math.random() - 0.5) * 14  // range [-7, 7]
+      data[i]     = 128 + val // R
+      data[i + 1] = 128 + val // G
+      data[i + 2] = 128 + val // B
+      data[i + 3] = 8         // Alpha: very light (~3% opacity)
+    }
+    nCtx.putImageData(imgData, 0, 0)
+
+    const pattern = ctx.createPattern(noiseCanvas, 'repeat')
+    if (pattern) {
+      ctx.save()
+      ctx.globalCompositeOperation = 'overlay'
+      ctx.fillStyle = pattern
+      ctx.fillRect(0, 0, W, H)
+      ctx.restore()
+    }
+  } catch (err) {
+    console.warn('Could not render dither noise:', err)
+  }
+}
+

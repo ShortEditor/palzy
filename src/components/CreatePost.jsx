@@ -62,7 +62,7 @@ export default function CreatePost({ onPostCreated }) {
     try {
       let imageURL = null
       if (imageFile) {
-        imageURL = await uploadImage(imageFile, 'posts')
+        imageURL = await uploadImage(imageFile, 'posts', currentUser.uid)
       }
       await createPost({ authorId: currentUser.uid, content: trimmed, imageURL })
       setText('')

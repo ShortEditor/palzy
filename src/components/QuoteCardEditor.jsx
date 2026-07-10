@@ -58,9 +58,9 @@ export default function QuoteCardEditor({ onClose, onPostCreated }) {
     try {
       const canvas = canvasRef.current
       const imageFile = await new Promise((res, rej) =>
-        canvas.toBlob(b => b ? res(new File([b], 'quote.jpg', { type: 'image/jpeg' })) : rej(), 'image/jpeg', 0.93)
+        canvas.toBlob(b => b ? res(new File([b], 'quote.png', { type: 'image/png' })) : rej(), 'image/png')
       )
-      const imageURL = await uploadImage(imageFile, 'quote-cards')
+      const imageURL = await uploadImage(imageFile, 'quote-cards', currentUser.uid)
       await createPost({
         authorId: currentUser.uid,
         content: caption.trim(),
