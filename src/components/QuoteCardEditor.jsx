@@ -31,9 +31,10 @@ export default function QuoteCardEditor({ onClose, onPostCreated }) {
   const currentRatio = RATIOS[ratioId] ?? RATIOS[DEFAULT_RATIO]
 
   // ─── Re-render canvas whenever any input changes ──────────────
-  const redraw = useCallback(() => {
+  const redraw = useCallback(async () => {
     const canvas = canvasRef.current
     if (!canvas) return
+    await ensureFontLoaded(fontId)
     renderQuoteCard(canvas, {
       text: quoteText || 'Your quote here…',
       attribution,
@@ -45,18 +46,10 @@ export default function QuoteCardEditor({ onClose, onPostCreated }) {
   }, [quoteText, attribution, templateId, fontId, layoutId, ratioId])
 
   useEffect(() => {
-    // Load font asynchronously first, then trigger redraw
-    let active = true
-    ensureFontLoaded(fontId).then(() => {
-      if (!active) return
-      if (renderReq.current) cancelAnimationFrame(renderReq.current)
-      renderReq.current = requestAnimationFrame(() => { redraw() })
-    })
-    return () => {
-      active = false
-      if (renderReq.current) cancelAnimationFrame(renderReq.current)
-    }
-  }, [fontId, redraw])
+    if (renderReq.current) cancelAnimationFrame(renderReq.current)
+    renderReq.current = requestAnimationFrame(() => { redraw() })
+    return () => { if (renderReq.current) cancelAnimationFrame(renderReq.current) }
+  }, [redraw])
 
   // ─── Export → Upload → Post ───────────────────────────────────
   async function handlePost() {
