@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { uploadImage } from '../utils/cloudinary'
 import { createPost } from '../firebase/posts'
 import {
-  CANVAS_W, CANVAS_H,
+  RATIOS, RATIO_LIST, DEFAULT_RATIO,
   TEMPLATE_LIST, FONT_LIST, LAYOUT_LIST,
   renderQuoteCard, ensureFontLoaded,
 } from '../utils/quoteCardRenderer'
@@ -14,20 +14,23 @@ const MAX_QUOTE = 200
 const MAX_ATTR  = 60
 
 export default function QuoteCardEditor({ onClose, onPostCreated }) {
-  const { currentUser, userProfile } = useAuth()
+  const { currentUser } = useAuth()
 
-  const [quoteText, setQuoteText]       = useState('')
-  const [attribution, setAttribution]   = useState('')
-  const [templateId, setTemplateId]     = useState('midnight')
-  const [fontId, setFontId]             = useState('playfair')
-  const [layoutId, setLayoutId]         = useState('centered')
-  const [submitting, setSubmitting]     = useState(false)
-  const [caption, setCaption]           = useState('')
+  const [quoteText, setQuoteText]     = useState('')
+  const [attribution, setAttribution] = useState('')
+  const [templateId, setTemplateId]   = useState('midnight')
+  const [fontId, setFontId]           = useState('playfair')
+  const [layoutId, setLayoutId]       = useState('centered')
+  const [ratioId, setRatioId]         = useState(DEFAULT_RATIO)
+  const [submitting, setSubmitting]   = useState(false)
+  const [caption, setCaption]         = useState('')
 
   const canvasRef = useRef(null)
   const renderReq = useRef(null)
 
-  // ─── Re-render canvas whenever inputs change ─────────────────
+  const currentRatio = RATIOS[ratioId] ?? RATIOS[DEFAULT_RATIO]
+
+  // ─── Re-render canvas whenever any input changes ──────────────
   const redraw = useCallback(async () => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -38,17 +41,17 @@ export default function QuoteCardEditor({ onClose, onPostCreated }) {
       templateId,
       fontId,
       layoutId,
+      ratioId,
     })
-  }, [quoteText, attribution, templateId, fontId, layoutId])
+  }, [quoteText, attribution, templateId, fontId, layoutId, ratioId])
 
   useEffect(() => {
-    // Debounce redraws slightly so rapid typing stays smooth
     if (renderReq.current) cancelAnimationFrame(renderReq.current)
     renderReq.current = requestAnimationFrame(() => { redraw() })
     return () => { if (renderReq.current) cancelAnimationFrame(renderReq.current) }
   }, [redraw])
 
-  // ─── Export → Upload → Post ──────────────────────────────────
+  // ─── Export → Upload → Post ───────────────────────────────────
   async function handlePost() {
     if (!quoteText.trim()) { toast.error('Write your quote first!'); return }
     setSubmitting(true)
@@ -62,7 +65,7 @@ export default function QuoteCardEditor({ onClose, onPostCreated }) {
         authorId: currentUser.uid,
         content: caption.trim(),
         imageURL,
-        quoteMetadata: { templateId, fontId, layoutId, text: quoteText.trim(), attribution: attribution.trim() },
+        quoteMetadata: { templateId, fontId, layoutId, ratioId, text: quoteText.trim(), attribution: attribution.trim() },
       })
       toast.success('Quote posted! ✦')
       onPostCreated?.()
@@ -103,27 +106,47 @@ export default function QuoteCardEditor({ onClose, onPostCreated }) {
         </div>
 
         {/* Body: two columns on desktop, stacked on mobile */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0,1fr) 340px',
-          gap: 0,
-        }}
-          className="quote-editor-grid"
-        >
-          {/* ── LEFT: Canvas Preview ───────────────────────── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 340px', gap: 0 }} className="quote-editor-grid">
+
+          {/* ── LEFT: Canvas Preview ─────────────────────── */}
           <div style={{
             background: '#0a0a0f',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: 'var(--space-5)',
-            minHeight: 340,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            padding: 'var(--space-5)', gap: 'var(--space-4)', minHeight: 340,
           }}>
+            {/* Ratio picker — Instagram-style pills */}
+            <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+              {RATIO_LIST.map(r => (
+                <button
+                  key={r.id}
+                  onClick={() => setRatioId(r.id)}
+                  style={{
+                    padding: '5px 14px',
+                    borderRadius: 'var(--radius-full)',
+                    border: ratioId === r.id ? '2px solid var(--brand-primary)' : '1.5px solid rgba(255,255,255,0.15)',
+                    background: ratioId === r.id ? 'var(--brand-primary)' : 'rgba(255,255,255,0.06)',
+                    color: ratioId === r.id ? '#fff' : 'rgba(255,255,255,0.55)',
+                    fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                    transition: 'all var(--dur-fast)',
+                    lineHeight: 1.2,
+                  }}
+                >
+                  <span style={{ fontSize: 16 }}>{r.icon}</span>
+                  <span>{r.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Canvas — aspect ratio adapts to selection */}
             <canvas
               ref={canvasRef}
-              width={CANVAS_W}
-              height={CANVAS_H}
+              width={currentRatio.W}
+              height={currentRatio.H}
               style={{
-                width: '100%',
-                maxWidth: 320,
+                width: currentRatio.id === 'landscape' ? '100%' : 'auto',
+                maxWidth: currentRatio.id === 'landscape' ? '100%' : 280,
+                maxHeight: 360,
                 height: 'auto',
                 borderRadius: 'var(--radius-lg)',
                 boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
@@ -173,9 +196,7 @@ export default function QuoteCardEditor({ onClose, onPostCreated }) {
               {/* Background templates */}
               <div className="form-group" style={{ margin: 0 }}>
                 <label className="form-label">Background</label>
-                <div style={{
-                  display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-2)',
-                }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-2)' }}>
                   {TEMPLATE_LIST.map(t => (
                     <TemplateSwatch key={t.id} template={t} selected={templateId === t.id} onSelect={() => setTemplateId(t.id)} />
                   ))}
@@ -197,11 +218,9 @@ export default function QuoteCardEditor({ onClose, onPostCreated }) {
                         background: fontId === f.id ? 'var(--brand-primary)' : 'var(--bg-elevated)',
                         color: fontId === f.id ? '#fff' : 'var(--text-secondary)',
                         fontFamily: `"${f.family}", serif`,
-                        fontSize: 13,
-                        cursor: 'pointer',
+                        fontSize: 13, cursor: 'pointer',
                         transition: 'all var(--dur-fast)',
-                        fontWeight: f.weight,
-                        fontStyle: f.style,
+                        fontWeight: f.weight, fontStyle: f.style,
                       }}
                     >
                       {f.name}
@@ -224,8 +243,7 @@ export default function QuoteCardEditor({ onClose, onPostCreated }) {
                         border: layoutId === l.id ? '2px solid var(--brand-primary)' : '1.5px solid var(--border-normal)',
                         background: layoutId === l.id ? 'color-mix(in srgb, var(--brand-primary) 12%, transparent)' : 'var(--bg-elevated)',
                         color: layoutId === l.id ? 'var(--brand-primary)' : 'var(--text-muted)',
-                        cursor: 'pointer',
-                        fontSize: 10,
+                        cursor: 'pointer', fontSize: 10,
                         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
                         transition: 'all var(--dur-fast)',
                       }}
@@ -237,7 +255,7 @@ export default function QuoteCardEditor({ onClose, onPostCreated }) {
                 </div>
               </div>
 
-              {/* Caption (optional post text) */}
+              {/* Caption */}
               <div className="form-group" style={{ margin: 0 }}>
                 <label className="form-label">Caption <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(optional)</span></label>
                 <textarea
@@ -255,8 +273,7 @@ export default function QuoteCardEditor({ onClose, onPostCreated }) {
             <div style={{
               padding: 'var(--space-4)',
               borderTop: '1px solid var(--border-subtle)',
-              background: 'var(--bg-elevated)',
-              marginTop: 'auto',
+              background: 'var(--bg-elevated)', marginTop: 'auto',
             }}>
               <button
                 className="btn btn-primary"
@@ -277,21 +294,17 @@ export default function QuoteCardEditor({ onClose, onPostCreated }) {
   )
 }
 
-// ─── Template Swatch ──────────────────────────────────────────────────────────
+// ─── Template Swatch (mini canvas thumbnail) ──────────────────────────────────
 function TemplateSwatch({ template, selected, onSelect }) {
   const canvasRef = useRef(null)
 
   useEffect(() => {
     const c = canvasRef.current
     if (!c) return
-    c.width = 80; c.height = 100
+    const W = 80, H = 100
+    c.width = W; c.height = H
     const ctx = c.getContext('2d')
-    // Scale the background to thumbnail size
-    const scaleX = 80 / CANVAS_W, scaleY = 100 / CANVAS_H
-    ctx.save()
-    ctx.scale(scaleX, scaleY)
-    template.bg(ctx)
-    ctx.restore()
+    template.bg(ctx, W, H)
   }, [template])
 
   return (
@@ -299,7 +312,8 @@ function TemplateSwatch({ template, selected, onSelect }) {
       onClick={onSelect}
       title={template.name}
       style={{
-        padding: 0, border: selected ? '2.5px solid var(--brand-primary)' : '2.5px solid transparent',
+        padding: 0,
+        border: selected ? '2.5px solid var(--brand-primary)' : '2.5px solid transparent',
         borderRadius: 'var(--radius-md)', overflow: 'hidden', cursor: 'pointer',
         boxShadow: selected ? '0 0 0 2px var(--brand-primary)' : 'none',
         transition: 'box-shadow var(--dur-fast)',
