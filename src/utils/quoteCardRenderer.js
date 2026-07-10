@@ -156,7 +156,7 @@ function measureAndWrap(ctx, text, maxWidth) {
   return lines
 }
 
-function autoSizeFont(ctx, text, maxWidth, maxHeight, fontStr, maxPx = 80, minPx = 24, step = 4) {
+function autoSizeFont(ctx, text, maxWidth, maxHeight, fontStr, maxPx = 140, minPx = 28, step = 4) {
   let size = maxPx
   while (size >= minPx) {
     ctx.font = fontStr.replace('__SIZE__', size)
@@ -267,7 +267,7 @@ function _drawTopQuote(ctx, text, attribution, tmpl, fontBase, inner, PAD, W, H)
 
   const startY = PAD + quoteMarkSize * 0.88
   const maxH = H - startY - PAD - 120
-  const { size, lines } = autoSizeFont(ctx, text, inner, maxH, fontBase, 72)
+  const { size, lines } = autoSizeFont(ctx, text, inner, maxH, fontBase, 120)
   const lh = size * 1.45
 
   let y = startY
