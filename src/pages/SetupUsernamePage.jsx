@@ -60,7 +60,6 @@ export default function SetupUsernamePage() {
   async function handleSubmit(e) {
     e.preventDefault()
     if (usernameStatus !== 'ok') return
-    if (!branch || !year)        { toast.error('Please select your branch and year'); return }
 
     setSubmitting(true)
     try {
@@ -73,9 +72,11 @@ export default function SetupUsernamePage() {
         username,
         name: currentUser.displayName || username,
         photoURL,
-        branch,
-        year,
+        branch: branch || '',
+        year: year || '',
         bio,
+        showBranch: true,
+        showYear: true,
       })
 
       await refreshProfile()
@@ -162,15 +163,15 @@ export default function SetupUsernamePage() {
           {/* Branch & Year row */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
             <div className="form-group">
-              <label className="form-label" htmlFor="branch">Branch *</label>
-              <select id="branch" className="form-input form-select" value={branch} onChange={e => setBranch(e.target.value)} required>
+              <label className="form-label" htmlFor="branch">Branch <span style={{ color: 'var(--text-muted)' }}>(optional)</span></label>
+              <select id="branch" className="form-input form-select" value={branch} onChange={e => setBranch(e.target.value)}>
                 <option value="">Select…</option>
                 {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label" htmlFor="year">Year *</label>
-              <select id="year" className="form-input form-select" value={year} onChange={e => setYear(e.target.value)} required>
+              <label className="form-label" htmlFor="year">Year <span style={{ color: 'var(--text-muted)' }}>(optional)</span></label>
+              <select id="year" className="form-input form-select" value={year} onChange={e => setYear(e.target.value)}>
                 <option value="">Select…</option>
                 {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
@@ -196,7 +197,7 @@ export default function SetupUsernamePage() {
             id="btn-complete-profile"
             type="submit"
             className="btn btn-primary btn-lg"
-            disabled={usernameStatus !== 'ok' || submitting || !branch || !year}
+            disabled={usernameStatus !== 'ok' || submitting}
             style={{ marginTop: 'var(--space-2)' }}
           >
             {submitting ? <><div className="spinner" />Setting up…</> : 'Complete Profile →'}

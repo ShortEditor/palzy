@@ -122,7 +122,17 @@ export default function ExplorePage() {
                       {user.name}
                       {user.isVerified && <VerifiedBadge size={13} />}
                     </div>
-                    <div className="text-xs text-muted">@{user.username} · {user.branch} {user.year}</div>
+                    <div className="text-xs text-muted">
+                      @{user.username}
+                      {[
+                        user.branch && user.showBranch !== false ? user.branch : null,
+                        user.year && user.showYear !== false ? user.year : null
+                      ].filter(Boolean).length > 0 && ' · '}
+                      {[
+                        user.branch && user.showBranch !== false ? user.branch : null,
+                        user.year && user.showYear !== false ? user.year : null
+                      ].filter(Boolean).join(' ')}
+                    </div>
                   </div>
                 </Link>
               ))}

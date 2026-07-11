@@ -141,7 +141,8 @@ export default function FollowListModal({ uid, tab: initialTab, onClose }) {
                     </div>
                     <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>
                       @{user.username}
-                      {user.branch && <> · {user.branch}</>}
+                      {user.branch && user.showBranch !== false && <> · {user.branch}</>}
+                      {user.year && user.showYear !== false && <> · {user.year}</>}
                     </div>
                     {user.bio && (
                       <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>

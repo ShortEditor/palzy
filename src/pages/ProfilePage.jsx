@@ -41,6 +41,8 @@ export default function ProfilePage() {
   const [editBanner, setEditBanner] = useState(null)
   const [editBannerPreview, setEditBannerPreview] = useState('')
   const [saving, setSaving]         = useState(false)
+  const [editShowBranch, setEditShowBranch] = useState(true)
+  const [editShowYear, setEditShowYear]     = useState(true)
 
   // Crop modal
   const [cropTarget, setCropTarget] = useState(null) // 'avatar' | 'banner' | null
@@ -101,6 +103,8 @@ export default function ProfilePage() {
     setEditBio(profile.bio ?? '')
     setEditBranch(profile.branch ?? '')
     setEditYear(profile.year ?? '')
+    setEditShowBranch(profile.showBranch !== false)
+    setEditShowYear(profile.showYear !== false)
     setEditAvatarPreview(profile.photoURL ?? '')
     setEditBannerPreview(profile.bannerURL ?? '')
     setEditAvatar(null)
@@ -150,9 +154,26 @@ export default function ProfilePage() {
       let bannerURL = profile.bannerURL
       if (editAvatar) photoURL  = await uploadImage(editAvatar, 'avatars')
       if (editBanner) bannerURL = await uploadImage(editBanner, 'banners')
-      await updateUserProfile(profile.uid, { bio: editBio, branch: editBranch, year: editYear, photoURL, bannerURL })
+      await updateUserProfile(profile.uid, {
+        bio: editBio,
+        branch: editBranch,
+        year: editYear,
+        photoURL,
+        bannerURL,
+        showBranch: editShowBranch,
+        showYear: editShowYear
+      })
       if (isOwn) await refreshProfile()
-      setProfile(prev => ({ ...prev, bio: editBio, branch: editBranch, year: editYear, photoURL, bannerURL }))
+      setProfile(prev => ({
+        ...prev,
+        bio: editBio,
+        branch: editBranch,
+        year: editYear,
+        photoURL,
+        bannerURL,
+        showBranch: editShowBranch,
+        showYear: editShowYear
+      }))
       setEditing(false)
       toast.success('Profile updated!')
     } catch {
@@ -199,7 +220,7 @@ export default function ProfilePage() {
         </h1>
       </div>
 
-      {/* Banner — clickable if own profile */}
+      {/* Banner */}
       <div
         className="profile-banner"
         style={{
@@ -207,23 +228,8 @@ export default function ProfilePage() {
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           position: 'relative',
-          cursor: isOwn ? 'pointer' : 'default',
         }}
-        onClick={() => isOwn && setEditing(true)}
-        title={isOwn ? 'Click to change banner' : ''}
-      >
-        {isOwn && (
-          <div style={{
-            position: 'absolute', bottom: 8, right: 12,
-            background: 'rgba(0,0,0,0.55)', borderRadius: 'var(--radius-md)',
-            padding: '4px 10px', fontSize: 'var(--font-size-xs)',
-            color: '#fff', display: 'flex', alignItems: 'center', gap: 4,
-            backdropFilter: 'blur(4px)',
-          }}>
-            <Icon name="pencil" size={11} /> Change banner
-          </div>
-        )}
-      </div>
+      />
 
       {/* Profile info */}
       <div className="profile-info">
@@ -284,10 +290,10 @@ export default function ProfilePage() {
         )}
 
         <div className="profile-meta-row">
-          {profile.branch && (
+          {profile.branch && profile.showBranch !== false && (
             <span className="profile-meta-item badge badge-brand">{profile.branch}</span>
           )}
-          {profile.year && (
+          {profile.year && profile.showYear !== false && (
             <span className="profile-meta-item badge badge-green">{profile.year}</span>
           )}
         </div>
@@ -389,15 +395,46 @@ export default function ProfilePage() {
                 <div className="form-group">
                   <label className="form-label" htmlFor="edit-branch">Branch</label>
                   <select id="edit-branch" className="form-input form-select" value={editBranch} onChange={e => setEditBranch(e.target.value)}>
+                    <option value="">None</option>
                     {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
                   </select>
                 </div>
                 <div className="form-group">
                   <label className="form-label" htmlFor="edit-year">Year</label>
                   <select id="edit-year" className="form-input form-select" value={editYear} onChange={e => setEditYear(e.target.value)}>
+                    <option value="">None</option>
                     {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
                   </select>
                 </div>
+              </div>
+
+              {/* Academic Visibility */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                <span className="form-label" style={{ marginBottom: 2 }}>Academic Visibility</span>
+                <label className="flex items-center gap-2" style={{ fontSize: 'var(--font-size-sm)', cursor: 'pointer', color: 'var(--text-primary)' }}>
+                  <input
+                    type="checkbox"
+                    checked={editShowBranch}
+                    onChange={e => setEditShowBranch(e.target.checked)}
+                    style={{
+                      accentColor: 'var(--brand-primary)',
+                      width: 16, height: 16, cursor: 'pointer'
+                    }}
+                  />
+                  Show Branch ({editBranch || 'None'}) on profile
+                </label>
+                <label className="flex items-center gap-2" style={{ fontSize: 'var(--font-size-sm)', cursor: 'pointer', color: 'var(--text-primary)', marginTop: 2 }}>
+                  <input
+                    type="checkbox"
+                    checked={editShowYear}
+                    onChange={e => setEditShowYear(e.target.checked)}
+                    style={{
+                      accentColor: 'var(--brand-primary)',
+                      width: 16, height: 16, cursor: 'pointer'
+                    }}
+                  />
+                  Show Year ({editYear || 'None'}) on profile
+                </label>
               </div>
             </div>
             <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
