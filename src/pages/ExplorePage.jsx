@@ -9,6 +9,8 @@ import Avatar from '../components/Avatar'
 import VerifiedBadge from '../components/VerifiedBadge'
 import { Link } from 'react-router-dom'
 import Icon from '../components/Icon'
+import FollowButton from '../components/FollowButton'
+import { getRecommendations } from '../firebase/follows'
 
 export default function ExplorePage() {
   const { currentUser } = useAuth()
@@ -19,6 +21,20 @@ export default function ExplorePage() {
   const [authorMap, setAuthorMap] = useState({})
   const [searching, setSearching] = useState(false)
   const [searched, setSearched]   = useState(false)
+  const [suggestions, setSuggestions] = useState([])
+  const [loadingSuggestions, setLoadingSuggestions] = useState(true)
+
+  useEffect(() => {
+    if (!currentUser) return
+    getRecommendations(currentUser.uid, 8)
+      .then(setSuggestions)
+      .catch(console.error)
+      .finally(() => setLoadingSuggestions(false))
+  }, [currentUser])
+
+  function handleFollowed(uid) {
+    setSuggestions(prev => prev.filter(u => u.uid !== uid))
+  }
 
   async function handleSearch(e) {
     e.preventDefault()
@@ -100,11 +116,87 @@ export default function ExplorePage() {
 
       {/* Results */}
       {!searched ? (
-        <div className="empty-state">
-          <div className="empty-state-icon" style={{ color: 'var(--text-muted)' }}><Icon name="search" size={40} /></div>
-          <div className="empty-state-title">Find your batchmates</div>
-          <div className="empty-state-body">Search by username or keyword to find posts and people.</div>
-        </div>
+        loadingSuggestions ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-8)' }}><div className="spinner" /></div>
+        ) : suggestions.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-state-icon" style={{ color: 'var(--text-muted)' }}><Icon name="search" size={40} /></div>
+            <div className="empty-state-title">Find your batchmates</div>
+            <div className="empty-state-body">Search by username or keyword to find posts and people.</div>
+          </div>
+        ) : (
+          <div>
+            <div style={{ padding: 'var(--space-4) var(--space-5)', fontSize: 'var(--font-size-base)', fontWeight: 700, fontFamily: 'var(--font-display)', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Icon name="users" size={18} /> People you may know
+            </div>
+            {suggestions.map(user => (
+              <div
+                key={user.uid}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 'var(--space-3)',
+                  padding: 'var(--space-4) var(--space-5)',
+                  borderBottom: '1px solid var(--border-subtle)',
+                  transition: 'background var(--dur-fast)',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                onMouseLeave={e => e.currentTarget.style.background = ''}
+              >
+                <Link to={`/u/${user.username}`} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flex: 1, minWidth: 0, textDecoration: 'none' }}>
+                  <Avatar src={user.photoURL} name={user.name} size="md" />
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--text-primary)' }} className="font-semibold text-sm">
+                      {user.name}
+                      {user.isVerified && <VerifiedBadge size={13} />}
+                    </div>
+                    
+                    {/* Handles + Academic details info line */}
+                    <div className="text-xs text-muted" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 6px' }}>
+                      <span>@{user.username}</span>
+                      {[
+                        user.branch && user.showBranch !== false ? user.branch : null,
+                        user.year && user.showYear !== false ? user.year : null
+                      ].filter(Boolean).length > 0 && <span>·</span>}
+                      <span>
+                        {[
+                          user.branch && user.showBranch !== false ? user.branch : null,
+                          user.year && user.showYear !== false ? user.year : null
+                        ].filter(Boolean).join(' ')}
+                      </span>
+                    </div>
+
+                    {/* Mutual Stack */}
+                    {user.mutualCount > 0 && (
+                      <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--brand-accent)', display: 'flex', alignItems: 'center', gap: 3, marginTop: 4 }}>
+                        <div style={{ display: 'flex', marginRight: 2 }}>
+                          {user.mutualSamples?.slice(0, 2).map(m => (
+                            <div key={m.uid} style={{
+                              width: 14, height: 14, borderRadius: '50%', overflow: 'hidden',
+                              border: '1.5px solid var(--bg-card)',
+                              marginLeft: -4, firstChild: { marginLeft: 0 },
+                              background: 'var(--bg-input)', flexShrink: 0,
+                            }}>
+                              {m.photoURL
+                                ? <img src={m.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                : <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg,var(--brand-primary-cont),var(--brand-accent))', display:'flex', alignItems:'center', justifyContent:'center', fontSize: 6, color:'#fff', fontWeight:700 }}>{m.name?.[0]}</div>
+                              }
+                            </div>
+                          ))}
+                        </div>
+                        {user.mutualCount} mutual{user.mutualCount !== 1 ? 's' : ''}
+                      </div>
+                    )}
+                  </div>
+                </Link>
+                <FollowButton
+                  targetUid={user.uid}
+                  onToggle={(followed) => { if (followed) handleFollowed(user.uid) }}
+                />
+              </div>
+            ))}
+          </div>
+        )
       ) : (
         <>
           {/* People */}
