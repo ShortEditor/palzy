@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { collection, getDocs, query, orderBy, limit, where } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import { getUserProfile } from '../firebase/users'
