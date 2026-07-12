@@ -21,7 +21,7 @@ import { getUserProfile, updateStreak } from './users'
 const POSTS_PER_PAGE = 15
 
 // ─── Create a new post ───────────────────────────────────────
-export async function createPost({ authorId, content, imageURL = null, quoteMetadata = null }) {
+export async function createPost({ authorId, content, imageURL = null, quoteMetadata = null, tags = [] }) {
   const author = await getUserProfile(authorId)
   const type = quoteMetadata ? 'quote' : (imageURL ? 'image' : 'text')
   const postRef = await addDoc(collection(db, 'posts'), {
@@ -33,6 +33,7 @@ export async function createPost({ authorId, content, imageURL = null, quoteMeta
     type,
     content: content?.trim() ?? '',
     imageURL,
+    tags: tags.length > 0 ? tags : [],
     ...(quoteMetadata ? { quoteMetadata } : {}),
     likeCount: 0,
     commentCount: 0,

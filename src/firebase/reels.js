@@ -15,20 +15,21 @@ const REELS_PER_PAGE = 5
 
 /**
  * Fetch algorithm-ranked reels (posts with imageURL).
- * Score = likeCount×2 + commentCount×3 + recencyBonus
- * Sorted server-side by likeCount desc first (Firestore limitation),
- * then re-ranked client-side with recency decay.
+ * Score = (likeCount×2 + commentCount×3 + recencyBonus) × random jitter
  *
- * Pagination: cursor-based using the last Firestore document snapshot.
+ * The random jitter (0.6–1.4) means popular posts generally surface first
+ * but the exact order changes on every refresh — feels alive, not static.
+ *
+ * Fetches a pool of 40 posts and client-side ranks them.
  */
 export async function getReelsFeed(cursor = null, seenIds = new Set()) {
-  // Pull a wider batch to allow for client-side scoring + dedup
-  const FETCH_BATCH = REELS_PER_PAGE * 4
+  // Larger pool = more variety per session
+  const FETCH_BATCH = REELS_PER_PAGE * 8
 
   let q = query(
     collection(db, 'posts'),
-    where('imageURL', '!=', null),   // only image/reel posts
-    orderBy('imageURL'),             // required when using where != null
+    where('imageURL', '!=', null),
+    orderBy('imageURL'),
     orderBy('createdAt', 'desc'),
     limit(FETCH_BATCH),
   )
@@ -50,18 +51,20 @@ export async function getReelsFeed(cursor = null, seenIds = new Set()) {
   const now = Date.now()
   const MS_PER_HOUR = 3_600_000
 
-  // Client-side score: engagement + recency decay
   const scored = snap.docs
     .filter(d => !seenIds.has(d.id))
     .map(d => {
       const data = d.data()
       const ageHours = (now - (data.createdAt?.toMillis?.() ?? now)) / MS_PER_HOUR
-      // Recency bonus: halves every 24h (like HN algorithm)
+      // Recency bonus: decays over 48h
       const recencyBonus = Math.pow(0.97, ageHours)
-      const score = (data.likeCount ?? 0) * 2 +
-                    (data.commentCount ?? 0) * 3 +
-                    recencyBonus * 10
-      return { id: d.id, _snap: d, score, ...data }
+      const baseScore = (data.likeCount ?? 0) * 2 +
+                        (data.commentCount ?? 0) * 3 +
+                        recencyBonus * 10
+      // Random jitter: 60%–140% of base score → reshuffles every refresh
+      // while still broadly respecting engagement ranking
+      const jitter = 0.6 + Math.random() * 0.8
+      return { id: d.id, _snap: d, score: baseScore * jitter, ...data }
     })
     .sort((a, b) => b.score - a.score)
     .slice(0, REELS_PER_PAGE)

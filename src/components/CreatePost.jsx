@@ -17,6 +17,7 @@ export default function CreatePost({ onPostCreated }) {
   const [imagePreview, setImagePreview] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [showQuoteEditor, setShowQuoteEditor] = useState(false)
+  const [isDoubt, setIsDoubt]       = useState(false)
   const textareaRef = useRef(null)
   const fileInputRef = useRef(null)
 
@@ -64,9 +65,15 @@ export default function CreatePost({ onPostCreated }) {
       if (imageFile) {
         imageURL = await uploadImage(imageFile, 'posts', currentUser.uid)
       }
-      const newPost = await createPost({ authorId: currentUser.uid, content: trimmed, imageURL })
+      const newPost = await createPost({
+        authorId: currentUser.uid,
+        content: trimmed,
+        imageURL,
+        tags: isDoubt ? ['doubt'] : [],
+      })
       setText('')
       removeImage()
+      setIsDoubt(false)
       toast.success('Posted! 🎉')
       onPostCreated?.(newPost)
     } catch (err) {
@@ -157,6 +164,26 @@ export default function CreatePost({ onPostCreated }) {
                 style={{ fontSize: 15 }}
               >
                 ✦
+              </button>
+
+              {/* Doubt toggle */}
+              <button
+                id="btn-mark-doubt"
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() => setIsDoubt(prev => !prev)}
+                disabled={submitting}
+                title={isDoubt ? 'Remove doubt tag' : 'Mark as doubt'}
+                style={{
+                  fontSize: 12, fontWeight: 700, gap: 4,
+                  color: isDoubt ? '#f59e0b' : 'var(--text-muted)',
+                  background: isDoubt ? 'rgba(245,158,11,0.12)' : 'transparent',
+                  border: isDoubt ? '1px solid rgba(245,158,11,0.35)' : '1px solid transparent',
+                  borderRadius: 99, padding: '3px 10px',
+                  transition: 'all 0.15s',
+                }}
+              >
+                ❓ {isDoubt ? 'Doubt' : 'Doubt?'}
               </button>
             </div>
 
