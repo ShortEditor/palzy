@@ -43,9 +43,10 @@ export default function FeedPage() {
   const [loading, setLoading]           = useState(true)
   const [loadingMore, setLoadingMore]   = useState(false)
 
-  const loaderRef = useRef(null)
-  const authorMapRef = useRef(authorMap)
+  const loaderRef       = useRef(null)
+  const authorMapRef    = useRef(authorMap)
   const followingIdsRef = useRef(followingIds)
+  const seenIdsRef      = useRef(new Set())   // deduplicate across pages
 
   // Keep refs in sync
   useEffect(() => { authorMapRef.current = authorMap }, [authorMap])
@@ -67,20 +68,27 @@ export default function FeedPage() {
         followingIdsRef.current,
       )
 
+      // Reset seen set on initial load
+      if (cur === null) seenIdsRef.current = new Set()
+
+      // Deduplicate: filter posts already rendered
+      const freshPosts = newPosts.filter(p => !seenIdsRef.current.has(p.id))
+      freshPosts.forEach(p => seenIdsRef.current.add(p.id))
+
       // Fetch any authors we haven't loaded yet (legacy posts without denormalized data)
-      const missingUids = [...new Set(newPosts.map(p => p.authorId))].filter(uid => !authorMapRef.current[uid])
+      const missingUids = [...new Set(freshPosts.map(p => p.authorId))].filter(uid => !authorMapRef.current[uid])
       const profiles = await Promise.all(missingUids.map(uid => getUserProfile(uid)))
       const newAuthorMap = {}
       profiles.forEach((p, i) => { if (p) newAuthorMap[missingUids[i]] = p })
 
       // Batch check likes
-      const newLikeMap = await batchCheckLikes(newPosts.map(p => p.id), currentUser.uid)
+      const newLikeMap = await batchCheckLikes(freshPosts.map(p => p.id), currentUser.uid)
 
       setAuthorMap(prev => ({ ...prev, ...newAuthorMap }))
       setLikeMap(prev => ({ ...prev, ...newLikeMap }))
-      setPosts(prev => cur ? [...prev, ...newPosts] : newPosts)
+      setPosts(prev => cur ? [...prev, ...freshPosts] : freshPosts)
       setCursor(nextCursor)
-      setHasMore(more)
+      setHasMore(more && freshPosts.length > 0)
     } catch (err) {
       console.error('Feed fetch error:', err)
     } finally {

@@ -39,7 +39,7 @@ export default function PostCard({ post, authorProfile, isLiked: initialLiked = 
     setLiked(prev => !prev)
     setLikeCount(prev => liked ? prev - 1 : prev + 1)
     try {
-      await toggleLike(post.id, currentUser.uid, userProfile, !!post.firstLikerId)
+      await toggleLike(post.id, currentUser.uid)
     } catch {
       // Revert on error
       setLiked(prev => !prev)
