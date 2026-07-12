@@ -22,9 +22,9 @@ export default function AppShell({ children }) {
   }
 
   const navItems = [
-    { to: '/',        icon: 'home',   label: 'Home'    },
-    { to: '/explore', icon: 'search', label: 'Explore' },
-    { to: '/reels',   icon: 'play',   label: 'Reels'   },
+    { to: '/',        icon: 'home',    label: 'Home'    },
+    { to: '/explore', icon: 'search',  label: 'Explore' },
+    { to: '/campus',  icon: 'book',    label: 'Campus'  },
     { to: `/u/${userProfile?.username}`, icon: 'user', label: 'Profile' },
   ]
 

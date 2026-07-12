@@ -30,6 +30,8 @@ export async function createPost({ authorId, content, imageURL = null, quoteMeta
     authorUsername: author?.username ?? '',
     authorPhotoURL: author?.photoURL ?? '',
     authorIsVerified: author?.isVerified ?? false,
+    authorBranch: author?.branch ?? '',
+    authorYear: author?.year ?? '',
     type,
     content: content?.trim() ?? '',
     imageURL,

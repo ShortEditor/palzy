@@ -14,7 +14,7 @@ const FeedPage       = lazy(() => import('./pages/FeedPage'))
 const PostDetailPage = lazy(() => import('./pages/PostDetailPage'))
 const ProfilePage    = lazy(() => import('./pages/ProfilePage'))
 const ExplorePage    = lazy(() => import('./pages/ExplorePage'))
-const ReelsPage      = lazy(() => import('./pages/ReelsPage'))
+const CampusPage     = lazy(() => import('./pages/CampusPage'))
 const AdminLayout    = lazy(() => import('./pages/admin/AdminLayout'))
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
 const AdminUsers     = lazy(() => import('./pages/admin/AdminUsers'))
@@ -74,7 +74,7 @@ export default function App() {
           <Route element={<AppShellWrapper />}>
             <Route path="/"             element={<FeedPage />} />
             <Route path="/explore"      element={<ExplorePage />} />
-            <Route path="/reels"        element={<ReelsPage />} />
+            <Route path="/campus"       element={<CampusPage />} />
             <Route path="/post/:postId" element={<PostDetailPage />} />
             <Route path="/u/:username"  element={<ProfilePage />} />
           </Route>

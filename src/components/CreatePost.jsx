@@ -18,6 +18,7 @@ export default function CreatePost({ onPostCreated }) {
   const [submitting, setSubmitting] = useState(false)
   const [showQuoteEditor, setShowQuoteEditor] = useState(false)
   const [isDoubt, setIsDoubt]       = useState(false)
+  const [isNote, setIsNote]         = useState(false)
   const textareaRef = useRef(null)
   const fileInputRef = useRef(null)
 
@@ -65,15 +66,20 @@ export default function CreatePost({ onPostCreated }) {
       if (imageFile) {
         imageURL = await uploadImage(imageFile, 'posts', currentUser.uid)
       }
+      const tags = []
+      if (isDoubt) tags.push('doubt')
+      if (isNote) tags.push('note')
+
       const newPost = await createPost({
         authorId: currentUser.uid,
         content: trimmed,
         imageURL,
-        tags: isDoubt ? ['doubt'] : [],
+        tags,
       })
       setText('')
       removeImage()
       setIsDoubt(false)
+      setIsNote(false)
       toast.success('Posted! 🎉')
       onPostCreated?.(newPost)
     } catch (err) {
@@ -171,7 +177,10 @@ export default function CreatePost({ onPostCreated }) {
                 id="btn-mark-doubt"
                 type="button"
                 className="btn btn-ghost btn-sm"
-                onClick={() => setIsDoubt(prev => !prev)}
+                onClick={() => {
+                  setIsDoubt(prev => !prev)
+                  if (!isDoubt) setIsNote(false) // toggle off note if doubt is checked
+                }}
                 disabled={submitting}
                 title={isDoubt ? 'Remove doubt tag' : 'Mark as doubt'}
                 style={{
@@ -184,6 +193,29 @@ export default function CreatePost({ onPostCreated }) {
                 }}
               >
                 ❓ {isDoubt ? 'Doubt' : 'Doubt?'}
+              </button>
+
+              {/* Note toggle */}
+              <button
+                id="btn-mark-note"
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() => {
+                  setIsNote(prev => !prev)
+                  if (!isNote) setIsDoubt(false) // toggle off doubt if note is checked
+                }}
+                disabled={submitting}
+                title={isNote ? 'Remove note tag' : 'Mark as class note'}
+                style={{
+                  fontSize: 12, fontWeight: 700, gap: 4,
+                  color: isNote ? 'var(--brand-primary-cont)' : 'var(--text-muted)',
+                  background: isNote ? 'var(--brand-primary-glow)' : 'transparent',
+                  border: isNote ? '1px solid var(--brand-primary-cont)' : '1px solid transparent',
+                  borderRadius: 99, padding: '3px 10px',
+                  transition: 'all 0.15s',
+                }}
+              >
+                📝 {isNote ? 'Note' : 'Note?'}
               </button>
             </div>
 
