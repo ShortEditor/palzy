@@ -61,14 +61,14 @@ export default function QuoteCardEditor({ onClose, onPostCreated }) {
         canvas.toBlob(b => b ? res(new File([b], 'quote.png', { type: 'image/png' })) : rej(), 'image/png')
       )
       const imageURL = await uploadImage(imageFile, 'quote-cards', currentUser.uid)
-      await createPost({
+      const newPost = await createPost({
         authorId: currentUser.uid,
         content: caption.trim(),
         imageURL,
         quoteMetadata: { templateId, fontId, layoutId, ratioId, text: quoteText.trim(), attribution: attribution.trim() },
       })
       toast.success('Quote posted! ✦')
-      onPostCreated?.()
+      onPostCreated?.(newPost)
       onClose()
     } catch (err) {
       console.error(err)

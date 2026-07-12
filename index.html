@@ -7,9 +7,23 @@
     <meta name="description" content="Palzy — the social feed built for your college crowd. Post, like, comment and chat with your batchmates." />
     <meta name="theme-color" content="#a078ff" />
     <link rel="manifest" href="/manifest.webmanifest" />
+    <!-- Fonts: preconnect first, then async load to unblock FCP -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Geist:wght@400;500;600;700;800;900&family=Be+Vietnam+Pro:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    </noscript>
+
+    <!-- Firebase + Cloudinary DNS warm-up -->
+    <link rel="preconnect" href="https://firestore.googleapis.com" />
+    <link rel="preconnect" href="https://identitytoolkit.googleapis.com" />
+    <link rel="dns-prefetch" href="https://res.cloudinary.com" />
     <title>Palzy</title>
 
     <!-- ── Content Protection ────────────────────────────────────────

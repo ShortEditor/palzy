@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { getFeedPosts, batchCheckLikes } from '../firebase/posts'
 import { getUserProfile } from '../firebase/users'
+import { getFollowingIds } from '../firebase/follows'
 import CreatePost from '../components/CreatePost'
 import PostCard from '../components/PostCard'
 import Icon from '../components/Icon'
@@ -33,29 +34,40 @@ function PostSkeleton() {
 export default function FeedPage() {
   const { currentUser } = useAuth()
 
-  const [posts, setPosts]           = useState([])
-  const [authorMap, setAuthorMap]   = useState({})   // uid → profile
-  const [likeMap, setLikeMap]       = useState({})   // postId → boolean
-  const [cursor, setCursor]         = useState(null)
-  const [hasMore, setHasMore]       = useState(true)
-  const [loading, setLoading]       = useState(true)
-  const [loadingMore, setLoadingMore] = useState(false)
+  const [posts, setPosts]               = useState([])
+  const [authorMap, setAuthorMap]       = useState({})   // uid → profile
+  const [likeMap, setLikeMap]           = useState({})   // postId → boolean
+  const [followingIds, setFollowingIds] = useState([])   // uids this user follows
+  const [cursor, setCursor]             = useState(null)
+  const [hasMore, setHasMore]           = useState(true)
+  const [loading, setLoading]           = useState(true)
+  const [loadingMore, setLoadingMore]   = useState(false)
 
   const loaderRef = useRef(null)
   const authorMapRef = useRef(authorMap)
+  const followingIdsRef = useRef(followingIds)
 
-  // Keep ref in sync
+  // Keep refs in sync
+  useEffect(() => { authorMapRef.current = authorMap }, [authorMap])
+  useEffect(() => { followingIdsRef.current = followingIds }, [followingIds])
+
+  // Load following list once on mount
   useEffect(() => {
-    authorMapRef.current = authorMap
-  }, [authorMap])
+    if (!currentUser?.uid) return
+    getFollowingIds(currentUser.uid).then(ids => setFollowingIds(ids)).catch(() => {})
+  }, [currentUser?.uid])
 
   // ─── Fetch a page of posts ──────────────────────────────────
-  const fetchPosts = useCallback(async (cur = null, prepend = false) => {
+  const fetchPosts = useCallback(async (cur = null) => {
     if (cur === null) setLoading(true); else setLoadingMore(true)
     try {
-      const { posts: newPosts, nextCursor, hasMore: more } = await getFeedPosts(cur)
+      const { posts: newPosts, nextCursor, hasMore: more } = await getFeedPosts(
+        cur,
+        currentUser.uid,
+        followingIdsRef.current,
+      )
 
-      // Fetch any authors we haven't loaded yet
+      // Fetch any authors we haven't loaded yet (legacy posts without denormalized data)
       const missingUids = [...new Set(newPosts.map(p => p.authorId))].filter(uid => !authorMapRef.current[uid])
       const profiles = await Promise.all(missingUids.map(uid => getUserProfile(uid)))
       const newAuthorMap = {}
@@ -66,7 +78,7 @@ export default function FeedPage() {
 
       setAuthorMap(prev => ({ ...prev, ...newAuthorMap }))
       setLikeMap(prev => ({ ...prev, ...newLikeMap }))
-      setPosts(prev => cur ? (prepend ? [...newPosts, ...prev] : [...prev, ...newPosts]) : newPosts)
+      setPosts(prev => cur ? [...prev, ...newPosts] : newPosts)
       setCursor(nextCursor)
       setHasMore(more)
     } catch (err) {
@@ -91,12 +103,17 @@ export default function FeedPage() {
     return () => observer.disconnect()
   }, [cursor, hasMore, loadingMore, loading, fetchPosts])
 
-  // Called after creating a new post — refresh feed from top
-  function handlePostCreated() {
-    setPosts([])
-    setCursor(null)
-    setHasMore(true)
-    fetchPosts(null)
+  // Called after creating a new post — prepend it locally to feed
+  function handlePostCreated(newPost) {
+    if (newPost) {
+      setPosts(prev => [newPost, ...prev])
+    } else {
+      // Fallback
+      setPosts([])
+      setCursor(null)
+      setHasMore(true)
+      fetchPosts(null)
+    }
   }
 
   // Called when a post is deleted

@@ -64,11 +64,11 @@ export default function CreatePost({ onPostCreated }) {
       if (imageFile) {
         imageURL = await uploadImage(imageFile, 'posts', currentUser.uid)
       }
-      await createPost({ authorId: currentUser.uid, content: trimmed, imageURL })
+      const newPost = await createPost({ authorId: currentUser.uid, content: trimmed, imageURL })
       setText('')
       removeImage()
       toast.success('Posted! 🎉')
-      onPostCreated?.()
+      onPostCreated?.(newPost)
     } catch (err) {
       console.error(err)
       toast.error('Could not post. Try again.')

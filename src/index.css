@@ -65,10 +65,10 @@
   --shadow-clay-hover: inset 1px 1px 2px rgba(255,255,255,0.9),
                        0 20px 48px rgba(124,77,255,0.15);
 
-  /* Typography */
-  --font-sans:    'Be Vietnam Pro', 'Inter', system-ui, -apple-system, sans-serif;
-  --font-display: 'Geist', 'Inter', system-ui, sans-serif;
-  --font-fun:     'Baloo 2', 'Geist', system-ui, sans-serif; /* playful headings */
+  /* Typography — Baloo 2 + Inter (async loaded), system-ui instant fallback */
+  --font-sans:    'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Inter', system-ui, sans-serif;
+  --font-fun:     'Baloo 2', 'Inter', system-ui, sans-serif; /* playful headings */
   --font-size-xs:   0.75rem;
   --font-size-sm:   0.875rem;
   --font-size-base: 1rem;

@@ -131,9 +131,10 @@ export default function PostCard({ post, authorProfile, isLiked: initialLiked = 
     navigate(`/post/${post.id}`)
   }
 
-  const displayName = authorProfile?.name     ?? 'Unknown'
-  const handle      = authorProfile?.username  ?? '...'
-  const photoURL    = authorProfile?.photoURL  ?? ''
+  const displayName = post.authorName || authorProfile?.name || 'Unknown'
+  const handle      = post.authorUsername || authorProfile?.username || '...'
+  const photoURL    = post.authorPhotoURL || authorProfile?.photoURL || ''
+  const isVerified  = post.authorIsVerified !== undefined ? post.authorIsVerified : (authorProfile?.isVerified ?? false)
 
   return (
     <article
@@ -168,7 +169,7 @@ export default function PostCard({ post, authorProfile, isLiked: initialLiked = 
             >
               {displayName}
             </Link>
-            {authorProfile?.isVerified && <VerifiedBadge size={14} />}
+            {isVerified && <VerifiedBadge size={14} />}
           </div>
           <span className="post-author-handle">@{handle}</span>
           <span className="post-timestamp" title={createdAt?.toLocaleString()}>{timeAgo}</span>

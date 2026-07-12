@@ -11,7 +11,7 @@ import toast from 'react-hot-toast'
 
 export default function PostDetailPage() {
   const { postId } = useParams()
-  const { currentUser } = useAuth()
+  const { currentUser, userProfile } = useAuth()
   const navigate = useNavigate()
 
   const [post, setPost]             = useState(null)
@@ -75,16 +75,9 @@ export default function PostDetailPage() {
     if (!commentText.trim()) return
     setSubmitting(true)
     try {
-      await addCommentToPost(postId, { authorId: currentUser.uid, text: commentText })
+      const newComment = await addCommentToPost(postId, { authorId: currentUser.uid, text: commentText })
       setCommentText('')
-      // Reload comments
-      const updated = await getComments(postId)
-      setComments(updated)
-      // Ensure current user's profile is in the map
-      if (!commentAuthors[currentUser.uid]) {
-        const p = await getUserProfile(currentUser.uid)
-        if (p) setCommentAuthors(prev => ({ ...prev, [currentUser.uid]: p }))
-      }
+      setComments(prev => [...prev, newComment])
     } catch (err) {
       toast.error('Could not add comment.')
     } finally {
@@ -100,7 +93,10 @@ export default function PostDetailPage() {
   if (!post) return null
 
   const postTime = post.createdAt?.toDate?.()
-  const handle   = author?.username ?? '...'
+  const displayName = post.authorName || author?.name || 'Unknown'
+  const handle = post.authorUsername || author?.username || '...'
+  const photoURL = post.authorPhotoURL || author?.photoURL || ''
+  const isVerified = post.authorIsVerified !== undefined ? post.authorIsVerified : (author?.isVerified ?? false)
 
   return (
     <div className="feed-column">
@@ -116,11 +112,11 @@ export default function PostDetailPage() {
       <div style={{ padding: 'var(--space-5)', borderBottom: '1px solid var(--border-subtle)' }}>
         {/* Author row */}
         <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
-          <Avatar src={author?.photoURL} name={author?.name} size="lg" />
+          <Avatar src={photoURL} name={displayName} size="lg" />
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
-              {author?.name}
-              {author?.isVerified && <VerifiedBadge size={16} />}
+              {displayName}
+              {isVerified && <VerifiedBadge size={16} />}
             </div>
             <div className="text-sm text-muted">@{handle}</div>
           </div>
@@ -173,7 +169,7 @@ export default function PostDetailPage() {
         onSubmit={handleComment}
         style={{ padding: 'var(--space-4) var(--space-5)', borderBottom: '1px solid var(--border-subtle)', display: 'flex', gap: 'var(--space-3)' }}
       >
-        <Avatar src={commentAuthors[currentUser.uid]?.photoURL} name={commentAuthors[currentUser.uid]?.name ?? 'You'} size="md" />
+        <Avatar src={userProfile?.photoURL} name={userProfile?.name ?? 'You'} size="md" />
         <div style={{ flex: 1, display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
           <input
             id="comment-input"
@@ -203,18 +199,21 @@ export default function PostDetailPage() {
         </div>
       ) : (
         comments.map(comment => {
-          const cAuthor = commentAuthors[comment.authorId]
+          const cAuthorName = comment.authorName || commentAuthors[comment.authorId]?.name || 'Unknown'
+          const cAuthorUsername = comment.authorUsername || commentAuthors[comment.authorId]?.username || '...'
+          const cAuthorPhotoURL = comment.authorPhotoURL || commentAuthors[comment.authorId]?.photoURL || ''
+          const cAuthorIsVerified = comment.authorIsVerified !== undefined ? comment.authorIsVerified : (commentAuthors[comment.authorId]?.isVerified ?? false)
           const cTime   = comment.createdAt?.toDate?.()
           return (
             <div key={comment.id} className="comment-item">
-              <Avatar src={cAuthor?.photoURL} name={cAuthor?.name} size="sm" />
+              <Avatar src={cAuthorPhotoURL} name={cAuthorName} size="sm" />
               <div className="comment-body">
                 <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: 4 }} className="font-semibold text-sm">
-                      {cAuthor?.name ?? 'Unknown'}
-                      {cAuthor?.isVerified && <VerifiedBadge size={12} />}
+                      {cAuthorName}
+                      {cAuthorIsVerified && <VerifiedBadge size={12} />}
                     </span>
-                    <span className="text-xs text-muted">@{cAuthor?.username ?? '...'}</span>
+                    <span className="text-xs text-muted">@{cAuthorUsername}</span>
                     {cTime && <span className="text-xs text-muted" style={{ marginLeft: 'auto' }}>{formatDistanceToNow(cTime, { addSuffix: true })}</span>}
                   </div>
                 <p className="comment-text">{comment.text}</p>

@@ -34,11 +34,24 @@ export async function createUserProfile(uid, { username, name, photoURL, branch,
   })
 }
 
-// ─── Get user profile by UID ─────────────────────────────────
+const profileCache = new Map()
+const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+
+// ─── Get user profile by UID (with 5-min memory caching) ──────
 export async function getUserProfile(uid) {
+  const cached = profileCache.get(uid)
+  if (cached && Date.now() - cached.time < CACHE_TTL) {
+    return cached.data
+  }
+
   const snap = await getDoc(doc(db, 'users', uid))
-  if (!snap.exists()) return null
-  return { uid: snap.id, ...snap.data() }
+  const profile = snap.exists() ? { uid: snap.id, ...snap.data() } : null
+  profileCache.set(uid, { data: profile, time: Date.now() })
+  return profile
+}
+
+export function invalidateUserCache(uid) {
+  profileCache.delete(uid)
 }
 
 // ─── Update profile fields ───────────────────────────────────
@@ -50,6 +63,7 @@ export async function updateUserProfile(uid, updates) {
     }
   })
   await updateDoc(doc(db, 'users', uid), cleanUpdates)
+  invalidateUserCache(uid)
 }
 
 // ─── Get user by username ────────────────────────────────────
