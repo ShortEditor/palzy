@@ -41,31 +41,4 @@ export default defineConfig({
   resolve: {
     alias: { '@': '/src' },
   },
-  build: {
-    rolldownOptions: {
-      output: {
-        // Split heavy deps into separate cacheable chunks
-        manualChunks(id) {
-          // Firebase — split by service so unused ones stay cached longer
-          if (id.includes('firebase/app') || id.includes('@firebase/app'))         return 'firebase-app'
-          if (id.includes('firebase/auth') || id.includes('@firebase/auth'))       return 'firebase-auth'
-          if (id.includes('firebase/firestore') || id.includes('@firebase/firestore')) return 'firebase-firestore'
-          if (id.includes('firebase/storage') || id.includes('@firebase/storage')) return 'firebase-storage'
-          if (id.includes('@firebase'))                                             return 'firebase-misc'
-
-          // React ecosystem
-          if (id.includes('node_modules/react/') ||
-              id.includes('node_modules/react-dom/') ||
-              id.includes('node_modules/react-router'))                            return 'vendor-react'
-
-          // Utilities
-          if (id.includes('node_modules/date-fns') ||
-              id.includes('node_modules/react-hot-toast') ||
-              id.includes('node_modules/@tanstack'))                               return 'vendor-utils'
-        },
-      },
-    },
-    // Raise warning threshold — 600kB post-split is expected for Firebase
-    chunkSizeWarningLimit: 600,
-  },
 })

@@ -77,3 +77,31 @@ export async function getUserByUsername(username) {
   const d = snap.docs[0]
   return { uid: d.id, ...d.data() }
 }
+
+// ─── Update daily posting streak ─────────────────────────────
+// Call once per createPost. Safe to call multiple times per day.
+export async function updateStreak(uid) {
+  const today = new Date().toISOString().slice(0, 10) // 'YYYY-MM-DD'
+  const userRef = doc(db, 'users', uid)
+  const snap = await getDoc(userRef)
+  if (!snap.exists()) return
+
+  const { streakCount = 0, streakLastDate = null, streakBestEver = 0 } = snap.data()
+
+  // Already posted today — nothing to update
+  if (streakLastDate === today) return
+
+  const yesterday = new Date()
+  yesterday.setDate(yesterday.getDate() - 1)
+  const yesterdayStr = yesterday.toISOString().slice(0, 10)
+
+  const newCount = streakLastDate === yesterdayStr ? streakCount + 1 : 1
+  const newBest  = Math.max(streakBestEver, newCount)
+
+  await updateDoc(userRef, {
+    streakCount:    newCount,
+    streakLastDate: today,
+    streakBestEver: newBest,
+  })
+  invalidateUserCache(uid)
+}

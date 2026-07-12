@@ -16,7 +16,7 @@ import {
   increment,
 } from 'firebase/firestore'
 import { db } from './config'
-import { getUserProfile } from './users'
+import { getUserProfile, updateStreak } from './users'
 
 const POSTS_PER_PAGE = 15
 
@@ -39,6 +39,8 @@ export async function createPost({ authorId, content, imageURL = null, quoteMeta
     createdAt: serverTimestamp(),
   })
   const snap = await getDoc(postRef)
+  // Fire-and-forget streak update (non-blocking)
+  updateStreak(authorId).catch(() => {})
   return { id: snap.id, ...snap.data() }
 }
 
@@ -158,20 +160,27 @@ export async function getPost(postId) {
 }
 
 // ─── Like / Unlike (atomic transaction) ─────────────────────
-export async function toggleLike(postId, userId) {
+export async function toggleLike(postId, userId, userProfile = null) {
   const likeId  = `${postId}_${userId}`
   const likeRef = doc(db, 'likes', likeId)
   const postRef = doc(db, 'posts', postId)
 
   return runTransaction(db, async tx => {
-    const likeSnap = await tx.get(likeRef)
+    const [likeSnap, postSnap] = await Promise.all([tx.get(likeRef), tx.get(postRef)])
     if (likeSnap.exists()) {
       tx.delete(likeRef)
       tx.update(postRef, { likeCount: increment(-1) })
       return false // now unliked
     } else {
       tx.set(likeRef, { postId, userId, createdAt: serverTimestamp() })
-      tx.update(postRef, { likeCount: increment(1) })
+      const postData = postSnap.data() ?? {}
+      const updates = { likeCount: increment(1) }
+      // First-to-react: only set once, never overwrite
+      if (!postData.firstLikerId) {
+        updates.firstLikerId       = userId
+        updates.firstLikerUsername = userProfile?.username ?? null
+      }
+      tx.update(postRef, updates)
       return true // now liked
     }
   })
