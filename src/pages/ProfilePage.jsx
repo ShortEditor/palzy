@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { getUserByUsername, updateUserProfile } from '../firebase/users'
 import { getUserPosts, batchCheckLikes } from '../firebase/posts'
+import { renderRecapCard } from '../utils/recapCardRenderer'
 import { isFollowing, followUser, unfollowUser, syncFollowCounts } from '../firebase/follows'
 import { uploadImage } from '../utils/cloudinary'
 import PostCard from '../components/PostCard'
@@ -187,6 +188,45 @@ export default function ProfilePage() {
     setPosts(prev => prev.filter(p => p.id !== postId))
   }
 
+  async function handleGenerateRecap() {
+    if (!isOwn || !profile) return
+    const toastId = toast.loading('Generating your recap...')
+    try {
+      // Count this week's posts for the user
+      const { posts: weekPosts } = await getUserPosts(profile.uid)
+      const now = new Date()
+      const dayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1
+      const weekStart = new Date(now)
+      weekStart.setDate(now.getDate() - dayOfWeek)
+      weekStart.setHours(0, 0, 0, 0)
+      const weekCount = weekPosts.filter(p => {
+        const d = p.createdAt?.toDate?.() ?? new Date(0)
+        return d >= weekStart
+      }).length
+      const likesReceived = weekPosts.reduce((sum, p) => sum + (p.likeCount ?? 0), 0)
+
+      const dataUrl = await renderRecapCard({
+        name: profile.name,
+        username: profile.username,
+        photoURL: profile.photoURL,
+        stats: {
+          postCount: weekCount,
+          likesReceived,
+          streakCount: profile.streakCount ?? 0,
+          newFollowers: profile.followerCount ?? 0,
+        },
+      })
+      const a = document.createElement('a')
+      a.href = dataUrl
+      a.download = `palzy-recap-${profile.username}.png`
+      a.click()
+      toast.success('Recap card downloaded! 🎉', { id: toastId })
+    } catch (err) {
+      console.error(err)
+      toast.error('Could not generate recap.', { id: toastId })
+    }
+  }
+
   if (loading) return (
     <div className="feed-column" style={{ display: 'flex', justifyContent: 'center', paddingTop: 'var(--space-12)' }}>
       <div className="spinner spinner-lg" />
@@ -295,6 +335,34 @@ export default function ProfilePage() {
           )}
           {profile.year && profile.showYear !== false && (
             <span className="profile-meta-item badge badge-green">{profile.year}</span>
+          )}
+          {/* 🔥 Streak badge */}
+          {(profile.streakCount ?? 0) > 0 && (
+            <span
+              className="profile-meta-item"
+              title={`${profile.streakCount}-day posting streak${profile.streakBestEver ? ` · Best: ${profile.streakBestEver}` : ''}`}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                background: 'linear-gradient(135deg,rgba(249,115,22,0.15),rgba(245,158,11,0.15))',
+                border: '1px solid rgba(249,115,22,0.3)',
+                color: '#f97316', borderRadius: 99, padding: '3px 10px',
+                fontSize: 'var(--font-size-xs)', fontWeight: 700, cursor: 'default',
+              }}
+            >
+              🔥 {profile.streakCount}
+            </span>
+          )}
+          {/* 📊 Weekly recap — own profile only */}
+          {isOwn && (
+            <button
+              id="btn-generate-recap"
+              className="btn btn-ghost btn-sm"
+              onClick={handleGenerateRecap}
+              title="Download your weekly recap card"
+              style={{ fontSize: 'var(--font-size-xs)', padding: '3px 10px', borderRadius: 99 }}
+            >
+              📊 Recap
+            </button>
           )}
         </div>
       </div>

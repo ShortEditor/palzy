@@ -12,7 +12,7 @@ import FollowButton from './FollowButton'
 import toast from 'react-hot-toast'
 
 export default function PostCard({ post, authorProfile, isLiked: initialLiked = false, onDelete }) {
-  const { currentUser } = useAuth()
+  const { currentUser, userProfile } = useAuth()
   const navigate = useNavigate()
 
   const [liked, setLiked]         = useState(initialLiked)
@@ -39,7 +39,7 @@ export default function PostCard({ post, authorProfile, isLiked: initialLiked = 
     setLiked(prev => !prev)
     setLikeCount(prev => liked ? prev - 1 : prev + 1)
     try {
-      await toggleLike(post.id, currentUser.uid)
+      await toggleLike(post.id, currentUser.uid, userProfile, !!post.firstLikerId)
     } catch {
       // Revert on error
       setLiked(prev => !prev)
@@ -217,6 +217,26 @@ export default function PostCard({ post, authorProfile, isLiked: initialLiked = 
             <Icon name={liked ? 'heartFilled' : 'heart'} size={18} fill={liked} />
             <span>{likeCount > 0 ? likeCount : ''}</span>
           </button>
+
+          {/* ⚡ First-to-react badge */}
+          {post.firstLikerId && (
+            <span
+              title={`First like by @${post.firstLikerUsername ?? '?'}`}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 3,
+                fontSize: 10, fontWeight: 700,
+                color: '#f59e0b',
+                background: 'rgba(245,158,11,0.12)',
+                border: '1px solid rgba(245,158,11,0.25)',
+                borderRadius: 99,
+                padding: '2px 7px',
+                cursor: 'default',
+                userSelect: 'none',
+              }}
+            >
+              ⚡ first
+            </span>
+          )}
 
           {/* Comments */}
           <button

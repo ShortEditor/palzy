@@ -160,23 +160,24 @@ export async function getPost(postId) {
 }
 
 // ─── Like / Unlike (atomic transaction) ─────────────────────
-export async function toggleLike(postId, userId, userProfile = null) {
+// hasFirstLiker: pass post.firstLikerId truthy value from caller
+// to avoid reading postRef inside the transaction (security-rule safe)
+export async function toggleLike(postId, userId, userProfile = null, hasFirstLiker = false) {
   const likeId  = `${postId}_${userId}`
   const likeRef = doc(db, 'likes', likeId)
   const postRef = doc(db, 'posts', postId)
 
   return runTransaction(db, async tx => {
-    const [likeSnap, postSnap] = await Promise.all([tx.get(likeRef), tx.get(postRef)])
+    const likeSnap = await tx.get(likeRef) // only read likeRef — no postRef read
     if (likeSnap.exists()) {
       tx.delete(likeRef)
       tx.update(postRef, { likeCount: increment(-1) })
       return false // now unliked
     } else {
       tx.set(likeRef, { postId, userId, createdAt: serverTimestamp() })
-      const postData = postSnap.data() ?? {}
       const updates = { likeCount: increment(1) }
-      // First-to-react: only set once, never overwrite
-      if (!postData.firstLikerId) {
+      // First-to-react: only write if nobody has liked yet (caller checks)
+      if (!hasFirstLiker) {
         updates.firstLikerId       = userId
         updates.firstLikerUsername = userProfile?.username ?? null
       }

@@ -10,6 +10,7 @@ import {
 } from 'firebase/auth'
 import { auth, googleProvider } from '../firebase/config'
 import { getUserProfile } from '../firebase/users'
+import toast from 'react-hot-toast'
 
 const AuthContext = createContext(null)
 
@@ -28,6 +29,23 @@ export function AuthProvider({ children }) {
           // Wait for the Firestore profile before marking loading = false
           const profile = await getUserProfile(user.uid)
           setUserProfile(profile)
+
+          // 🎂 Anniversary ping (once per session)
+          if (profile?.createdAt && !sessionStorage.getItem('palzy_anniv_shown')) {
+            const created = profile.createdAt.toDate ? profile.createdAt.toDate() : new Date(profile.createdAt)
+            const now = new Date()
+            if (created.getMonth() === now.getMonth() && created.getDate() === now.getDate()) {
+              const years = now.getFullYear() - created.getFullYear()
+              sessionStorage.setItem('palzy_anniv_shown', '1')
+              setTimeout(() => {
+                toast(`🎂 ${years > 0 ? `${years} year${years > 1 ? 's' : ''} on Palzy today!` : 'Happy Palzy birthday!'} 🎉`, {
+                  duration: 6000,
+                  icon: '🎂',
+                  style: { fontWeight: 600 },
+                })
+              }, 2000) // slight delay so the page settles first
+            }
+          }
         } catch (err) {
           console.error('Failed to load user profile:', err)
           setUserProfile(null)
