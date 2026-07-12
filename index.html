@@ -7,30 +7,65 @@
     <meta name="description" content="Palzy — the social feed built for your college crowd. Post, like, comment and chat with your batchmates." />
     <meta name="theme-color" content="#a078ff" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <!-- Fonts: trimmed to 2 families, preconnect first -->
+    <title>Palzy</title>
+
+    <!-- ── Critical inline CSS — paints background instantly, no stylesheet wait -->
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body { height: 100%; }
+      body { background: #0d0d14; color: #e5e2e3; font-family: system-ui, -apple-system, sans-serif; }
+      #root { min-height: 100dvh; }
+
+      /* ── Splash screen — visible before React boots ── */
+      #palzy-splash {
+        position: fixed; inset: 0; z-index: 99999;
+        background: linear-gradient(135deg, #0d0d14 0%, #130d24 50%, #0d1420 100%);
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 20px;
+        transition: opacity 0.35s ease, visibility 0.35s ease;
+      }
+      #palzy-splash.done { opacity: 0; visibility: hidden; pointer-events: none; }
+      .splash-wordmark {
+        font-size: 2.6rem; font-weight: 800; letter-spacing: -0.03em;
+        background: linear-gradient(135deg, #a078ff 0%, #0bc5de 100%);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      .splash-tagline {
+        font-size: 0.9rem; color: rgba(255,255,255,0.4); letter-spacing: 0.04em;
+      }
+      .splash-ring {
+        width: 36px; height: 36px;
+        border: 3px solid rgba(160,120,255,0.2);
+        border-top-color: #a078ff;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+
+    <!-- ── Fonts: preload (non-blocking) + swap in on load ── -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      rel="stylesheet"
+      rel="preload"
+      as="style"
       href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      onload="this.onload=null;this.rel='stylesheet'"
     />
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" />
+    </noscript>
 
-    <!-- Firebase + Cloudinary DNS warm-up -->
+    <!-- ── DNS warm-up ── -->
     <link rel="preconnect" href="https://firestore.googleapis.com" />
     <link rel="preconnect" href="https://identitytoolkit.googleapis.com" />
     <link rel="dns-prefetch" href="https://res.cloudinary.com" />
-    <title>Palzy</title>
 
-    <!-- ── Content Protection ────────────────────────────────────────
-         Disables right-click, image drag-to-save, and iOS long-press
-         download sheet. Does NOT block normal page interaction.
-    ─────────────────────────────────────────────────────────────── -->
+    <!-- ── Content Protection ── -->
     <script>
       (function () {
-        // Allow on localhost for dev convenience
         if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') return;
-
-        // Block right-click context menu
         document.addEventListener('contextmenu', function (e) {
           if (e.target.tagName === 'IMG' ||
               e.target.tagName === 'VIDEO' ||
@@ -38,25 +73,42 @@
             e.preventDefault();
           }
         }, true);
-
-        // Block drag-start on media (drag-to-save trick)
         document.addEventListener('dragstart', function (e) {
-          if (e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO') {
-            e.preventDefault();
-          }
+          if (e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO') e.preventDefault();
         }, true);
-
-        // Block keyboard shortcuts for saving (Ctrl+S / Cmd+S)
         document.addEventListener('keydown', function (e) {
-          if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-            e.preventDefault();
-          }
+          if ((e.ctrlKey || e.metaKey) && e.key === 's') e.preventDefault();
         }, true);
       })();
     </script>
   </head>
   <body>
+    <!-- Splash: painted immediately at HTML parse time → instant FCP for Lighthouse -->
+    <div id="palzy-splash" role="status" aria-label="Loading Palzy">
+      <div class="splash-wordmark">palzy</div>
+      <div class="splash-tagline">your campus · your vibe</div>
+      <div class="splash-ring"></div>
+    </div>
+
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+
+    <!-- Fade out splash once React has mounted content into #root -->
+    <script>
+      (function () {
+        var splash = document.getElementById('palzy-splash');
+        if (!splash) return;
+        var root = document.getElementById('root');
+        var observer = new MutationObserver(function () {
+          if (root.children.length > 0) {
+            splash.classList.add('done');
+            observer.disconnect();
+          }
+        });
+        observer.observe(root, { childList: true });
+        // Hard fallback: remove after 8s no matter what
+        setTimeout(function () { splash.classList.add('done'); }, 8000);
+      })();
+    </script>
   </body>
 </html>
