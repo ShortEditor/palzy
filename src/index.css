@@ -1019,6 +1019,15 @@ body, .clay-card, .clay-input, .sidebar, .topbar, .bottom-nav, .page-header,
 
 .create-post-tools { display: flex; align-items: center; gap: var(--space-2); }
 
+/* Tag pills row — appears between textarea and action bar */
+.create-post-tags {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  padding: var(--space-2) 0 0;
+}
+
 .char-counter { font-size: var(--font-size-xs); font-weight: 500; color: var(--text-muted); min-width: 36px; text-align: right; }
 .char-counter.warn { color: var(--brand-yellow); }
 .char-counter.over { color: var(--brand-red); }
@@ -1447,6 +1456,18 @@ body, .clay-card, .clay-input, .sidebar, .topbar, .bottom-nav, .page-header,
   .page-header h1  { font-size: var(--font-size-xl); }
 
   .create-post-bar { margin: var(--space-3); border-radius: var(--radius-xl); }
+
+  /* Bottom nav compact — 5 items on narrow phones */
+  .bottom-nav {
+    width: min(96vw, 380px);
+    padding: var(--space-1) var(--space-2);
+  }
+  .bottom-nav-item {
+    padding: var(--space-1) var(--space-2);
+    font-size: 0.55rem;
+  }
+  .bottom-nav-item svg { width: 20px; height: 20px; }
+  .bottom-nav-item.active { padding-inline: var(--space-3); }
 }
 
 /* ─── Quote Card Editor ────────────── */

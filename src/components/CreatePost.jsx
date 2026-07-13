@@ -142,7 +142,58 @@ export default function CreatePost({ onPostCreated }) {
             </div>
           )}
 
-          {/* Action row */}
+          {/* Tag pills row — only shown when textarea is focused/has content */}
+          {(text || isDoubt || isNote) && (
+            <div className="create-post-tags">
+              {/* Doubt toggle */}
+              <button
+                id="btn-mark-doubt"
+                type="button"
+                onClick={() => {
+                  setIsDoubt(prev => !prev)
+                  if (!isDoubt) setIsNote(false)
+                }}
+                disabled={submitting}
+                title={isDoubt ? 'Remove doubt tag' : 'Mark as doubt'}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                  fontSize: 12, fontWeight: 700,
+                  color: isDoubt ? '#f59e0b' : 'var(--text-muted)',
+                  background: isDoubt ? 'rgba(245,158,11,0.12)' : 'var(--bg-input)',
+                  border: isDoubt ? '1px solid rgba(245,158,11,0.4)' : '1px solid var(--border-subtle)',
+                  borderRadius: 99, padding: '4px 12px',
+                  cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap',
+                }}
+              >
+                ❓ {isDoubt ? 'Doubt ✓' : 'Doubt?'}
+              </button>
+
+              {/* Note toggle */}
+              <button
+                id="btn-mark-note"
+                type="button"
+                onClick={() => {
+                  setIsNote(prev => !prev)
+                  if (!isNote) setIsDoubt(false)
+                }}
+                disabled={submitting}
+                title={isNote ? 'Remove note tag' : 'Mark as class note'}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                  fontSize: 12, fontWeight: 700,
+                  color: isNote ? 'var(--brand-primary-cont)' : 'var(--text-muted)',
+                  background: isNote ? 'var(--brand-primary-glow)' : 'var(--bg-input)',
+                  border: isNote ? '1px solid var(--brand-primary-cont)' : '1px solid var(--border-subtle)',
+                  borderRadius: 99, padding: '4px 12px',
+                  cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap',
+                }}
+              >
+                📝 {isNote ? 'Note ✓' : 'Note?'}
+              </button>
+            </div>
+          )}
+
+          {/* Action row — only icons + submit, no tags */}
           <div className="create-post-actions">
             <div className="create-post-tools">
               {/* Image picker */}
@@ -170,52 +221,6 @@ export default function CreatePost({ onPostCreated }) {
                 style={{ fontSize: 15 }}
               >
                 ✦
-              </button>
-
-              {/* Doubt toggle */}
-              <button
-                id="btn-mark-doubt"
-                type="button"
-                className="btn btn-ghost btn-sm"
-                onClick={() => {
-                  setIsDoubt(prev => !prev)
-                  if (!isDoubt) setIsNote(false) // toggle off note if doubt is checked
-                }}
-                disabled={submitting}
-                title={isDoubt ? 'Remove doubt tag' : 'Mark as doubt'}
-                style={{
-                  fontSize: 12, fontWeight: 700, gap: 4,
-                  color: isDoubt ? '#f59e0b' : 'var(--text-muted)',
-                  background: isDoubt ? 'rgba(245,158,11,0.12)' : 'transparent',
-                  border: isDoubt ? '1px solid rgba(245,158,11,0.35)' : '1px solid transparent',
-                  borderRadius: 99, padding: '3px 10px',
-                  transition: 'all 0.15s',
-                }}
-              >
-                ❓ {isDoubt ? 'Doubt' : 'Doubt?'}
-              </button>
-
-              {/* Note toggle */}
-              <button
-                id="btn-mark-note"
-                type="button"
-                className="btn btn-ghost btn-sm"
-                onClick={() => {
-                  setIsNote(prev => !prev)
-                  if (!isNote) setIsDoubt(false) // toggle off doubt if note is checked
-                }}
-                disabled={submitting}
-                title={isNote ? 'Remove note tag' : 'Mark as class note'}
-                style={{
-                  fontSize: 12, fontWeight: 700, gap: 4,
-                  color: isNote ? 'var(--brand-primary-cont)' : 'var(--text-muted)',
-                  background: isNote ? 'var(--brand-primary-glow)' : 'transparent',
-                  border: isNote ? '1px solid var(--brand-primary-cont)' : '1px solid transparent',
-                  borderRadius: 99, padding: '3px 10px',
-                  transition: 'all 0.15s',
-                }}
-              >
-                📝 {isNote ? 'Note' : 'Note?'}
               </button>
             </div>
 
