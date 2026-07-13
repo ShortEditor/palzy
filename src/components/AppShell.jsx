@@ -5,6 +5,7 @@ import Icon from './Icon'
 import Avatar from './Avatar'
 import SuggestionsSidebar from './SuggestionsSidebar'
 import VerifiedBadge from './VerifiedBadge'
+import InstallBanner from './InstallBanner'
 import toast from 'react-hot-toast'
 
 export default function AppShell({ children }) {
@@ -200,6 +201,7 @@ export default function AppShell({ children }) {
           </div>
         )}
       </div>
+      <InstallBanner />
     </div>
   )
 }
