@@ -87,6 +87,14 @@
 
     <!-- ── Content Protection ── -->
     <script>
+      // Capture PWA install prompt BEFORE React mounts (race-condition fix)
+      window.__pwaPrompt = null;
+      window.addEventListener('beforeinstallprompt', function(e) {
+        e.preventDefault();
+        window.__pwaPrompt = e;
+      });
+    </script>
+    <script>
       (function () {
         if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') return;
         document.addEventListener('contextmenu', function (e) {

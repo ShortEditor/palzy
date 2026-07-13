@@ -5,29 +5,39 @@ export default function InstallBanner() {
   const promptRef = useRef(null)
 
   useEffect(() => {
-    // Already installed as PWA — skip
+    // Don't show if already installed as standalone PWA
     if (window.matchMedia('(display-mode: standalone)').matches) return
-    // Already dismissed this session — skip
+    if (window.navigator.standalone === true) return
+    // Don't show if dismissed this session
     if (sessionStorage.getItem('pwa-dismissed')) return
 
-    const handler = (e) => {
-      e.preventDefault()
+    function activate(e) {
       promptRef.current = e
-
-      // Show modal 800ms after page load (page renders first)
+      window.__pwaPrompt = e
       setTimeout(() => setShow(true), 800)
     }
 
+    // ── KEY FIX: Check if the event was already captured before React mounted ──
+    // index.html captures it in a plain <script> tag before React boots
+    if (window.__pwaPrompt) {
+      activate(window.__pwaPrompt)
+      return
+    }
+
+    // Otherwise listen for it (fires within a few seconds on Chrome)
+    const handler = (e) => activate(e)
     window.addEventListener('beforeinstallprompt', handler)
     return () => window.removeEventListener('beforeinstallprompt', handler)
   }, [])
 
   async function handleInstall() {
-    if (!promptRef.current) return
-    promptRef.current.prompt()
-    await promptRef.current.userChoice
+    const prompt = promptRef.current
+    if (!prompt) return
+    prompt.prompt()
+    await prompt.userChoice
     setShow(false)
     promptRef.current = null
+    window.__pwaPrompt = null
   }
 
   function handleDismiss() {
@@ -44,7 +54,7 @@ export default function InstallBanner() {
         position: 'fixed', inset: 0, zIndex: 9998,
         background: 'rgba(0,0,0,0.65)',
         backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
-        animation: 'fadeIn 0.2s ease',
+        animation: 'pwaFadeIn 0.2s ease',
       }} />
 
       {/* Bottom sheet */}
@@ -55,19 +65,19 @@ export default function InstallBanner() {
         borderRadius: '28px 28px 0 0',
         padding: '32px 28px 44px',
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20,
-        animation: 'slideUp 0.35s cubic-bezier(0.34,1.56,0.64,1)',
+        animation: 'pwaSlideUp 0.35s cubic-bezier(0.34,1.56,0.64,1)',
         boxShadow: '0 -24px 80px rgba(0,0,0,0.6)',
         maxWidth: 480, margin: '0 auto',
       }}>
         <style>{`
-          @keyframes fadeIn  { from { opacity:0 } to { opacity:1 } }
-          @keyframes slideUp { from { transform:translateY(100%) } to { transform:translateY(0) } }
+          @keyframes pwaFadeIn  { from { opacity:0 } to { opacity:1 } }
+          @keyframes pwaSlideUp { from { transform:translateY(100%) } to { transform:translateY(0) } }
         `}</style>
 
-        {/* Drag handle */}
+        {/* Handle */}
         <div style={{ width:40, height:4, borderRadius:99, background:'rgba(255,255,255,0.15)', position:'absolute', top:12, left:'50%', transform:'translateX(-50%)' }} />
 
-        {/* App icon */}
+        {/* Icon */}
         <div style={{ position:'relative' }}>
           <img src="/icon-512.png" alt="Palzy" style={{
             width:88, height:88, borderRadius:22,
@@ -81,7 +91,7 @@ export default function InstallBanner() {
           }} />
         </div>
 
-        {/* Text */}
+        {/* Title + subtitle */}
         <div style={{ textAlign:'center' }}>
           <div style={{
             fontSize:22, fontWeight:800, letterSpacing:'-0.02em',
@@ -96,7 +106,7 @@ export default function InstallBanner() {
           </div>
         </div>
 
-        {/* Feature pills */}
+        {/* Pills */}
         <div style={{ display:'flex', gap:8, flexWrap:'wrap', justifyContent:'center' }}>
           {['⚡ Instant load','📲 Home screen','🔔 Notifications'].map(f => (
             <span key={f} style={{
@@ -119,7 +129,7 @@ export default function InstallBanner() {
               color:'#fff', fontSize:16, fontWeight:800,
               cursor:'pointer', fontFamily:'var(--font-display)', letterSpacing:'-0.01em',
               boxShadow:'0 8px 24px rgba(160,120,255,0.45)',
-              transition: 'transform 0.1s',
+              transition:'transform 0.1s',
             }}
             onMouseDown={e => e.currentTarget.style.transform='scale(0.97)'}
             onMouseUp={e => e.currentTarget.style.transform=''}
@@ -137,7 +147,7 @@ export default function InstallBanner() {
               background:'rgba(255,255,255,0.04)',
               color:'rgba(255,255,255,0.45)', fontSize:15, fontWeight:600,
               cursor:'pointer', fontFamily:'var(--font-sans)',
-              transition: 'background 0.15s',
+              transition:'background 0.15s',
             }}
             onMouseEnter={e => e.currentTarget.style.background='rgba(255,255,255,0.08)'}
             onMouseLeave={e => e.currentTarget.style.background='rgba(255,255,255,0.04)'}
