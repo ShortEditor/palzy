@@ -9,6 +9,7 @@ import Avatar from './Avatar'
 import Icon from './Icon'
 import VerifiedBadge from './VerifiedBadge'
 import FollowButton from './FollowButton'
+import RichText from './RichText'
 import toast from 'react-hot-toast'
 
 export default function PostCard({ post, authorProfile, isLiked: initialLiked = false, onDelete }) {
@@ -181,8 +182,25 @@ export default function PostCard({ post, authorProfile, isLiked: initialLiked = 
           )}
         </div>
 
-        {/* Post text */}
-        {post.content && <p className="post-text">{post.content}</p>}
+        {/* Post text — parsed for @mentions and links */}
+        {post.content && (
+          <RichText text={post.content} className="post-text" />
+        )}
+
+        {/* Tags: doubt / note / collab */}
+        {Array.isArray(post.tags) && post.tags.length > 0 && (
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 'var(--space-2)' }}>
+            {post.tags.includes('doubt') && (
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 99, padding: '2px 10px' }}>❓ Doubt</span>
+            )}
+            {post.tags.includes('note') && (
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--brand-primary-cont)', background: 'var(--brand-primary-glow)', border: '1px solid var(--brand-primary-cont)', borderRadius: 99, padding: '2px 10px' }}>📝 Note</span>
+            )}
+            {post.tags.includes('collab') && (
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#10b981', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 99, padding: '2px 10px' }}>🤝 Collab</span>
+            )}
+          </div>
+        )}
 
         {/* Post image */}
         {post.imageURL && (

@@ -7,6 +7,7 @@ import { getUserProfile } from '../firebase/users'
 import Avatar from '../components/Avatar'
 import Icon from '../components/Icon'
 import VerifiedBadge from '../components/VerifiedBadge'
+import RichText from '../components/RichText'
 import toast from 'react-hot-toast'
 
 // ── Single comment / reply row ────────────────────────────────
@@ -57,10 +58,8 @@ function CommentRow({ comment, postId, currentUser, isAdmin, onDelete, onReply, 
         </div>
 
         {/* Text */}
-        <p style={{
-          fontSize: 'var(--font-size-sm)', color: 'var(--text-primary)',
+        <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-primary)',
           marginTop: 'var(--space-1)', lineHeight: 1.55,
-          whiteSpace: 'pre-wrap', wordBreak: 'break-word',
         }}>
           {comment.text}
         </p>
@@ -275,9 +274,10 @@ export default function PostDetailPage() {
         </div>
 
         {post.content && (
-          <p style={{ fontSize: 'var(--font-size-xl)', lineHeight: 1.6, marginBottom: 'var(--space-4)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-            {post.content}
-          </p>
+          <RichText
+            text={post.content}
+            style={{ fontSize: 'var(--font-size-xl)', lineHeight: 1.6, marginBottom: 'var(--space-4)' }}
+          />
         )}
 
         {post.imageURL && (

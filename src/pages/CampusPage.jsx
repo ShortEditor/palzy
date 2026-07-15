@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { getDoubtPosts } from '../firebase/doubts'
-import { getNotesPosts, getHotPosts } from '../firebase/campus'
+import { getNotesPosts, getCollabPosts, getHotPosts } from '../firebase/campus'
 import { getUserProfile } from '../firebase/users'
 import { batchCheckLikes } from '../firebase/posts'
 import { useAuth } from '../contexts/AuthContext'
 import PostCard from '../components/PostCard'
 import Icon from '../components/Icon'
 
-const TABS = ['Doubts', 'Notes', 'Hot This Week']
+const TABS = ['Doubts', 'Notes', 'Collabs', 'Hot This Week']
 const BRANCHES = ['CSE', 'ECE']
 const YEARS    = ['1st Year', '2nd Year', '3rd Year']
 
@@ -229,6 +229,7 @@ export default function CampusPage() {
           <button key={tab} style={tabStyle(tab)} onClick={() => setActiveTab(tab)}>
             {tab === 'Doubts' && '❓ '}
             {tab === 'Notes' && '📝 '}
+            {tab === 'Collabs' && '🤝 '}
             {tab === 'Hot This Week' && '🔥 '}
             {tab}
           </button>
@@ -259,7 +260,18 @@ export default function CampusPage() {
         />
       )}
 
-      {/* Hot This Week tab */}
+      {/* Collabs tab */}
+      {activeTab === 'Collabs' && (
+        <CampusBoardSection
+          currentUser={currentUser}
+          userProfile={userProfile}
+          fetchFunction={getCollabPosts}
+          emptyTitle="No collabs yet"
+          emptyBody="Looking for a project partner or study group? Post and toggle Collab to list it here."
+          emptyIcon="🤝"
+        />
+      )}
+
       {activeTab === 'Hot This Week' && (
         <div>
           <div style={{ padding: 'var(--space-4) var(--space-5) 0', fontSize: 'var(--font-size-sm)', color: 'var(--text-muted)' }}>
