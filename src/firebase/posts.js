@@ -14,6 +14,7 @@ import {
   serverTimestamp,
   runTransaction,
   increment,
+  writeBatch,
 } from 'firebase/firestore'
 import { db } from './config'
 import { getUserProfile, updateStreak } from './users'
@@ -200,13 +201,13 @@ export async function batchCheckLikes(postIds, userId) {
   return results
 }
 
-// ─── Add a comment (two writes — addDoc can't be in a transaction) ───
-export async function addCommentToPost(postId, { authorId, text }) {
+// ─── Add a comment or reply ──────────────────────────────────
+// parentId = null means top-level; parentId = commentId means a reply
+export async function addCommentToPost(postId, { authorId, text, parentId = null }) {
   const author = await getUserProfile(authorId)
   const commentsRef = collection(db, 'posts', postId, 'comments')
   const postRef     = doc(db, 'posts', postId)
 
-  // Write comment then increment counter
   const commentRef = await addDoc(commentsRef, {
     authorId,
     authorName: author?.name ?? '',
@@ -214,6 +215,7 @@ export async function addCommentToPost(postId, { authorId, text }) {
     authorPhotoURL: author?.photoURL ?? '',
     authorIsVerified: author?.isVerified ?? false,
     text: text.trim(),
+    parentId: parentId ?? null,
     createdAt: serverTimestamp(),
   })
   await updateDoc(postRef, { commentCount: increment(1) })
@@ -222,7 +224,7 @@ export async function addCommentToPost(postId, { authorId, text }) {
   return { id: snap.id, ...snap.data() }
 }
 
-// ─── Get comments for a post ─────────────────────────────────
+// ─── Get comments for a post (flat, sorted asc) ──────────────
 export async function getComments(postId) {
   const q = query(
     collection(db, 'posts', postId, 'comments'),
@@ -232,8 +234,21 @@ export async function getComments(postId) {
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
 }
 
-// ─── Delete a comment ─────────────────────────────────────────
+// ─── Delete a comment + cascade all replies ───────────────────
+// Atomically deletes the comment, all its replies, and fixes commentCount
 export async function deleteComment(postId, commentId) {
-  await deleteDoc(doc(db, 'posts', postId, 'comments', commentId))
-  await updateDoc(doc(db, 'posts', postId), { commentCount: increment(-1) })
+  const repliesQ = query(
+    collection(db, 'posts', postId, 'comments'),
+    where('parentId', '==', commentId)
+  )
+  const repliesSnap = await getDocs(repliesQ)
+
+  const batch = writeBatch(db)
+  repliesSnap.docs.forEach(d => batch.delete(d.ref))
+  batch.delete(doc(db, 'posts', postId, 'comments', commentId))
+  const totalDeleted = repliesSnap.docs.length + 1
+  batch.update(doc(db, 'posts', postId), { commentCount: increment(-totalDeleted) })
+
+  await batch.commit()
+  return totalDeleted
 }
