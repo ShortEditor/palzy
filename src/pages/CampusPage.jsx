@@ -8,8 +8,8 @@ import PostCard from '../components/PostCard'
 import Icon from '../components/Icon'
 
 const TABS = ['Doubts', 'Notes', 'Hot This Week']
-const BRANCHES = ['CSE', 'ECE', 'ME', 'CE', 'EE', 'IT']
-const YEARS    = ['1st Year', '2nd Year', '3rd Year', '4th Year']
+const BRANCHES = ['CSE', 'ECE']
+const YEARS    = ['1st Year', '2nd Year', '3rd Year']
 
 // ── Campus Board Filterable Section ────────────────────────────
 function CampusBoardSection({ currentUser, userProfile, fetchFunction, emptyTitle, emptyBody, emptyIcon }) {

@@ -1,38 +1,37 @@
-﻿import { collection, query, where, orderBy, limit, startAfter, getDocs } from "firebase/firestore"
+import { collection, query, orderBy, limit, startAfter, getDocs } from "firebase/firestore"
 import { db } from "./config"
 
 const DOUBTS_PER_PAGE = 15
+const FETCH_POOL = 100  // fetch more, filter client-side (avoids composite index)
 
 // Fetch doubt-tagged posts, optionally filtered by branch + year
 export async function getDoubtPosts(cursor = null, branch = null, year = null) {
+  // Fetch a pool of recent posts WITHOUT array-contains filter
+  // (avoids needing a missing composite index on tags + createdAt)
   let q = query(
     collection(db, "posts"),
-    where("tags", "array-contains", "doubt"),
     orderBy("createdAt", "desc"),
-    limit(DOUBTS_PER_PAGE + 1),
+    limit(FETCH_POOL),
   )
   if (cursor) q = query(
     collection(db, "posts"),
-    where("tags", "array-contains", "doubt"),
     orderBy("createdAt", "desc"),
     startAfter(cursor),
-    limit(DOUBTS_PER_PAGE + 1),
+    limit(FETCH_POOL),
   )
 
   const snap = await getDocs(q)
   let posts = snap.docs.map(d => ({ id: d.id, ...d.data() }))
 
-  // Client-side branch/year filter (stored on user, not post — filter by authorBranch if denormalized)
-  // For now filter by authorBranch / authorYear if available on the post doc
+  // Filter by tags client-side
+  posts = posts.filter(p => Array.isArray(p.tags) && p.tags.includes('doubt'))
+
+  // Filter by branch/year if set
   if (branch) posts = posts.filter(p => !p.authorBranch || p.authorBranch === branch)
   if (year)   posts = posts.filter(p => !p.authorYear   || p.authorYear   === year)
 
-  const hasMore = posts.length > DOUBTS_PER_PAGE
-  if (hasMore) posts.pop()
-
-  const nextCursor = snap.docs.length > DOUBTS_PER_PAGE
-    ? snap.docs[DOUBTS_PER_PAGE - 1]
-    : null
+  const hasMore = snap.docs.length === FETCH_POOL
+  const nextCursor = snap.docs[snap.docs.length - 1] ?? null
 
   return { posts, nextCursor, hasMore }
 }
