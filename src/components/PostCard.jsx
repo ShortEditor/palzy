@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { formatDistanceToNow } from 'date-fns'
 import { useAuth } from '../contexts/AuthContext'
@@ -12,7 +12,7 @@ import FollowButton from './FollowButton'
 import RichText from './RichText'
 import toast from 'react-hot-toast'
 
-export default function PostCard({ post, authorProfile, isLiked: initialLiked = false, onDelete }) {
+const PostCard = memo(function PostCard({ post, authorProfile, isLiked: initialLiked = false, onDelete }) {
   const { currentUser, userProfile } = useAuth()
   const navigate = useNavigate()
 
@@ -382,4 +382,6 @@ export default function PostCard({ post, authorProfile, isLiked: initialLiked = 
       </div>
     </article>
   )
-}
+})
+
+export default PostCard

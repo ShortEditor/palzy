@@ -39,15 +39,20 @@ export default function CreatePost({ onPostCreated }) {
 
   // ── Mention search ──────────────────────────────────────────
   const searchMentions = useCallback(async (q) => {
-    if (!q) { setMentionResults([]); return }
     setMentionLoading(true)
     try {
-      const snap = await getDocs(query(
-        collection(db, 'users'),
-        where('username', '>=', q),
-        where('username', '<=', q + '\uf8ff'),
-        limit(6),
-      ))
+      let snap
+      if (!q) {
+        // Show some users immediately when just @ is typed
+        snap = await getDocs(query(collection(db, 'users'), limit(5)))
+      } else {
+        snap = await getDocs(query(
+          collection(db, 'users'),
+          where('username', '>=', q),
+          where('username', '<=', q + '\uf8ff'),
+          limit(6),
+        ))
+      }
       setMentionResults(snap.docs.map(d => ({ uid: d.id, ...d.data() })))
     } catch { setMentionResults([]) }
     finally { setMentionLoading(false) }
@@ -185,9 +190,9 @@ export default function CreatePost({ onPostCreated }) {
                   <div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
                 </div>
               )}
-              {!mentionLoading && mentionResults.length === 0 && mentionQuery.length > 0 && (
+              {!mentionLoading && mentionResults.length === 0 && (
                 <div style={{ padding: 'var(--space-3)', fontSize: 'var(--font-size-sm)', color: 'var(--text-muted)', textAlign: 'center' }}>
-                  No users found
+                  {mentionQuery ? 'No users found' : 'Keep typing to search…'}
                 </div>
               )}
               {mentionResults.map(user => (
