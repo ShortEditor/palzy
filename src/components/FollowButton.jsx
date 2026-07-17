@@ -33,9 +33,8 @@ export default function FollowButton({ targetUid, initialState, onToggle, size =
       setFollowing(initialState)
       setLoading(false)
     }
-  }, [initialState])
-
-  // Don't show if viewing own profile
+  }, [initialState])  
+  // Don't show if viewing own profile test
   if (!currentUser || currentUser.uid === targetUid) return null
 
   async function handleToggle(e) {
