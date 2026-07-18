@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.vercel.palzy.twa",
+        "sha256_cert_fingerprints": ["E0:9A:68:57:51:57:F5:2A:C9:AE:29:B1:DF:EB:BC:0F:98:FB:1D:A1:05:9E:CE:28:1E:FA:83:83:8F:32:69:CE"]
+      }
+    }]
