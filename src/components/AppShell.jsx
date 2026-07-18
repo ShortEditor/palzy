@@ -38,10 +38,11 @@ export default function AppShell({ children }) {
       <aside className="sidebar">
         {/* Logo */}
         <div className="sidebar-logo">
-          <div className="sidebar-logo-icon">
-            <Icon name="graduationCap" size={20} style={{ color: '#fff' }} />
-          </div>
-          <span className="sidebar-logo-text">Palzy</span>
+          <img
+            src="/logo-header.png"
+            alt="Palzy"
+            style={{ height: 36, width: 'auto', objectFit: 'contain' }}
+          />
         </div>
 
         {/* Nav items */}
@@ -135,10 +136,11 @@ export default function AppShell({ children }) {
           {/* Mobile topbar */}
           <header className="topbar">
             <span className="topbar-logo">
-              <div className="topbar-logo-icon">
-                <Icon name="graduationCap" size={16} style={{ color: '#fff' }} />
-              </div>
-              Palzy
+              <img
+                src="/logo-header.png"
+                alt="Palzy"
+                style={{ height: 28, width: 'auto', objectFit: 'contain' }}
+              />
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
               {/* Theme toggle mobile */}
