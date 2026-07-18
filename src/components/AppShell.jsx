@@ -41,8 +41,9 @@ export default function AppShell({ children }) {
           <img
             src="/logo-header.png"
             alt="Palzy"
-            style={{ height: 36, width: 'auto', objectFit: 'contain' }}
+            style={{ height: 32, width: 'auto', objectFit: 'contain' }}
           />
+          <span className="sidebar-logo-text">Palzy</span>
         </div>
 
         {/* Nav items */}
