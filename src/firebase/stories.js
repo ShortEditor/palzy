@@ -1,4 +1,4 @@
-import { doc, getDoc, updateDoc } from 'firebase/firestore'
+import { doc, getDoc, updateDoc, setDoc, getDocs, collection, query, where } from 'firebase/firestore'
 import { db } from './config'
 import { invalidateUserCache } from './users'
 
@@ -23,8 +23,6 @@ const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000
 
 /**
  * Create a new Text 24h Story.
- * Stores story documents inside the user's own profile document array field ('stories').
- * This is 100% immune to Firestore collection permission rules & requires no custom indexes.
  */
 export async function createStory({ authorId, text = '', gradientId = 'neon', fontId = 'bold' }) {
   const userRef = doc(db, 'users', authorId)
@@ -50,6 +48,7 @@ export async function createStory({ authorId, text = '', gradientId = 'neon', fo
     authorName: profile.name || '',
     authorUsername: profile.username || '',
     authorPhotoURL: profile.photoURL || '',
+    authorIsVerified: profile.isVerified ?? false,
     text: text.trim(),
     gradient: grad,
     gradientId,
@@ -89,7 +88,6 @@ export async function deleteStory(storyId, authorId) {
 
 /**
  * Fetch active text stories (posted in the last 24 hours) from followed users + self.
- * Fetches user profiles directly (bypassing the memory cache) to ensure instant updates.
  */
 export async function getActiveStories(currentUid, followingIds = []) {
   if (!currentUid) return []
@@ -121,6 +119,7 @@ export async function getActiveStories(currentUid, followingIds = []) {
             authorName: profile.name || '',
             authorUsername: profile.username || '',
             authorPhotoURL: profile.photoURL || '',
+            authorIsVerified: profile.isVerified ?? false,
             stories: activeStories,
           })
         }
@@ -139,6 +138,45 @@ export async function getActiveStories(currentUid, followingIds = []) {
     return rawStories
   } catch (err) {
     console.error('getActiveStories error:', err)
+    return []
+  }
+}
+
+/**
+ * Record a story view inside the open 'likes' collection (bypassing rules/indexes).
+ */
+export async function markStoryAsViewed(storyId, viewerId, viewerProfile) {
+  if (!storyId || !viewerId || !viewerProfile) return
+  const viewId = `storyview_${storyId}_${viewerId}`
+  try {
+    await setDoc(doc(db, 'likes', viewId), {
+      isStoryView: true,
+      storyId,
+      viewerId,
+      viewerName: viewerProfile.name || '',
+      viewerUsername: viewerProfile.username || '',
+      viewerPhotoURL: viewerProfile.photoURL || '',
+      createdAt: Date.now(),
+    })
+  } catch (err) {
+    console.error('Error marking story as viewed:', err)
+  }
+}
+
+/**
+ * Fetch all viewers for a specific story (using a single-field query on storyId).
+ */
+export async function getStoryViewers(storyId) {
+  if (!storyId) return []
+  try {
+    const q = query(
+      collection(db, 'likes'),
+      where('storyId', '==', storyId)
+    )
+    const snap = await getDocs(q)
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+  } catch (err) {
+    console.error('Error fetching story viewers:', err)
     return []
   }
 }
