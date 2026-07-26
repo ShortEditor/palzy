@@ -31,7 +31,7 @@ export default function StoryViewerModal({ userGroups = [], initialUserIndex = 0
           handleNext()
           return 0
         }
-        return prev + 2 // 100% in 5s (50 steps * 100ms)
+        return prev + 2 // 100% in 5s
       })
     }, 100)
 
@@ -90,7 +90,7 @@ export default function StoryViewerModal({ userGroups = [], initialUserIndex = 0
       <div
         style={{
           position: 'relative', width: '100%', maxWidth: 420, height: '100dvh',
-          background: currentStory.imageURL ? '#000' : (currentStory.gradient || '#111'),
+          background: currentStory.gradient || 'linear-gradient(135deg, #8E2DE2, #4A00E0)',
           display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
           overflow: 'hidden',
         }}
@@ -164,34 +164,22 @@ export default function StoryViewerModal({ userGroups = [], initialUserIndex = 0
           </div>
         </div>
 
-        {/* Content Area */}
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-          {currentStory.imageURL ? (
-            <img
-              src={currentStory.imageURL}
-              alt="Story"
-              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-            />
-          ) : (
-            <div style={{
-              padding: 30, color: '#ffffff', fontSize: 24, fontWeight: 700,
-              textAlign: 'center', wordBreak: 'break-word', whiteSpace: 'pre-wrap',
-              textShadow: '0 2px 10px rgba(0,0,0,0.4)',
-            }}>
-              {currentStory.text}
-            </div>
-          )}
-
-          {currentStory.imageURL && currentStory.text && (
-            <div style={{
-              position: 'absolute', bottom: 40, left: 20, right: 20,
-              background: 'rgba(0,0,0,0.7)', color: '#fff', padding: '12px 16px',
-              borderRadius: 14, textAlign: 'center', fontSize: 15, fontWeight: 600,
-              backdropFilter: 'blur(4px)',
-            }}>
-              {currentStory.text}
-            </div>
-          )}
+        {/* Text Story Canvas Area */}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+          <div style={{
+            color: '#ffffff',
+            fontSize: 28,
+            fontFamily: currentStory.fontFamily || 'var(--font-sans)',
+            fontWeight: currentStory.fontWeight || 800,
+            fontStyle: currentStory.fontStyle || 'normal',
+            textAlign: 'center',
+            wordBreak: 'break-word',
+            whiteSpace: 'pre-wrap',
+            textShadow: '0 4px 16px rgba(0,0,0,0.4)',
+            lineHeight: 1.4,
+          }}>
+            {currentStory.text}
+          </div>
         </div>
 
         {/* Left / Right Tap Controls */}
