@@ -67,6 +67,13 @@ service cloud.firestore {
       allow read, write: if isAuth();
     }
 
+    // ─── Stories ──────────────────────────────────────────────
+    match /stories/{storyId} {
+      allow read:   if isAuth();
+      allow create: if isAuth() && !isBanned() && request.resource.data.authorId == uid();
+      allow delete: if isAuth() && (resource.data.authorId == uid() || isAdmin());
+    }
+
     // ─── Emoji Reactions ──────────────────────────────────────
     // Keyed: {postId}__{userId}
     match /emojiReactions/{reactionId} {

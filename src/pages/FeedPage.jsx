@@ -5,6 +5,7 @@ import { getUserProfile } from '../firebase/users'
 import { getFollowingIds } from '../firebase/follows'
 import CreatePost from '../components/CreatePost'
 import PostCard from '../components/PostCard'
+import StoriesBar from '../components/StoriesBar'
 import Icon from '../components/Icon'
 
 const SKELETON_COUNT = 5
@@ -135,6 +136,9 @@ export default function FeedPage() {
       <div className="page-header">
         <h1>Home</h1>
       </div>
+
+      {/* 24-hour Stories Bar */}
+      <StoriesBar />
 
       {/* Create post bar */}
       <CreatePost onPostCreated={handlePostCreated} />
