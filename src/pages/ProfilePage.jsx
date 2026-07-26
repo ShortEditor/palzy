@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useCall } from '../contexts/CallContext'
 import { getUserByUsername, updateUserProfile } from '../firebase/users'
 import { getUserPosts, batchCheckLikes } from '../firebase/posts'
 import { renderRecapCard } from '../utils/recapCardRenderer'
@@ -311,9 +312,9 @@ export default function ProfilePage() {
           </button>
         </div>
 
-        {/* Follow button for non-own profiles */}
+        {/* Follow + Call buttons for non-own profiles */}
         {!isOwn && (
-          <div style={{ marginTop: 'var(--space-3)' }}>
+          <div style={{ marginTop: 'var(--space-3)', display: 'flex', alignItems: 'center', gap: 10 }}>
             <FollowButton
               targetUid={profile.uid}
               initialState={followState}
@@ -326,6 +327,7 @@ export default function ProfilePage() {
               }}
               size="md"
             />
+            <CallButtonOnProfile profile={profile} />
           </div>
         )}
 
@@ -535,5 +537,32 @@ export default function ProfilePage() {
         />
       )}
     </div>
+  )
+}
+
+// ── Inline call button — uses CallContext ─────────────────────
+function CallButtonOnProfile({ profile }) {
+  const { callState, startCall } = useCall()
+  const busy = callState !== 'idle'
+
+  return (
+    <button
+      onClick={() => startCall(profile.uid, profile)}
+      disabled={busy}
+      title={busy ? 'Already in a call' : `Call ${profile.name}`}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 6,
+        padding: '8px 16px', borderRadius: 20,
+        background: busy ? 'var(--bg-input)' : 'linear-gradient(135deg, #30d158, #1a9944)',
+        color: busy ? 'var(--text-muted)' : '#fff',
+        border: 'none', cursor: busy ? 'not-allowed' : 'pointer',
+        fontWeight: 700, fontSize: 14,
+        boxShadow: busy ? 'none' : '0 4px 14px rgba(48,209,88,0.4)',
+        transition: 'all 0.15s',
+        opacity: busy ? 0.6 : 1,
+      }}
+    >
+      📞 {busy ? 'Busy' : 'Call'}
+    </button>
   )
 }

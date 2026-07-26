@@ -1,15 +1,18 @@
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
+import { CallProvider, useCall } from '../contexts/CallContext'
 import Icon from './Icon'
 import Avatar from './Avatar'
 import SuggestionsSidebar from './SuggestionsSidebar'
 import VerifiedBadge from './VerifiedBadge'
 import InstallBanner from './InstallBanner'
 import NotificationBell from './NotificationBell'
+import IncomingCallModal from './IncomingCallModal'
+import ActiveCallUI from './ActiveCallUI'
 import toast from 'react-hot-toast'
 
-export default function AppShell({ children }) {
+function AppShellInner({ children }) {
   const { userProfile, isAdmin, logout } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
@@ -203,6 +206,30 @@ export default function AppShell({ children }) {
         )}
       </div>
       <InstallBanner />
+
+      {/* ── Voice call overlays (globally available) ── */}
+      <IncomingCallModal />
+      <ActiveCallUI />
+
+      {/* Hidden audio element for remote voice stream */}
+      <audio ref={useCallAudio()} autoPlay playsInline style={{ display: 'none' }} />
     </div>
+  )
+}
+
+function useCallAudio() {
+  try {
+    const { remoteAudioRef } = useCall()
+    return remoteAudioRef
+  } catch {
+    return null
+  }
+}
+
+export default function AppShell({ children }) {
+  return (
+    <CallProvider>
+      <AppShellInner>{children}</AppShellInner>
+    </CallProvider>
   )
 }
