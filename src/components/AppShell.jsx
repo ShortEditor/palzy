@@ -191,15 +191,8 @@ export default function AppShell({ children }) {
                 <span>{label}</span>
               </NavLink>
             ))}
-            <button
-              id="btn-compose-mobile"
-              className="bottom-nav-item bottom-nav-compose"
-              onClick={() => navigate('/')}
-            >
-              <Icon name="plus" size={24} />
-              <span>Post</span>
-            </button>
           </nav>
+
         </main>
 
         {/* ── Right sidebar: suggestions (desktop only) ──────── */}

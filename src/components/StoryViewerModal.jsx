@@ -65,7 +65,7 @@ export default function StoryViewerModal({ userGroups = [], initialUserIndex = 0
   async function handleDelete() {
     if (!currentStory) return
     try {
-      await deleteStory(currentStory.id)
+      await deleteStory(currentStory.id, currentGroup.authorId)
       toast.success('Story deleted')
       onDeleteStory?.(currentStory.id)
       handleNext()
@@ -75,8 +75,13 @@ export default function StoryViewerModal({ userGroups = [], initialUserIndex = 0
   }
 
   function formatTime(ts) {
-    if (!ts?.toDate) return ''
-    try { return formatDistanceToNow(ts.toDate(), { addSuffix: true }) } catch { return '' }
+    if (!ts) return ''
+    try {
+      const date = typeof ts.toDate === 'function' ? ts.toDate() : new Date(ts)
+      return formatDistanceToNow(date, { addSuffix: true })
+    } catch {
+      return ''
+    }
   }
 
   // Adjust text font size depending on length of the text in viewer
