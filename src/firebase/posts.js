@@ -49,7 +49,6 @@ export async function createPost({ authorId, content, imageURL = null, quoteMeta
     ...(quoteMetadata ? { quoteMetadata } : {}),
     likeCount: 0,
     commentCount: 0,
-    emojiCounts: {},
     createdAt: serverTimestamp(),
   })
   const snap = await getDoc(postRef)

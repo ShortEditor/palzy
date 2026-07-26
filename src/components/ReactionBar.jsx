@@ -1,21 +1,28 @@
-import { useState } from 'react'
-import { EMOJIS, EMOJI_LABELS, toggleEmojiReaction } from '../firebase/reactions'
+import { useState, useEffect } from 'react'
+import { EMOJIS, EMOJI_LABELS, toggleEmojiReaction, getEmojiCounts } from '../firebase/reactions'
 
 /**
- * Emoji reaction bar — 5 emojis below the post content.
- * Separate from the ❤️ like button.
+ * Emoji reaction bar — 5 emojis below post content.
+ * Self-loads aggregate counts from Firestore on mount.
+ * Fully optimistic updates with rollback on error.
  */
-export default function ReactionBar({ postId, userId, initialReaction, emojiCounts = {} }) {
+export default function ReactionBar({ postId, userId, initialReaction }) {
   const [userReaction, setUserReaction] = useState(initialReaction || null)
-  const [counts, setCounts] = useState(emojiCounts)
+  const [counts, setCounts] = useState({})
   const [loading, setLoading] = useState(false)
+
+  // Load real counts from Firestore on mount
+  useEffect(() => {
+    if (!postId) return
+    getEmojiCounts(postId).then(setCounts).catch(() => {})
+  }, [postId])
 
   async function handleReact(emoji, e) {
     e.stopPropagation()
     if (loading || !userId) return
     setLoading(true)
 
-    const old = userReaction
+    const old  = userReaction
     const next = old === emoji ? null : emoji
 
     // Optimistic update
@@ -29,10 +36,11 @@ export default function ReactionBar({ postId, userId, initialReaction, emojiCoun
 
     try {
       await toggleEmojiReaction(postId, userId, emoji)
-    } catch {
-      // Revert on error
+    } catch (err) {
+      console.error('Reaction error:', err)
+      // Revert on failure — re-fetch real counts
       setUserReaction(old)
-      setCounts(emojiCounts)
+      getEmojiCounts(postId).then(setCounts).catch(() => {})
     } finally {
       setLoading(false)
     }
@@ -44,7 +52,7 @@ export default function ReactionBar({ postId, userId, initialReaction, emojiCoun
       onClick={e => e.stopPropagation()}
     >
       {EMOJIS.map(emoji => {
-        const count  = counts[emoji] || 0
+        const count  = Math.max(0, counts[emoji] || 0)
         const active = userReaction === emoji
         return (
           <button
@@ -67,7 +75,7 @@ export default function ReactionBar({ postId, userId, initialReaction, emojiCoun
               fontWeight: active ? 700 : 400,
               transition: 'all 0.15s',
               opacity: loading ? 0.6 : 1,
-              transform: active ? 'scale(1.05)' : 'scale(1)',
+              transform: active ? 'scale(1.08)' : 'scale(1)',
             }}
           >
             <span>{emoji}</span>
