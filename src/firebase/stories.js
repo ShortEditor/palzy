@@ -103,7 +103,9 @@ export async function getActiveStories(currentUid, followingIds = []) {
 
     return groups
   } catch (err) {
-    console.error('getActiveStories error:', err)
+    if (err?.code !== 'permission-denied') {
+      console.error('getActiveStories error:', err)
+    }
     return []
   }
 }
