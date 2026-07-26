@@ -58,11 +58,15 @@ function CommentRow({ comment, postId, currentUser, isAdmin, onDelete, onReply, 
         </div>
 
         {/* Text */}
-        <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-primary)',
-          marginTop: 'var(--space-1)', lineHeight: 1.55,
-        }}>
-          {comment.text}
-        </p>
+        <RichText
+          text={comment.text}
+          style={{
+            fontSize: 'var(--font-size-sm)',
+            color: 'var(--text-primary)',
+            marginTop: 'var(--space-1)',
+            lineHeight: 1.55,
+          }}
+        />
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-2)', alignItems: 'center' }}>
