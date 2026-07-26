@@ -14,6 +14,8 @@ import {
   getCountFromServer,
 } from 'firebase/firestore'
 import { db } from './config'
+import { getUserProfile } from './users'
+import { createNotification } from './notifications'
 
 // ─── Follow a user ────────────────────────────────────────────
 export async function followUser(followerId, followeeId) {
@@ -32,6 +34,18 @@ export async function followUser(followerId, followeeId) {
   try {
     await updateDoc(doc(db, 'users', followeeId), { followerCount: increment(1) })
   } catch {}
+
+  // Notify the person being followed (fire-and-forget)
+  getUserProfile(followerId).then(follower => {
+    if (!follower) return
+    createNotification(followeeId, {
+      type: 'follow',
+      fromUid: followerId,
+      fromName: follower.name || '',
+      fromUsername: follower.username || '',
+      fromPhotoURL: follower.photoURL || '',
+    })
+  }).catch(() => {})
 }
 
 // ─── Unfollow a user ──────────────────────────────────────────

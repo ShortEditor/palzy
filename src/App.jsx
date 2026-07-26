@@ -10,16 +10,18 @@ import LoginPage from './pages/LoginPage'
 import SetupUsernamePage from './pages/SetupUsernamePage'
 
 // ── Lazy loaded (only fetched when navigated to) ──────────────
-const FeedPage       = lazy(() => import('./pages/FeedPage'))
-const PostDetailPage = lazy(() => import('./pages/PostDetailPage'))
-const ProfilePage    = lazy(() => import('./pages/ProfilePage'))
-const ExplorePage    = lazy(() => import('./pages/ExplorePage'))
-const CampusPage     = lazy(() => import('./pages/CampusPage'))
-const AdminLayout    = lazy(() => import('./pages/admin/AdminLayout'))
-const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
-const AdminUsers     = lazy(() => import('./pages/admin/AdminUsers'))
-const AdminPosts     = lazy(() => import('./pages/admin/AdminPosts'))
-const AdminReports   = lazy(() => import('./pages/admin/AdminReports'))
+const FeedPage           = lazy(() => import('./pages/FeedPage'))
+const PostDetailPage     = lazy(() => import('./pages/PostDetailPage'))
+const ProfilePage        = lazy(() => import('./pages/ProfilePage'))
+const ExplorePage        = lazy(() => import('./pages/ExplorePage'))
+const CampusPage         = lazy(() => import('./pages/CampusPage'))
+const NotificationsPage  = lazy(() => import('./pages/NotificationsPage'))
+const HashtagPage        = lazy(() => import('./pages/HashtagPage'))
+const AdminLayout        = lazy(() => import('./pages/admin/AdminLayout'))
+const AdminDashboard     = lazy(() => import('./pages/admin/AdminDashboard'))
+const AdminUsers         = lazy(() => import('./pages/admin/AdminUsers'))
+const AdminPosts         = lazy(() => import('./pages/admin/AdminPosts'))
+const AdminReports       = lazy(() => import('./pages/admin/AdminReports'))
 
 function PageLoader() {
   return (
@@ -72,11 +74,13 @@ export default function App() {
         {/* Auth + profile required — main app */}
         <Route element={<ProtectedRoute requireProfile={true} />}>
           <Route element={<AppShellWrapper />}>
-            <Route path="/"             element={<FeedPage />} />
-            <Route path="/explore"      element={<ExplorePage />} />
-            <Route path="/campus"       element={<CampusPage />} />
-            <Route path="/post/:postId" element={<PostDetailPage />} />
-            <Route path="/u/:username"  element={<ProfilePage />} />
+            <Route path="/"                  element={<FeedPage />} />
+            <Route path="/explore"           element={<ExplorePage />} />
+            <Route path="/campus"            element={<CampusPage />} />
+            <Route path="/notifications"     element={<NotificationsPage />} />
+            <Route path="/tag/:tag"          element={<HashtagPage />} />
+            <Route path="/post/:postId"      element={<PostDetailPage />} />
+            <Route path="/u/:username"       element={<ProfilePage />} />
           </Route>
         </Route>
 

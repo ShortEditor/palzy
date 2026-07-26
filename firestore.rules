@@ -44,10 +44,10 @@ service cloud.firestore {
         && request.resource.data.authorId == uid();
       allow delete: if isAuth()
         && (resource.data.authorId == uid() || isAdmin());
-      // Only allow updating specific counter fields
+      // Allow updating counter fields and emojiCounts
       allow update: if isAuth()
         && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(['likeCount', 'commentCount']);
+             .hasOnly(['likeCount', 'commentCount', 'emojiCounts']);
 
       // ─── Comments (subcollection) ────────────────────────
       match /comments/{commentId} {
@@ -65,6 +65,32 @@ service cloud.firestore {
     // ─── Likes ────────────────────────────────────────────────
     match /likes/{likeId} {
       allow read, write: if isAuth();
+    }
+
+    // ─── Emoji Reactions ──────────────────────────────────────
+    // Keyed: {postId}__{userId}
+    match /emojiReactions/{reactionId} {
+      allow read: if isAuth();
+      allow create, update: if isAuth()
+        && request.resource.data.userId == uid()
+        && request.resource.data.emoji is string;
+      allow delete: if isAuth()
+        && resource.data.userId == uid();
+    }
+
+    // ─── Notifications ────────────────────────────────────────
+    // Stored as subcollection: notifications/{userId}/items/{itemId}
+    match /notifications/{userId}/items/{itemId} {
+      // Users read only their own notifications
+      allow read: if isAuth() && uid() == userId;
+      // Any authenticated user can create a notification for another user
+      // (fromUid must match the requester to prevent spoofing)
+      allow create: if isAuth()
+        && request.resource.data.fromUid == uid();
+      // Only the recipient can mark as read
+      allow update: if isAuth() && uid() == userId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow delete: if isAuth() && uid() == userId;
     }
 
     // ─── Follows ──────────────────────────────────────────────

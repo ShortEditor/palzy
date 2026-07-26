@@ -2,13 +2,14 @@ import { Link } from 'react-router-dom'
 
 /**
  * Renders post/comment text with:
- * - Clickable @mentions → /u/username
+ * - Clickable @mentions → /u/username  (purple bold)
+ * - Clickable #hashtags → /tag/tagname (accent color)
  * - Clickable https:// links → external tab
  * - Plain text as-is
  */
 
-// Matches https:// URLs and @username mentions
-const SEGMENT_RE = /(https?:\/\/[^\s<>"',]+|@[a-z0-9_]{1,20})/gi
+// Matches URLs, @mentions, and #hashtags
+const SEGMENT_RE = /(https?:\/\/[^\s<>"',]+|@[a-z0-9_]{1,20}|#[a-z0-9_]{1,30})/gi
 
 export default function RichText({ text, className = '', style = {} }) {
   if (!text) return null
@@ -25,6 +26,8 @@ export default function RichText({ text, className = '', style = {} }) {
     const value = match[0]
     if (value.startsWith('@')) {
       segments.push({ type: 'mention', username: value.slice(1), content: value })
+    } else if (value.startsWith('#')) {
+      segments.push({ type: 'hashtag', tag: value.slice(1).toLowerCase(), content: value })
     } else {
       segments.push({ type: 'url', url: value, content: value })
     }
@@ -43,6 +46,18 @@ export default function RichText({ text, className = '', style = {} }) {
               key={i}
               to={`/u/${seg.username}`}
               style={{ color: 'var(--brand-primary-cont)', fontWeight: 600, textDecoration: 'none' }}
+              onClick={e => e.stopPropagation()}
+            >
+              {seg.content}
+            </Link>
+          )
+        }
+        if (seg.type === 'hashtag') {
+          return (
+            <Link
+              key={i}
+              to={`/tag/${seg.tag}`}
+              style={{ color: 'var(--brand-accent)', fontWeight: 600, textDecoration: 'none' }}
               onClick={e => e.stopPropagation()}
             >
               {seg.content}

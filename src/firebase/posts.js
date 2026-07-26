@@ -18,6 +18,14 @@ import {
 } from 'firebase/firestore'
 import { db } from './config'
 import { getUserProfile, updateStreak } from './users'
+import { createNotification } from './notifications'
+
+/** Extract #hashtags from post text (lowercase, unique, max 10) */
+function extractHashtags(text) {
+  if (!text) return []
+  const matches = text.match(/#([a-z0-9_]{1,30})/gi) || []
+  return [...new Set(matches.map(h => h.slice(1).toLowerCase()))].slice(0, 10)
+}
 
 const POSTS_PER_PAGE = 15
 
@@ -37,9 +45,11 @@ export async function createPost({ authorId, content, imageURL = null, quoteMeta
     content: content?.trim() ?? '',
     imageURL,
     tags: tags.length > 0 ? tags : [],
+    hashtags: extractHashtags(content?.trim() ?? ''),
     ...(quoteMetadata ? { quoteMetadata } : {}),
     likeCount: 0,
     commentCount: 0,
+    emojiCounts: {},
     createdAt: serverTimestamp(),
   })
   const snap = await getDoc(postRef)
@@ -169,18 +179,37 @@ export async function toggleLike(postId, userId) {
   const likeRef = doc(db, 'likes', likeId)
   const postRef = doc(db, 'posts', postId)
 
-  return runTransaction(db, async tx => {
-    const likeSnap = await tx.get(likeRef)
+  const result = await runTransaction(db, async tx => {
+    const [likeSnap, postSnap] = await Promise.all([tx.get(likeRef), tx.get(postRef)])
     if (likeSnap.exists()) {
       tx.delete(likeRef)
       tx.update(postRef, { likeCount: increment(-1) })
-      return false // now unliked
+      return false // unliked
     } else {
       tx.set(likeRef, { postId, userId, createdAt: serverTimestamp() })
       tx.update(postRef, { likeCount: increment(1) })
-      return true // now liked
+      // Return author info for notification
+      return { authorId: postSnap.data()?.authorId, content: postSnap.data()?.content }
     }
   })
+
+  // Fire notification (non-blocking, won't fail the like action)
+  if (result && result.authorId && result.authorId !== userId) {
+    getUserProfile(userId).then(liker => {
+      if (!liker) return
+      createNotification(result.authorId, {
+        type: 'like',
+        fromUid: userId,
+        fromName: liker.name || '',
+        fromUsername: liker.username || '',
+        fromPhotoURL: liker.photoURL || '',
+        postId,
+        postContent: result.content || '',
+      })
+    }).catch(() => {})
+  }
+
+  return result !== false
 }
 
 // ─── Check if current user liked a post ──────────────────────
@@ -203,7 +232,7 @@ export async function batchCheckLikes(postIds, userId) {
 
 // ─── Add a comment or reply ──────────────────────────────────
 // parentId = null means top-level; parentId = commentId means a reply
-export async function addCommentToPost(postId, { authorId, text, parentId = null }) {
+export async function addCommentToPost(postId, { authorId, text, parentId = null, postAuthorId = null }) {
   const author = await getUserProfile(authorId)
   const commentsRef = collection(db, 'posts', postId, 'comments')
   const postRef     = doc(db, 'posts', postId)
@@ -219,6 +248,19 @@ export async function addCommentToPost(postId, { authorId, text, parentId = null
     createdAt: serverTimestamp(),
   })
   await updateDoc(postRef, { commentCount: increment(1) })
+
+  // Fire notification for comment on post (non-blocking)
+  if (postAuthorId && postAuthorId !== authorId) {
+    createNotification(postAuthorId, {
+      type: parentId ? 'reply' : 'comment',
+      fromUid: authorId,
+      fromName: author?.name || '',
+      fromUsername: author?.username || '',
+      fromPhotoURL: author?.photoURL || '',
+      postId,
+      commentText: text.trim(),
+    }).catch(() => {})
+  }
 
   const snap = await getDoc(commentRef)
   return { id: snap.id, ...snap.data() }

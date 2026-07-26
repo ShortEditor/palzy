@@ -6,6 +6,7 @@ import Avatar from './Avatar'
 import SuggestionsSidebar from './SuggestionsSidebar'
 import VerifiedBadge from './VerifiedBadge'
 import InstallBanner from './InstallBanner'
+import NotificationBell from './NotificationBell'
 import toast from 'react-hot-toast'
 
 export default function AppShell({ children }) {
@@ -23,9 +24,9 @@ export default function AppShell({ children }) {
   }
 
   const navItems = [
-    { to: '/',        icon: 'home',    label: 'Home'    },
-    { to: '/explore', icon: 'search',  label: 'Explore' },
-    { to: '/campus',  icon: 'book',    label: 'Campus'  },
+    { to: '/',               icon: 'home',    label: 'Home'          },
+    { to: '/explore',        icon: 'search',  label: 'Explore'       },
+    { to: '/campus',         icon: 'book',    label: 'Campus'        },
     { to: `/u/${userProfile?.username}`, icon: 'user', label: 'Profile' },
   ]
 
@@ -144,6 +145,9 @@ export default function AppShell({ children }) {
               />
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+              {/* Notification bell */}
+              <NotificationBell />
+
               {/* Theme toggle mobile */}
               <button
                 id="btn-theme-toggle-mobile"
@@ -153,6 +157,7 @@ export default function AppShell({ children }) {
               >
                 <Icon name={isDark ? 'sun' : 'moon'} size={20} />
               </button>
+
 
               {userProfile && (
                 <NavLink to={`/u/${userProfile.username}`}>

@@ -10,9 +10,10 @@ import Icon from './Icon'
 import VerifiedBadge from './VerifiedBadge'
 import FollowButton from './FollowButton'
 import RichText from './RichText'
+import ReactionBar from './ReactionBar'
 import toast from 'react-hot-toast'
 
-const PostCard = memo(function PostCard({ post, authorProfile, isLiked: initialLiked = false, onDelete }) {
+const PostCard = memo(function PostCard({ post, authorProfile, isLiked: initialLiked = false, userEmojiReaction = null, onDelete }) {
   const { currentUser, userProfile } = useAuth()
   const navigate = useNavigate()
 
@@ -201,6 +202,14 @@ const PostCard = memo(function PostCard({ post, authorProfile, isLiked: initialL
             )}
           </div>
         )}
+
+        {/* Emoji reactions */}
+        <ReactionBar
+          postId={post.id}
+          userId={currentUser?.uid}
+          initialReaction={userEmojiReaction}
+          emojiCounts={post.emojiCounts || {}}
+        />
 
         {/* Post image */}
         {post.imageURL && (
