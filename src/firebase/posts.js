@@ -68,7 +68,7 @@ export async function deletePost(postId) {
 // 3. Client-side score: likeCount×3 + commentCount×2 + recencyBonus
 // Firestore 'in' queries are capped at 30 UIDs — we batch as needed
 const FEED_POOL_SIZE   = 60   // raw posts fetched before scoring
-const FEED_PAGE_SIZE   = 15   // posts returned per call
+const FEED_PAGE_SIZE   = 5    // posts returned per call (optimized for fast initial load)
 const TRENDING_FILL    = 20   // trending posts to pad the pool
 
 function scorePost(post) {
