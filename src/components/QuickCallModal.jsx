@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react'
-import { searchUsers } from '../firebase/users'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import { getAllUsersForSearch, filterUsersLocally } from '../firebase/users'
 import { getRecommendations } from '../firebase/follows'
 import { useAuth } from '../contexts/AuthContext'
 import { useCall } from '../contexts/CallContext'
@@ -23,42 +23,38 @@ export default function QuickCallModal({ isOpen, onClose }) {
   const { currentUser } = useAuth()
   const { callState, startCall } = useCall()
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState([])
+  const [allUsers, setAllUsers] = useState([])
+  const [suggestions, setSuggestions] = useState([])
   const [loading, setLoading] = useState(false)
   const inputRef = useRef(null)
 
+  // Pre-fetch users + recommendations on modal open
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 100)
-      if (currentUser?.uid) {
-        setLoading(true)
-        getRecommendations(currentUser.uid, 6)
-          .then(list => setResults(list.filter(u => u.uid !== currentUser.uid)))
-          .catch(() => {})
-          .finally(() => setLoading(false))
-      }
+      setLoading(true)
+      Promise.all([
+        getAllUsersForSearch(),
+        currentUser?.uid ? getRecommendations(currentUser.uid, 6) : Promise.resolve([]),
+      ])
+        .then(([users, recs]) => {
+          setAllUsers(users)
+          setSuggestions(recs.filter(u => u.uid !== currentUser?.uid))
+        })
+        .catch(console.error)
+        .finally(() => setLoading(false))
     } else {
       setQuery('')
-      setResults([])
     }
   }, [isOpen, currentUser?.uid])
 
-  useEffect(() => {
-    if (!query.trim()) return
-    const timer = setTimeout(async () => {
-      setLoading(true)
-      try {
-        const list = await searchUsers(query.trim())
-        const filtered = list.filter(u => u.uid !== currentUser?.uid)
-        setResults(filtered)
-      } catch (err) {
-        console.error('Quick call search error:', err)
-      } finally {
-        setLoading(false)
-      }
-    }, 100)
-    return () => clearTimeout(timer)
-  }, [query, currentUser?.uid])
+  // Instant in-memory search results (0ms delay)
+  const results = useMemo(() => {
+    if (!query.trim()) {
+      return suggestions.length > 0 ? suggestions : filterUsersLocally(allUsers, '', currentUser?.uid, 10)
+    }
+    return filterUsersLocally(allUsers, query, currentUser?.uid, 20)
+  }, [allUsers, query, suggestions, currentUser?.uid])
 
   if (!isOpen) return null
 

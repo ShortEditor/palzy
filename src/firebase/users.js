@@ -106,20 +106,50 @@ export async function updateStreak(uid) {
   invalidateUserCache(uid)
 }
 
-// ─── Search users by partial name or username ─────────────────────
-export async function searchUsers(rawQuery, limitCount = 20) {
-  const q = rawQuery.trim().toLowerCase()
-  if (!q) return []
+// ─── Fast search with memory caching & token matching ──────────────
+let usersSearchCache = null
+let usersCacheTime = 0
 
-  // Fetch users to search client-side for true substring matching on name & username
-  const snap = await getDocs(query(collection(db, 'users'), limit(150)))
-  const users = snap.docs.map(d => ({ uid: d.id, ...d.data() }))
-
-  return users.filter(u => {
-    const name = (u.name || '').toLowerCase()
-    const username = (u.username || '').toLowerCase()
-    return name.includes(q) || username.includes(q)
-  }).slice(0, limitCount)
+export async function getAllUsersForSearch() {
+  const now = Date.now()
+  if (usersSearchCache && now - usersCacheTime < 300000) { // 5 min cache
+    return usersSearchCache
+  }
+  try {
+    const snap = await getDocs(query(collection(db, 'users'), limit(300)))
+    usersSearchCache = snap.docs.map(d => ({ uid: d.id, ...d.data() }))
+    usersCacheTime = now
+    return usersSearchCache
+  } catch (err) {
+    console.error('getAllUsersForSearch error:', err)
+    return usersSearchCache || []
+  }
 }
+
+export function filterUsersLocally(users, rawQuery, currentUid, limitCount = 20) {
+  const tokens = rawQuery.trim().toLowerCase().split(/\s+/).filter(Boolean)
+
+  if (!tokens.length) {
+    return users.filter(u => u.uid !== currentUid).slice(0, limitCount)
+  }
+
+  return users
+    .filter(u => {
+      if (u.uid === currentUid) return false
+      const name = (u.name || '').toLowerCase()
+      const username = (u.username || '').toLowerCase()
+      const branch = (u.branch || '').toLowerCase()
+
+      // Every search token must match either name, username, or branch
+      return tokens.every(token => name.includes(token) || username.includes(token) || branch.includes(token))
+    })
+    .slice(0, limitCount)
+}
+
+export async function searchUsers(rawQuery, limitCount = 20) {
+  const allUsers = await getAllUsersForSearch()
+  return filterUsersLocally(allUsers, rawQuery, null, limitCount)
+}
+
 
 
