@@ -288,9 +288,12 @@ export function CallProvider({ children }) {
     const audio = remoteAudioRef.current
     if (!audio) return
 
-    // setSinkId is supported in Chrome/Edge (not Firefox/Safari)
+    // setSinkId is supported in desktop Chrome/Edge (not Firefox/Safari or mobile browsers)
     if (typeof audio.setSinkId !== 'function') {
-      setErrorMsg('Speaker switching is not supported in this browser. Use Chrome or Edge for this feature.')
+      toast('Speaker switching isn\'t supported on this mobile browser. Use phone volume buttons or system audio control.', {
+        icon: '📱',
+        id: 'speaker-mobile-info',
+      })
       return
     }
 
@@ -303,7 +306,6 @@ export function CallProvider({ children }) {
         // Enumerate and pick the first non-default speaker output
         const devices = await navigator.mediaDevices.enumerateDevices()
         const speakers = devices.filter(d => d.kind === 'audiooutput')
-        // 'communications' devices are typically the earpiece on Windows
         // Pick a non-communications device as loudspeaker, fallback to default
         const speaker = speakers.find(d =>
           d.deviceId !== 'default' && !d.label.toLowerCase().includes('comm')
@@ -315,9 +317,9 @@ export function CallProvider({ children }) {
     } catch (err) {
       console.error('toggleSpeaker error:', err)
       if (err.name === 'NotAllowedError') {
-        setErrorMsg('Speaker access denied — allow audio output permissions in browser settings.')
+        toast.error('Speaker access denied — allow audio output in browser settings.')
       } else {
-        setErrorMsg('Could not switch speaker. Your browser or device may not support this.')
+        toast('Speaker selection not available on this device.', { icon: '🎧' })
       }
     }
   }, [isSpeaker])
