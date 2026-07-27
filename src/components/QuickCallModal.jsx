@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { searchUsers } from '../firebase/users'
-import { getFollowingIds } from '../firebase/follows'
+import { getRecommendations } from '../firebase/follows'
 import { useAuth } from '../contexts/AuthContext'
 import { useCall } from '../contexts/CallContext'
 import Avatar from './Avatar'
