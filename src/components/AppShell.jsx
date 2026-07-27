@@ -165,19 +165,6 @@ function AppShellInner({ children }) {
               />
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-              {/* Quick Call mobile button */}
-              <button
-                className="btn btn-ghost btn-icon"
-                onClick={() => setQuickCallOpen(true)}
-                title="Quick Call"
-                aria-label="Quick Call"
-                style={{ color: '#30d158' }}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M6.62 10.79c1.44 2.83 3.76 5.15 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
-                </svg>
-              </button>
-
               {/* Notification bell */}
               <NotificationBell />
 
@@ -213,17 +200,38 @@ function AppShellInner({ children }) {
 
           {/* Mobile bottom nav */}
           <nav className="bottom-nav" aria-label="Mobile navigation">
-            {navItems.map(({ to, icon, label }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={to === '/'}
-                className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}
-              >
-                <Icon name={icon} size={24} />
-                <span>{label}</span>
-              </NavLink>
-            ))}
+            <NavLink to="/" end className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+              <Icon name="home" size={24} />
+              <span>Home</span>
+            </NavLink>
+
+            <NavLink to="/explore" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+              <Icon name="search" size={24} />
+              <span>Explore</span>
+            </NavLink>
+
+            {/* Quick Call Button in bottom nav */}
+            <button
+              onClick={() => setQuickCallOpen(true)}
+              className="bottom-nav-item"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#30d158' }}
+              title="Quick Call"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M6.62 10.79c1.44 2.83 3.76 5.15 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+              </svg>
+              <span style={{ color: '#30d158', fontWeight: 700 }}>Call</span>
+            </button>
+
+            <NavLink to="/campus" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+              <Icon name="book" size={24} />
+              <span>Campus</span>
+            </NavLink>
+
+            <NavLink to={`/u/${userProfile?.username}`} className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+              <Icon name="user" size={24} />
+              <span>Profile</span>
+            </NavLink>
           </nav>
 
         </main>
