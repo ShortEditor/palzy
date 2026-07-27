@@ -2,6 +2,7 @@ import { useState, memo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { formatDistanceToNow } from 'date-fns'
 import { useAuth } from '../contexts/AuthContext'
+import { useCall } from '../contexts/CallContext'
 import { toggleLike, deletePost } from '../firebase/posts'
 import { reportPost } from '../firebase/admin'
 import { shareToStory, canNativeShare } from '../utils/shareUtils'
@@ -175,9 +176,16 @@ const PostCard = memo(function PostCard({ post, authorProfile, isLiked: initialL
           </div>
           <span className="post-author-handle">@{handle}</span>
           <span className="post-timestamp" title={createdAt?.toLocaleString()}>{timeAgo}</span>
-          {/* Inline follow button — show for non-owner posts */}
+          {/* Inline call & follow buttons — show for non-owner posts */}
           {!isOwner && (
-            <span onClick={e => e.stopPropagation()} style={{ marginLeft: 'auto' }}>
+            <span onClick={e => e.stopPropagation()} style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <PostAuthorCallBtn
+                uid={post.authorId}
+                name={displayName}
+                username={handle}
+                photoURL={photoURL}
+                isVerified={isVerified}
+              />
               <FollowButton targetUid={post.authorId} size="sm" />
             </span>
           )}
@@ -394,3 +402,33 @@ const PostCard = memo(function PostCard({ post, authorProfile, isLiked: initialL
 })
 
 export default PostCard
+
+function PostAuthorCallBtn({ uid, name, username, photoURL, isVerified }) {
+  const { callState, startCall } = useCall()
+  const busy = callState !== 'idle'
+
+  return (
+    <button
+      onClick={e => {
+        e.stopPropagation()
+        startCall(uid, { name, username, photoURL, isVerified })
+      }}
+      disabled={busy}
+      title={busy ? 'Already in a call' : `Call ${name}`}
+      style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        width: 28, height: 28, borderRadius: '50%',
+        background: busy ? 'var(--bg-input)' : 'rgba(48,209,88,0.15)',
+        border: '1px solid rgba(48,209,88,0.3)',
+        color: busy ? 'var(--text-muted)' : '#30d158',
+        cursor: busy ? 'not-allowed' : 'pointer',
+        transition: 'all 0.15s', padding: 0,
+      }}
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M6.62 10.79c1.44 2.83 3.76 5.15 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+      </svg>
+    </button>
+  )
+}
+

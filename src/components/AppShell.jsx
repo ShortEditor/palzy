@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
@@ -10,6 +11,7 @@ import InstallBanner from './InstallBanner'
 import NotificationBell from './NotificationBell'
 import IncomingCallModal from './IncomingCallModal'
 import ActiveCallUI from './ActiveCallUI'
+import QuickCallModal from './QuickCallModal'
 import toast from 'react-hot-toast'
 
 function AppShellInner({ children }) {
@@ -17,6 +19,7 @@ function AppShellInner({ children }) {
   const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
   const location = useLocation()
+  const [quickCallOpen, setQuickCallOpen] = useState(false)
 
   const showSuggestions = location.pathname === '/'
 
@@ -58,10 +61,24 @@ function AppShellInner({ children }) {
             end={to === '/'}
             className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
           >
-            <span className="nav-item-icon"><Icon name={icon} size={22} /></span>
+            <span className="nav-item-icon"><Icon name={icon} size={20} /></span>
             {label}
           </NavLink>
         ))}
+
+        {/* Quick Call Button desktop */}
+        <button
+          className="nav-item"
+          onClick={() => setQuickCallOpen(true)}
+          style={{ cursor: 'pointer', border: 'none', background: 'none', textAlign: 'left', width: '100%' }}
+        >
+          <span className="nav-item-icon" style={{ color: '#30d158' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M6.62 10.79c1.44 2.83 3.76 5.15 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+            </svg>
+          </span>
+          Quick Call
+        </button>
 
         {/* Post Vibe CTA */}
         <button
@@ -148,6 +165,19 @@ function AppShellInner({ children }) {
               />
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+              {/* Quick Call mobile button */}
+              <button
+                className="btn btn-ghost btn-icon"
+                onClick={() => setQuickCallOpen(true)}
+                title="Quick Call"
+                aria-label="Quick Call"
+                style={{ color: '#30d158' }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M6.62 10.79c1.44 2.83 3.76 5.15 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+                </svg>
+              </button>
+
               {/* Notification bell */}
               <NotificationBell />
 
@@ -210,6 +240,7 @@ function AppShellInner({ children }) {
       {/* ── Voice call overlays (globally available) ── */}
       <IncomingCallModal />
       <ActiveCallUI />
+      <QuickCallModal isOpen={quickCallOpen} onClose={() => setQuickCallOpen(false)} />
 
       {/* Hidden audio element for remote voice stream */}
       <audio ref={useCallAudio()} autoPlay playsInline style={{ display: 'none' }} />
