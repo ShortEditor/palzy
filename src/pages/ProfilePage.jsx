@@ -540,29 +540,123 @@ export default function ProfilePage() {
   )
 }
 
-// ── Inline call button — uses CallContext ─────────────────────
+// ── SVG Icons ──────────────────────────────────────────────────
+const PhoneIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M6.62 10.79c1.44 2.83 3.76 5.15 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+  </svg>
+)
+
+const InfoIcon = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+  </svg>
+)
+
+// ── Inline call button + info note ────────────────────────────
 function CallButtonOnProfile({ profile }) {
   const { callState, startCall } = useCall()
+  const [showInfo, setShowInfo] = useState(false)
   const busy = callState !== 'idle'
 
   return (
-    <button
-      onClick={() => startCall(profile.uid, profile)}
-      disabled={busy}
-      title={busy ? 'Already in a call' : `Call ${profile.name}`}
-      style={{
-        display: 'flex', alignItems: 'center', gap: 6,
-        padding: '8px 16px', borderRadius: 20,
-        background: busy ? 'var(--bg-input)' : 'linear-gradient(135deg, #30d158, #1a9944)',
-        color: busy ? 'var(--text-muted)' : '#fff',
-        border: 'none', cursor: busy ? 'not-allowed' : 'pointer',
-        fontWeight: 700, fontSize: 14,
-        boxShadow: busy ? 'none' : '0 4px 14px rgba(48,209,88,0.4)',
-        transition: 'all 0.15s',
-        opacity: busy ? 0.6 : 1,
-      }}
-    >
-      📞 {busy ? 'Busy' : 'Call'}
-    </button>
+    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+      {/* Call button */}
+      <button
+        onClick={() => startCall(profile.uid, profile)}
+        disabled={busy}
+        title={busy ? 'Already in a call' : `Call ${profile.name}`}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '8px 18px', borderRadius: 20,
+          background: busy ? 'var(--bg-input)' : 'linear-gradient(135deg, #30d158, #1a9944)',
+          color: busy ? 'var(--text-muted)' : '#fff',
+          border: 'none', cursor: busy ? 'not-allowed' : 'pointer',
+          fontWeight: 700, fontSize: 14,
+          boxShadow: busy ? 'none' : '0 4px 14px rgba(48,209,88,0.4)',
+          transition: 'all 0.15s',
+          opacity: busy ? 0.6 : 1,
+        }}
+      >
+        <PhoneIcon size={16} />
+        {busy ? 'Busy' : 'Call'}
+      </button>
+
+      {/* Info toggle button */}
+      <button
+        onClick={() => setShowInfo(v => !v)}
+        title="How calls work"
+        style={{
+          width: 28, height: 28, borderRadius: '50%', border: 'none',
+          background: showInfo ? 'var(--brand)' : 'var(--bg-input)',
+          color: showInfo ? '#fff' : 'var(--text-muted)',
+          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          transition: 'all 0.15s', flexShrink: 0,
+        }}
+      >
+        <InfoIcon size={14} />
+      </button>
+
+      {/* Info panel */}
+      {showInfo && (
+        <div style={{
+          position: 'absolute', top: '110%', left: 0,
+          zIndex: 200, width: 300,
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
+          borderRadius: 16,
+          boxShadow: '0 12px 36px rgba(0,0,0,0.2)',
+          padding: 16, fontSize: 13, lineHeight: 1.55,
+          color: 'var(--text-secondary)',
+        }}>
+          <div style={{ fontWeight: 800, color: 'var(--text-primary)', marginBottom: 10, fontSize: 14 }}>
+            📞 How voice calls work
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {[
+              { icon: '🔗', text: 'Calls are peer-to-peer via WebRTC — no call servers, completely free.' },
+              { icon: '🎙️', text: 'Both you and the other person must allow microphone access when prompted.' },
+              { icon: '🌐', text: 'Best supported on Chrome or Edge. Firefox and Safari may have issues.' },
+            ].map((item, i) => (
+              <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                <span style={{ flexShrink: 0 }}>{item.icon}</span>
+                <span>{item.text}</span>
+              </div>
+            ))}
+          </div>
+
+          <div style={{
+            marginTop: 12, padding: '10px 12px', borderRadius: 10,
+            background: 'rgba(255,149,0,0.1)', border: '1px solid rgba(255,149,0,0.2)',
+          }}>
+            <div style={{ fontWeight: 700, color: '#ff9500', marginBottom: 6, fontSize: 12 }}>
+              ⚠️ Common issues
+            </div>
+            <ul style={{ margin: 0, paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {[
+                'No audio → mic may be blocked. Click the 🔒 icon in the browser address bar to allow it.',
+                'Call failed → one side may be on a strict firewall. Try mobile data instead of Wi-Fi.',
+                'Mic in use → close other apps (Zoom, Meet, Teams) that are using your mic.',
+                'Speaker toggle only works in Chrome/Edge — not Firefox/Safari/mobile browsers.',
+              ].map((tip, i) => (
+                <li key={i} style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{tip}</li>
+              ))}
+            </ul>
+          </div>
+
+          <button
+            onClick={() => setShowInfo(false)}
+            style={{
+              marginTop: 12, width: '100%', padding: '7px', borderRadius: 10,
+              background: 'var(--bg-input)', border: 'none',
+              color: 'var(--text-muted)', cursor: 'pointer', fontWeight: 600, fontSize: 12,
+            }}
+          >
+            Got it
+          </button>
+        </div>
+      )}
+    </div>
   )
 }

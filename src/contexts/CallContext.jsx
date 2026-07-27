@@ -16,7 +16,9 @@ export function CallProvider({ children }) {
   const [callState, setCallState]     = useState('idle')  // idle | ringing_out | ringing_in | active
   const [remoteUser, setRemoteUser]   = useState(null)    // { name, username, photoURL, isVerified }
   const [isMuted, setIsMuted]         = useState(false)
+  const [isSpeaker, setIsSpeaker]     = useState(false)
   const [duration, setDuration]       = useState(0)
+  const [errorMsg, setErrorMsg]       = useState(null)    // null or string shown in ActiveCallUI
   const [incomingCallData, setIncomingCallData] = useState(null)
 
   // ── Refs ─────────────────────────────────────────────────────
@@ -73,6 +75,17 @@ export function CallProvider({ children }) {
         remoteAudioRef.current.srcObject = e.streams[0]
       }
     }
+    // Detect ICE failures / dropped connections
+    pc.oniceconnectionstatechange = () => {
+      const s = pc.iceConnectionState
+      if (s === 'failed') {
+        setErrorMsg('Connection failed — both devices may be on strict networks. Try on a different Wi-Fi or mobile data.')
+      } else if (s === 'disconnected') {
+        setErrorMsg('Connection unstable — call may have dropped.')
+      } else if (s === 'connected' || s === 'completed') {
+        setErrorMsg(null)
+      }
+    }
     return pc
   }, [])
 
@@ -97,7 +110,9 @@ export function CallProvider({ children }) {
     setCallState('idle')
     setRemoteUser(null)
     setIsMuted(false)
+    setIsSpeaker(false)
     setDuration(0)
+    setErrorMsg(null)
     setIncomingCallData(null)
   }, [])
 
@@ -179,11 +194,15 @@ export function CallProvider({ children }) {
 
     } catch (err) {
       console.error('startCall error:', err)
-      if (err.name === 'NotAllowedError') {
-        toast.error('Microphone access denied')
-      } else {
-        toast.error('Could not start call')
-      }
+      const msg = (() => {
+        if (err.name === 'NotAllowedError') return 'Microphone blocked — allow mic access in browser settings and retry.'
+        if (err.name === 'NotFoundError')   return 'No microphone found — plug in a mic or use headphones.'
+        if (err.name === 'NotReadableError') return 'Mic is in use by another app — close it and retry.'
+        if (err.message?.includes('TURN'))  return 'Network error — try on mobile data instead of Wi-Fi.'
+        return 'Could not start call — refresh the page and try again.'
+      })()
+      setErrorMsg(msg)
+      toast.error(msg, { duration: 5000 })
       cleanup()
     }
   }, [currentUser, userProfile, callState, buildPeerConnection, applyRemoteIce, startTimer, cleanup])
@@ -230,11 +249,14 @@ export function CallProvider({ children }) {
 
     } catch (err) {
       console.error('acceptCall error:', err)
-      if (err.name === 'NotAllowedError') {
-        toast.error('Microphone access denied')
-      } else {
-        toast.error('Could not connect call')
-      }
+      const msg = (() => {
+        if (err.name === 'NotAllowedError') return 'Microphone blocked — allow mic access in browser settings and retry.'
+        if (err.name === 'NotFoundError')   return 'No microphone found — plug in a mic or use headphones.'
+        if (err.name === 'NotReadableError') return 'Mic is in use by another app — close it and retry.'
+        return 'Could not connect — refresh the page and try accepting again.'
+      })()
+      setErrorMsg(msg)
+      toast.error(msg, { duration: 5000 })
       setCallStatus(callId, 'ended').catch(() => {})
       cleanup()
     }
@@ -252,7 +274,7 @@ export function CallProvider({ children }) {
     cleanup()
   }, [cleanup])
 
-  // ── toggleMute ───────────────────────────────────────────────
+  // ── toggleMute ────────────────────────────────────────────
   const toggleMute = useCallback(() => {
     const track = localStreamRef.current?.getAudioTracks()[0]
     if (track) {
@@ -261,11 +283,50 @@ export function CallProvider({ children }) {
     }
   }, [])
 
+  // ── toggleSpeaker ────────────────────────────────────────
+  const toggleSpeaker = useCallback(async () => {
+    const audio = remoteAudioRef.current
+    if (!audio) return
+
+    // setSinkId is supported in Chrome/Edge (not Firefox/Safari)
+    if (typeof audio.setSinkId !== 'function') {
+      setErrorMsg('Speaker switching is not supported in this browser. Use Chrome or Edge for this feature.')
+      return
+    }
+
+    try {
+      if (isSpeaker) {
+        // Switch back to default (earpiece)
+        await audio.setSinkId('default')
+        setIsSpeaker(false)
+      } else {
+        // Enumerate and pick the first non-default speaker output
+        const devices = await navigator.mediaDevices.enumerateDevices()
+        const speakers = devices.filter(d => d.kind === 'audiooutput')
+        // 'communications' devices are typically the earpiece on Windows
+        // Pick a non-communications device as loudspeaker, fallback to default
+        const speaker = speakers.find(d =>
+          d.deviceId !== 'default' && !d.label.toLowerCase().includes('comm')
+        )
+        await audio.setSinkId(speaker?.deviceId ?? 'default')
+        setIsSpeaker(true)
+      }
+      setErrorMsg(null)
+    } catch (err) {
+      console.error('toggleSpeaker error:', err)
+      if (err.name === 'NotAllowedError') {
+        setErrorMsg('Speaker access denied — allow audio output permissions in browser settings.')
+      } else {
+        setErrorMsg('Could not switch speaker. Your browser or device may not support this.')
+      }
+    }
+  }, [isSpeaker])
+
   return (
     <CallContext.Provider value={{
-      callState, remoteUser, isMuted, duration,
+      callState, remoteUser, isMuted, isSpeaker, duration, errorMsg,
       incomingCallData, remoteAudioRef,
-      startCall, acceptCall, declineCall, endCall, toggleMute,
+      startCall, acceptCall, declineCall, endCall, toggleMute, toggleSpeaker,
     }}>
       {children}
     </CallContext.Provider>

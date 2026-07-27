@@ -485,6 +485,7 @@ body, .clay-card, .clay-input, .sidebar, .topbar, .bottom-nav, .page-header,
   /* Organic squircle blob */
   border-radius: 45% 55% 60% 40% / 55% 45% 55% 45%;
   overflow: hidden;
+  
   background: linear-gradient(135deg, var(--brand-primary-cont), var(--vibe-lav));
   display: flex; align-items: center; justify-content: center;
   font-weight: 700; color: #fff; flex-shrink: 0;
