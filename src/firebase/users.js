@@ -106,19 +106,20 @@ export async function updateStreak(uid) {
   invalidateUserCache(uid)
 }
 
-// ─── Search users by username prefix ───────────────────────────────
-export async function searchUsers(rawQuery, limitCount = 10) {
+// ─── Search users by partial name or username ─────────────────────
+export async function searchUsers(rawQuery, limitCount = 20) {
   const q = rawQuery.trim().toLowerCase()
   if (!q) return []
 
-  const snap = await getDocs(
-    query(
-      collection(db, 'users'),
-      where('username', '>=', q),
-      where('username', '<=', q + '\uf8ff'),
-      limit(limitCount)
-    )
-  )
-  return snap.docs.map(d => ({ uid: d.id, ...d.data() }))
+  // Fetch users to search client-side for true substring matching on name & username
+  const snap = await getDocs(query(collection(db, 'users'), limit(150)))
+  const users = snap.docs.map(d => ({ uid: d.id, ...d.data() }))
+
+  return users.filter(u => {
+    const name = (u.name || '').toLowerCase()
+    const username = (u.username || '').toLowerCase()
+    return name.includes(q) || username.includes(q)
+  }).slice(0, limitCount)
 }
+
 

@@ -30,23 +30,25 @@ export default function QuickCallModal({ isOpen, onClose }) {
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 100)
+      if (currentUser?.uid) {
+        setLoading(true)
+        getRecommendations(currentUser.uid, 6)
+          .then(list => setResults(list.filter(u => u.uid !== currentUser.uid)))
+          .catch(() => {})
+          .finally(() => setLoading(false))
+      }
     } else {
       setQuery('')
       setResults([])
     }
-  }, [isOpen])
+  }, [isOpen, currentUser?.uid])
 
   useEffect(() => {
-    if (!query.trim()) {
-      setResults([])
-      setLoading(false)
-      return
-    }
+    if (!query.trim()) return
     const timer = setTimeout(async () => {
       setLoading(true)
       try {
         const list = await searchUsers(query.trim())
-        // Filter out self
         const filtered = list.filter(u => u.uid !== currentUser?.uid)
         setResults(filtered)
       } catch (err) {
@@ -54,7 +56,7 @@ export default function QuickCallModal({ isOpen, onClose }) {
       } finally {
         setLoading(false)
       }
-    }, 250)
+    }, 100)
     return () => clearTimeout(timer)
   }, [query, currentUser?.uid])
 
@@ -147,15 +149,21 @@ export default function QuickCallModal({ isOpen, onClose }) {
 
         {/* Results list */}
         <div style={{ overflowY: 'auto', padding: '8px 12px', flex: 1, minHeight: 180 }}>
+          {!query.trim() && results.length > 0 && (
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', padding: '6px 12px 10px', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              Suggested Friends
+            </div>
+          )}
+
           {loading ? (
             <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
-              Searching friends…
+              Searching…
             </div>
           ) : query.trim() && results.length === 0 ? (
             <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
               No users found matching "{query}"
             </div>
-          ) : !query.trim() ? (
+          ) : !query.trim() && results.length === 0 ? (
             <div style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
               Type a name or @username above to make an instant voice call 📞
             </div>
