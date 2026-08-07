@@ -32,11 +32,17 @@ export async function createNotification(toUid, { type, fromUid, fromName, fromU
 /** Real-time unread count. Returns unsubscribe fn. */
 export function listenUnreadCount(uid, cb) {
   if (!uid) return () => {}
+  // Listen to the full list ordered by createdAt, count unread client-side
+  // (avoids needing a composite index on the subcollection for read==false)
   const q = query(
     collection(db, 'notifications', uid, 'items'),
-    where('read', '==', false),
+    orderBy('createdAt', 'desc'),
+    limit(50),
   )
-  return onSnapshot(q, snap => cb(snap.size), () => cb(0))
+  return onSnapshot(q,
+    snap => cb(snap.docs.filter(d => d.data().read === false).length),
+    () => cb(0)
+  )
 }
 
 /** Real-time notifications list (newest 50). Returns unsubscribe fn. */

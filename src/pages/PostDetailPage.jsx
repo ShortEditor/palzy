@@ -199,7 +199,12 @@ export default function PostDetailPage() {
     if (!commentText.trim()) return
     setSubmitting(true)
     try {
-      const newComment = await addCommentToPost(postId, { authorId: currentUser.uid, text: commentText, parentId: null })
+      const newComment = await addCommentToPost(postId, {
+        authorId: currentUser.uid,
+        text: commentText,
+        parentId: null,
+        postAuthorId: post?.authorId ?? null,
+      })
       setCommentText('')
       setComments(prev => [...prev, newComment])
     } catch { toast.error('Could not add comment.') }
@@ -212,7 +217,12 @@ export default function PostDetailPage() {
     try {
       // Reply's parentId = the top-level comment's id (flatten threads to 2 levels)
       const parentId = parentComment.parentId ?? parentComment.id
-      const newReply = await addCommentToPost(postId, { authorId: currentUser.uid, text, parentId })
+      const newReply = await addCommentToPost(postId, {
+        authorId: currentUser.uid,
+        text,
+        parentId,
+        postAuthorId: post?.authorId ?? null,
+      })
       setComments(prev => [...prev, newReply])
       setReplyingTo(null)
     } catch { toast.error('Could not post reply.') }
