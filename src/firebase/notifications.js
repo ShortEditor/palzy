@@ -5,7 +5,6 @@ import {
   deleteDoc,
   updateDoc,
   query,
-  where,
   limit,
   onSnapshot,
   getDocs,
@@ -24,7 +23,8 @@ function getMillis(ts) {
 }
 
 /**
- * Create a notification for another user.
+ * Create a notification for another user in their items subcollection:
+ * /notifications/{toUid}/items/{docId}
  * type: 'like' | 'reaction' | 'comment' | 'reply' | 'follow' | 'mention' | 'call'
  */
 export async function createNotification(toUid, {
@@ -41,12 +41,11 @@ export async function createNotification(toUid, {
   if (!toUid || !fromUid || toUid === fromUid) return // never self-notify
 
   const payload = {
-    toUid,
+    type:         type         || 'like',
     fromUid,
     fromName:     fromName     || '',
     fromUsername: fromUsername || '',
     fromPhotoURL: fromPhotoURL || '',
-    type:         type         || 'like',
     postId:       postId       || null,
     postContent:  postContent  ? String(postContent).slice(0, 80) : null,
     commentText:  commentText  ? String(commentText).slice(0, 80) : null,
@@ -55,18 +54,10 @@ export async function createNotification(toUid, {
     createdAt:    serverTimestamp(),
   }
 
-  // 1. Write to top-level 'notifications' collection (primary)
-  try {
-    await addDoc(collection(db, 'notifications'), payload)
-  } catch (err) {
-    console.warn('createNotification top-level error:', err?.message)
-  }
-
-  // 2. Also write to subcollection for backward compatibility
   try {
     await addDoc(collection(db, 'notifications', toUid, 'items'), payload)
   } catch (err) {
-    console.warn('createNotification subcollection error:', err?.message)
+    console.warn('createNotification error:', err?.message)
   }
 }
 
@@ -77,63 +68,24 @@ export async function createNotification(toUid, {
 export function listenNotifications(uid, cb) {
   if (!uid) { cb([]); return () => {} }
 
-  // Listen to top-level notifications filtered by toUid
-  const qTop = query(
-    collection(db, 'notifications'),
-    where('toUid', '==', uid),
+  const q = query(
+    collection(db, 'notifications', uid, 'items'),
     limit(50),
   )
 
-  let unsubSub = null
-  let topReceived = false
-
-  const unsubTop = onSnapshot(
-    qTop,
+  return onSnapshot(
+    q,
     (snap) => {
-      topReceived = true
-      if (!snap.empty) {
-        const items = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-        items.sort((a, b) => getMillis(b.createdAt) - getMillis(a.createdAt))
-        cb(items)
-      } else {
-        // Top-level is empty, check legacy subcollection
-        if (!unsubSub) {
-          const qSub = query(collection(db, 'notifications', uid, 'items'), limit(50))
-          unsubSub = onSnapshot(
-            qSub,
-            (subSnap) => {
-              const items = subSnap.docs.map(d => ({ id: d.id, ...d.data() }))
-              items.sort((a, b) => getMillis(b.createdAt) - getMillis(a.createdAt))
-              cb(items)
-            },
-            () => cb([])
-          )
-        } else {
-          cb([])
-        }
-      }
+      const items = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      // Sort newest first in memory to avoid missing Firestore index errors
+      items.sort((a, b) => getMillis(b.createdAt) - getMillis(a.createdAt))
+      cb(items)
     },
     (err) => {
-      console.warn('Top-level notifications error, using subcollection:', err?.message)
-      if (!unsubSub) {
-        const qSub = query(collection(db, 'notifications', uid, 'items'), limit(50))
-        unsubSub = onSnapshot(
-          qSub,
-          (subSnap) => {
-            const items = subSnap.docs.map(d => ({ id: d.id, ...d.data() }))
-            items.sort((a, b) => getMillis(b.createdAt) - getMillis(a.createdAt))
-            cb(items)
-          },
-          () => cb([])
-        )
-      }
+      console.warn('listenNotifications error:', err?.message)
+      cb([])
     }
   )
-
-  return () => {
-    unsubTop()
-    if (unsubSub) unsubSub()
-  }
 }
 
 /**
@@ -153,40 +105,16 @@ export function listenUnreadCount(uid, cb) {
  */
 export async function markAllRead(uid) {
   if (!uid) return
-
-  // Mark top-level notifications read
   try {
-    const qTop = query(
-      collection(db, 'notifications'),
-      where('toUid', '==', uid),
-      where('read', '==', false),
-      limit(50),
-    )
-    const snapTop = await getDocs(qTop)
-    if (!snapTop.empty) {
-      const batch = writeBatch(db)
-      snapTop.docs.forEach(d => batch.update(d.ref, { read: true }))
-      await batch.commit()
-    }
-  } catch (err) {
-    console.warn('markAllRead top-level error:', err?.message)
-  }
+    const snap = await getDocs(query(collection(db, 'notifications', uid, 'items'), limit(50)))
+    const unreadDocs = snap.docs.filter(d => d.data().read === false)
+    if (unreadDocs.length === 0) return
 
-  // Mark legacy subcollection read
-  try {
-    const qSub = query(
-      collection(db, 'notifications', uid, 'items'),
-      where('read', '==', false),
-      limit(50),
-    )
-    const snapSub = await getDocs(qSub)
-    if (!snapSub.empty) {
-      const batch = writeBatch(db)
-      snapSub.docs.forEach(d => batch.update(d.ref, { read: true }))
-      await batch.commit()
-    }
+    const batch = writeBatch(db)
+    unreadDocs.forEach(d => batch.update(d.ref, { read: true }))
+    await batch.commit()
   } catch (err) {
-    console.warn('markAllRead subcollection error:', err?.message)
+    console.warn('markAllRead error:', err?.message)
   }
 }
 
@@ -194,14 +122,11 @@ export async function markAllRead(uid) {
  * Delete a single notification.
  */
 export async function deleteNotification(id, uid) {
-  if (!id) return
+  if (!id || !uid) return
   try {
-    await deleteDoc(doc(db, 'notifications', id))
-  } catch {}
-  if (uid) {
-    try {
-      await deleteDoc(doc(db, 'notifications', uid, 'items', id))
-    } catch {}
+    await deleteDoc(doc(db, 'notifications', uid, 'items', id))
+  } catch (err) {
+    console.warn('deleteNotification error:', err?.message)
   }
 }
 
@@ -211,12 +136,7 @@ export async function deleteNotification(id, uid) {
 export async function clearAllNotifications(uid) {
   if (!uid) return
   try {
-    const q = query(
-      collection(db, 'notifications'),
-      where('toUid', '==', uid),
-      limit(100),
-    )
-    const snap = await getDocs(q)
+    const snap = await getDocs(query(collection(db, 'notifications', uid, 'items'), limit(100)))
     if (!snap.empty) {
       const batch = writeBatch(db)
       snap.docs.forEach(d => batch.delete(d.ref))
