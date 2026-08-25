@@ -1,7 +1,6 @@
 import { collection, query, orderBy, limit, startAfter, getDocs } from "firebase/firestore"
 import { db } from "./config"
 
-const DOUBTS_PER_PAGE = 15
 const FETCH_POOL = 100  // fetch more, filter client-side (avoids composite index)
 
 // Fetch doubt-tagged posts, optionally filtered by branch + year

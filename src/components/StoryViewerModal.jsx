@@ -53,6 +53,17 @@ export default function StoryViewerModal({ userGroups = [], initialUserIndex = 0
     }
   }, [isOpen, userIndex, storyIndex, currentStory, currentUser, userProfile, currentGroup?.authorId])
 
+  const handleNext = useCallback(() => {
+    if (storyIndex < currentGroup?.stories?.length - 1) {
+      setStoryIndex(prev => prev + 1)
+    } else if (userIndex < userGroups?.length - 1) {
+      setUserIndex(prev => prev + 1)
+      setStoryIndex(0)
+    } else {
+      onClose()
+    }
+  }, [storyIndex, userIndex, currentGroup?.stories?.length, userGroups?.length, onClose])
+
   // Auto-advance timer (5 seconds per story) - pauses if viewers modal is open
   useEffect(() => {
     if (!isOpen || !currentStory || isViewersOpen) return
@@ -69,22 +80,11 @@ export default function StoryViewerModal({ userGroups = [], initialUserIndex = 0
     }, 100)
 
     return () => clearInterval(interval)
-  }, [isOpen, userIndex, storyIndex, currentStory, isViewersOpen])
+  }, [isOpen, currentStory, isViewersOpen, handleNext])
 
   if (!isOpen || !currentGroup || !currentStory) return null
 
   const isOwner = currentUser?.uid === currentGroup.authorId
-
-  function handleNext() {
-    if (storyIndex < currentGroup.stories.length - 1) {
-      setStoryIndex(prev => prev + 1)
-    } else if (userIndex < userGroups.length - 1) {
-      setUserIndex(prev => prev + 1)
-      setStoryIndex(0)
-    } else {
-      onClose()
-    }
-  }
 
   function handlePrev() {
     if (storyIndex > 0) {

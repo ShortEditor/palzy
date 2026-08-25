@@ -158,7 +158,8 @@ export default function FollowListModal({ uid, tab: initialTab, onClose }) {
                   onToggle={followed => {
                     setMyFollowing(prev => {
                       const next = new Set(prev)
-                      followed ? next.add(user.uid) : next.delete(user.uid)
+                      if (followed) next.add(user.uid)
+                      else next.delete(user.uid)
                       return next
                     })
                   }}

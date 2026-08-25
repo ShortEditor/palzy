@@ -1,7 +1,6 @@
 import { collection, query, orderBy, limit, startAfter, getDocs } from 'firebase/firestore'
 import { db } from './config'
 
-const CAMPUS_PER_PAGE = 15
 const FETCH_POOL = 100  // fetch more, filter client-side (avoids composite index)
 
 // Fetch posts tagged with "note" — filters client-side to avoid missing composite index

@@ -16,6 +16,7 @@ export default function FollowButton({ targetUid, initialState, onToggle, size =
   const [following, setFollowing] = useState(initialState ?? false)
   const [loading, setLoading]     = useState(initialState === undefined) // check on mount if not given
   const [checking, setChecking]   = useState(initialState === undefined)
+  const [hovered, setHovered]     = useState(false)
 
   // If initialState not provided, check Firestore on mount
   useEffect(() => {
@@ -55,15 +56,13 @@ export default function FollowButton({ targetUid, initialState, onToggle, size =
         toast('Unfollowed.')
       }
       onToggle?.(next)
-    } catch (err) {
+    } catch {
       setFollowing(!next) // revert on error
       toast.error('Could not update follow.')
     } finally {
       setLoading(false)
     }
   }
-
-  const [hovered, setHovered] = useState(false)
 
   const btnSize = size === 'sm' ? 'btn-sm' : ''
 

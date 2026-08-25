@@ -17,6 +17,20 @@ export default function StoriesBar() {
   const [isViewerOpen, setIsViewerOpen] = useState(false)
   const [activeUserIndex, setActiveUserIndex] = useState(0)
 
+  const loadStories = useCallback(async () => {
+    if (!currentUser?.uid) return
+    try {
+      setLoading(true)
+      const followingIds = await getFollowingIds(currentUser.uid)
+      const groups = await getActiveStories(currentUser.uid, followingIds)
+      setUserGroups(groups)
+    } catch (err) {
+      console.error('loadStories error:', err)
+    } finally {
+      setLoading(false)
+    }
+  }, [currentUser?.uid])
+
   useEffect(() => {
     if (!currentUser) return
     loadStories()
@@ -28,20 +42,7 @@ export default function StoriesBar() {
         setViewedStoryIds(JSON.parse(stored))
       }
     } catch {}
-  }, [currentUser])
-
-  async function loadStories() {
-    try {
-      setLoading(true)
-      const followingIds = await getFollowingIds(currentUser.uid)
-      const groups = await getActiveStories(currentUser.uid, followingIds)
-      setUserGroups(groups)
-    } catch (err) {
-      console.error('loadStories error:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [currentUser, loadStories])
 
   // Reload seen IDs from localStorage to update rings on UI
   const refreshSeenIds = () => {

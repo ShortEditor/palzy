@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useCall } from '../contexts/CallContext'
 import Avatar from './Avatar'
 import VerifiedBadge from './VerifiedBadge'
