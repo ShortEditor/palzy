@@ -63,13 +63,8 @@ export async function deletePost(postId) {
 }
 
 // ─── Hybrid ranked feed ──────────────────────────────────────
-// 1. Posts from followed users (+ self)
-// 2. Fill with trending posts from non-followed users
-// 3. Client-side score: likeCount×3 + commentCount×2 + recencyBonus
-// Firestore 'in' queries are capped at 30 UIDs — we batch as needed
 const FEED_POOL_SIZE   = 60   // raw posts fetched before scoring
 const FEED_PAGE_SIZE   = 5    // posts returned per call (optimized for fast initial load)
-const TRENDING_FILL    = 20   // trending posts to pad the pool
 
 function scorePost(post) {
   const ageMs = Date.now() - (post.createdAt?.toMillis?.() ?? Date.now())
@@ -88,7 +83,6 @@ export async function getFeedPosts(cursor = null, currentUid = null, followingId
     : []
 
   if (feedUids.length > 0) {
-    // Firestore 'in' limit = 30; batch if needed
     const batches = []
     for (let i = 0; i < feedUids.length; i += 30) {
       batches.push(feedUids.slice(i, i + 30))
@@ -129,11 +123,10 @@ export async function getFeedPosts(cursor = null, currentUid = null, followingId
   })
 
   // ── 3. Score + sort ────────────────────────────────────────
-  // Followed posts get a +15 score boost to naturally surface first
   const scored = pool.map(p => ({ ...p, _score: scorePost(p) + (p._isFollowed ? 15 : 0) }))
   scored.sort((a, b) => b._score - a._score)
 
-  // ── 4. Cursor-based pagination (index into sorted array) ───
+  // ── 4. Cursor-based pagination ─────────────────────────────
   const startIndex = cursor ?? 0
   const page = scored.slice(startIndex, startIndex + FEED_PAGE_SIZE)
   const nextCursor = startIndex + FEED_PAGE_SIZE
@@ -187,25 +180,33 @@ export async function toggleLike(postId, userId) {
     } else {
       tx.set(likeRef, { postId, userId, createdAt: serverTimestamp() })
       tx.update(postRef, { likeCount: increment(1) })
-      // Return author info for notification
       return { authorId: postSnap.data()?.authorId, content: postSnap.data()?.content }
     }
   })
 
-  // Fire notification (non-blocking, won't fail the like action)
+  // Fire notification (non-blocking)
   if (result && result.authorId && result.authorId !== userId) {
-    getUserProfile(userId).then(liker => {
-      if (!liker) return
-      createNotification(result.authorId, {
-        type: 'like',
-        fromUid: userId,
-        fromName: liker.name || '',
-        fromUsername: liker.username || '',
-        fromPhotoURL: liker.photoURL || '',
-        postId,
-        postContent: result.content || '',
+    getUserProfile(userId)
+      .then(liker => {
+        createNotification(result.authorId, {
+          type: 'like',
+          fromUid: userId,
+          fromName: liker?.name || 'Someone',
+          fromUsername: liker?.username || '',
+          fromPhotoURL: liker?.photoURL || '',
+          postId,
+          postContent: result.content || '',
+        })
       })
-    }).catch(() => {})
+      .catch(() => {
+        createNotification(result.authorId, {
+          type: 'like',
+          fromUid: userId,
+          fromName: 'Someone',
+          postId,
+          postContent: result.content || '',
+        })
+      })
   }
 
   return result !== false
@@ -248,12 +249,21 @@ export async function addCommentToPost(postId, { authorId, text, parentId = null
   })
   await updateDoc(postRef, { commentCount: increment(1) })
 
-  // Fire notification for comment on post (non-blocking)
-  if (postAuthorId && postAuthorId !== authorId) {
-    createNotification(postAuthorId, {
+  // Find target author to notify
+  let targetAuthorId = postAuthorId
+  if (!targetAuthorId) {
+    try {
+      const pSnap = await getDoc(postRef)
+      targetAuthorId = pSnap.data()?.authorId
+    } catch {}
+  }
+
+  // Fire notification for comment/reply on post (non-blocking)
+  if (targetAuthorId && targetAuthorId !== authorId) {
+    createNotification(targetAuthorId, {
       type: parentId ? 'reply' : 'comment',
       fromUid: authorId,
-      fromName: author?.name || '',
+      fromName: author?.name || 'Someone',
       fromUsername: author?.username || '',
       fromPhotoURL: author?.photoURL || '',
       postId,
@@ -276,7 +286,6 @@ export async function getComments(postId) {
 }
 
 // ─── Delete a comment + cascade all replies ───────────────────
-// Atomically deletes the comment, all its replies, and fixes commentCount
 export async function deleteComment(postId, commentId) {
   const repliesQ = query(
     collection(db, 'posts', postId, 'comments'),

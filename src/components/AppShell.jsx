@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 import { CallProvider, useCall } from '../contexts/CallContext'
+import { listenUnreadCount } from '../firebase/notifications'
 import Icon from './Icon'
 import Avatar from './Avatar'
 import SuggestionsSidebar from './SuggestionsSidebar'
@@ -15,11 +16,18 @@ import QuickCallModal from './QuickCallModal'
 import toast from 'react-hot-toast'
 
 function AppShellInner({ children }) {
-  const { userProfile, isAdmin, logout } = useAuth()
+  const { currentUser, userProfile, isAdmin, logout } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
   const location = useLocation()
   const [quickCallOpen, setQuickCallOpen] = useState(false)
+  const [unreadNotifications, setUnreadNotifications] = useState(0)
+
+  useEffect(() => {
+    if (!currentUser?.uid) return
+    const unsub = listenUnreadCount(currentUser.uid, setUnreadNotifications)
+    return unsub
+  }, [currentUser?.uid])
 
   const showSuggestions = location.pathname === '/'
 
@@ -32,6 +40,7 @@ function AppShellInner({ children }) {
   const navItems = [
     { to: '/',               icon: 'home',    label: 'Home'          },
     { to: '/explore',        icon: 'search',  label: 'Explore'       },
+    { to: '/notifications',  icon: 'bell',    label: 'Notifications', count: unreadNotifications },
     { to: '/campus',         icon: 'book',    label: 'Campus'        },
     { to: `/u/${userProfile?.username}`, icon: 'user', label: 'Profile' },
   ]
@@ -54,15 +63,34 @@ function AppShellInner({ children }) {
         </div>
 
         {/* Nav items */}
-        {navItems.map(({ to, icon, label }) => (
+        {navItems.map(({ to, icon, label, count }) => (
           <NavLink
             key={to}
             to={to}
             end={to === '/'}
             className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
           >
-            <span className="nav-item-icon"><Icon name={icon} size={20} /></span>
-            {label}
+            <span className="nav-item-icon" style={{ position: 'relative' }}>
+              <Icon name={icon} size={20} />
+              {count > 0 && (
+                <span style={{
+                  position: 'absolute', top: -2, right: -2,
+                  width: 7, height: 7, borderRadius: '50%',
+                  background: 'var(--brand-primary)',
+                }} />
+              )}
+            </span>
+            <span style={{ flex: 1 }}>{label}</span>
+            {count > 0 && (
+              <span style={{
+                background: 'var(--brand-primary)', color: '#fff',
+                fontSize: 10, fontWeight: 700,
+                padding: '2px 7px', borderRadius: 99,
+                lineHeight: 1.2,
+              }}>
+                {count > 9 ? '9+' : count}
+              </span>
+            )}
           </NavLink>
         ))}
 

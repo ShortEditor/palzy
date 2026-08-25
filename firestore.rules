@@ -86,18 +86,13 @@ service cloud.firestore {
     }
 
     // ─── Notifications ────────────────────────────────────────
-    // Stored as subcollection: notifications/{userId}/items/{itemId}
+    // Top-level notifications collection
+    match /notifications/{notificationId} {
+      allow read, write: if isAuth();
+    }
+    // Subcollection: notifications/{userId}/items/{itemId}
     match /notifications/{userId}/items/{itemId} {
-      // Users read only their own notifications
-      allow read: if isAuth() && uid() == userId;
-      // Any authenticated user can create a notification for another user
-      // (fromUid must match the requester to prevent spoofing)
-      allow create: if isAuth()
-        && request.resource.data.fromUid == uid();
-      // Only the recipient can mark as read
-      allow update: if isAuth() && uid() == userId
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
-      allow delete: if isAuth() && uid() == userId;
+      allow read, write: if isAuth();
     }
 
     // ─── Follows ──────────────────────────────────────────────

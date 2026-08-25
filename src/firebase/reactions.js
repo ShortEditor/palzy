@@ -1,5 +1,7 @@
 import { doc, getDoc, setDoc, deleteDoc, updateDoc, increment } from 'firebase/firestore'
 import { db } from './config'
+import { getUserProfile } from './users'
+import { createNotification } from './notifications'
 
 export const EMOJIS = ['😂', '🔥', '😮', '👏', '😢']
 export const EMOJI_LABELS = {
@@ -23,6 +25,8 @@ export async function toggleEmojiReaction(postId, userId, emoji) {
 
   const existing = await getDoc(rxnDoc)
 
+  let finalEmoji = null
+
   if (existing.exists()) {
     const old = existing.data().emoji
 
@@ -39,7 +43,7 @@ export async function toggleEmojiReaction(postId, userId, emoji) {
       } catch {
         await setDoc(cntDoc, { [emoji]: 1 })
       }
-      return emoji
+      finalEmoji = emoji
     }
   } else {
     // New reaction
@@ -50,8 +54,35 @@ export async function toggleEmojiReaction(postId, userId, emoji) {
     } else {
       await setDoc(cntDoc, { [emoji]: 1 })
     }
-    return emoji
+    finalEmoji = emoji
   }
+
+  // Notify post author if a reaction was set
+  if (finalEmoji) {
+    getDoc(doc(db, 'posts', postId))
+      .then(pSnap => {
+        const postData = pSnap.data()
+        if (postData?.authorId && postData.authorId !== userId) {
+          getUserProfile(userId)
+            .then(reactor => {
+              createNotification(postData.authorId, {
+                type: 'reaction',
+                fromUid: userId,
+                fromName: reactor?.name || 'Someone',
+                fromUsername: reactor?.username || '',
+                fromPhotoURL: reactor?.photoURL || '',
+                postId,
+                postContent: postData.content || '',
+                emoji: finalEmoji,
+              })
+            })
+            .catch(() => {})
+        }
+      })
+      .catch(() => {})
+  }
+
+  return finalEmoji
 }
 
 /** Get aggregate emoji counts for a post. */
