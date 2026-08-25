@@ -7,6 +7,7 @@ import {
   collection,
   where,
   getDocs,
+  limit,
   serverTimestamp,
 } from 'firebase/firestore'
 import { db } from './config'
@@ -22,14 +23,18 @@ export async function isUsernameTaken(username) {
 }
 
 // ─── Create user profile on first login ──────────────────────
-export async function createUserProfile(uid, { username, name, photoURL, branch, year, bio = '' }) {
+export async function createUserProfile(uid, { username, name, photoURL, branch, year, bio = '', showBranch = true, showYear = true }) {
   await setDoc(doc(db, 'users', uid), {
     username: username.toLowerCase(),
     name,
     photoURL: photoURL || '',
-    branch,
-    year,
+    branch: branch || '',
+    year: year || '',
     bio,
+    showBranch,
+    showYear,
+    followerCount: 0,
+    followingCount: 0,
     createdAt: serverTimestamp(),
   })
 }
@@ -54,14 +59,23 @@ export function invalidateUserCache(uid) {
   profileCache.delete(uid)
 }
 
+// ─── Allowed fields for profile updates (blocks privilege escalation) ─────
+const ALLOWED_PROFILE_FIELDS = new Set([
+  'name', 'username', 'photoURL', 'bannerURL', 'bio',
+  'branch', 'year', 'showBranch', 'showYear',
+  'stories', 'streakCount', 'streakLastDate', 'streakBestEver',
+  'followerCount', 'followingCount',
+])
+
 // ─── Update profile fields ───────────────────────────────────
 export async function updateUserProfile(uid, updates) {
   const cleanUpdates = {}
   Object.keys(updates).forEach(key => {
-    if (updates[key] !== undefined) {
+    if (updates[key] !== undefined && ALLOWED_PROFILE_FIELDS.has(key)) {
       cleanUpdates[key] = updates[key]
     }
   })
+  if (Object.keys(cleanUpdates).length === 0) return
   await updateDoc(doc(db, 'users', uid), cleanUpdates)
   invalidateUserCache(uid)
 }

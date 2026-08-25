@@ -19,8 +19,11 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isAuth();
 
-      // Anyone can create their own doc (first login)
-      allow create: if isAuth() && uid() == userId;
+      // Anyone can create their own doc — but CANNOT set privileged fields
+      allow create: if isAuth() && uid() == userId
+        && !('isAdmin'    in request.resource.data)
+        && !('isVerified' in request.resource.data)
+        && !('banned'     in request.resource.data);
 
       // Owner can update own doc — but NOT isAdmin/isVerified/banned
       allow update: if isAuth() && uid() == userId
@@ -28,7 +31,7 @@ service cloud.firestore {
         && !('isVerified' in request.resource.data.diff(resource.data).affectedKeys())
         && !('banned'     in request.resource.data.diff(resource.data).affectedKeys());
 
-      // Any logged-in user can update follower/following counters (needed for follow system)
+      // Follow system: any authenticated user can update ONLY counter fields on any profile
       allow update: if isAuth()
         && request.resource.data.diff(resource.data).affectedKeys()
              .hasOnly(['followerCount', 'followingCount']);
@@ -62,48 +65,95 @@ service cloud.firestore {
       }
     }
 
-    // ─── Likes ────────────────────────────────────────────────
+    // ─── Likes ──────────────────────────────────────────────
+    // Document ID pattern: {postId}_{userId} for ordinary likes
+    // Only the owning user can create/delete their own likes
     match /likes/{likeId} {
-      allow read, write: if isAuth();
-    }
-
-    // ─── Stories ──────────────────────────────────────────────
-    match /stories/{storyId} {
-      allow read:   if isAuth();
-      allow create: if isAuth() && !isBanned() && request.resource.data.authorId == uid();
-      allow delete: if isAuth() && (resource.data.authorId == uid() || isAdmin());
-    }
-
-    // ─── Emoji Reactions ──────────────────────────────────────
-    // Keyed: {postId}__{userId}
-    match /emojiReactions/{reactionId} {
       allow read: if isAuth();
-      allow create, update: if isAuth()
-        && request.resource.data.userId == uid()
-        && request.resource.data.emoji is string;
+
+      // Ordinary like: likeId = postId_userId, data must have userId == auth.uid
+      allow create: if isAuth()
+        && resource == null
+        && request.resource.data.userId == uid();
+
+      // Delete own like only
       allow delete: if isAuth()
         && resource.data.userId == uid();
+
+      // ── Emoji reactions: likeId = postId_rxn_userId ──
+      // Create/update own reaction
+      allow create: if isAuth()
+        && request.resource.data.userId == uid()
+        && request.resource.data.emoji is string;
+
+      // ── Emoji count aggregates: likeId = postId_emojiCounts ──
+      // Any authenticated user can update counts (incremented during reaction toggle)
+      allow create: if isAuth()
+        && likeId.matches('.*_emojiCounts');
+      allow update: if isAuth()
+        && likeId.matches('.*_emojiCounts');
+
+      // ── Notifications: likeId starts with notif_ ──
+      // Only the sender can create a notification (fromUid == auth.uid)
+      allow create: if isAuth()
+        && request.resource.data.isNotification == true
+        && request.resource.data.fromUid == uid();
+
+      // Recipient can read/update/delete their own notifications
+      allow update: if isAuth()
+        && resource.data.isNotification == true
+        && resource.data.notifToUid == uid()
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['read']);
+
+      allow delete: if isAuth()
+        && resource.data.isNotification == true
+        && resource.data.notifToUid == uid();
+
+      // ── Story views: likeId = storyview_storyId_viewerId ──
+      allow create: if isAuth()
+        && request.resource.data.isStoryView == true
+        && request.resource.data.viewerId == uid();
+
+      // ── Calls: likeId = call_callId ──
+      // Only the caller can create a call document
+      allow create: if isAuth()
+        && request.resource.data.isCall == true
+        && request.resource.data.callerId == uid();
+
+      // Caller or callee can update a call document
+      allow update: if isAuth()
+        && resource.data.isCall == true
+        && (resource.data.callerId == uid() || resource.data.calleeId == uid());
+
+      // Either party can delete/end a call
+      allow delete: if isAuth()
+        && resource.data.isCall == true
+        && (resource.data.callerId == uid() || resource.data.calleeId == uid());
     }
 
-    // ─── Notifications ────────────────────────────────────────
-    // Top-level notifications collection
-    match /notifications/{notificationId} {
-      allow read, write: if isAuth();
-    }
-    // Subcollection: notifications/{userId}/items/{itemId}
-    match /notifications/{userId}/items/{itemId} {
-      allow read, write: if isAuth();
-    }
-
-    // ─── Follows ──────────────────────────────────────────────
+    // ─── Follows ────────────────────────────────────────────
+    // Document ID: {followerId}_{followeeId}
     match /follows/{followId} {
-      allow read, write: if isAuth();
+      allow read: if isAuth();
+
+      // Only the follower (you) can create a follow document
+      allow create: if isAuth()
+        && request.resource.data.followerId == uid();
+
+      // Only the follower can unfollow (delete)
+      allow delete: if isAuth()
+        && resource.data.followerId == uid();
     }
 
-    // ─── Reports ──────────────────────────────────────────────
+    // ─── Reports ────────────────────────────────────────────
     match /reports/{reportId} {
       allow read:   if isAdmin();
-      allow create: if isAuth() && !isBanned();
+      allow create: if isAuth() && !isBanned()
+        && request.resource.data.reportedBy == uid()
+        && request.resource.data.reason is string
+        && request.resource.data.reason.size() > 0
+        && request.resource.data.reason.size() <= 500;
       allow update: if isAdmin();
     }
   }

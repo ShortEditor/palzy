@@ -253,25 +253,6 @@ const PostCard = memo(function PostCard({ post, authorProfile, isLiked: initialL
             <span>{likeCount > 0 ? likeCount : ''}</span>
           </button>
 
-          {/* ⚡ First-to-react badge */}
-          {post.firstLikerId && (
-            <span
-              title={`First like by @${post.firstLikerUsername ?? '?'}`}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 3,
-                fontSize: 10, fontWeight: 700,
-                color: '#f59e0b',
-                background: 'rgba(245,158,11,0.12)',
-                border: '1px solid rgba(245,158,11,0.25)',
-                borderRadius: 99,
-                padding: '2px 7px',
-                cursor: 'default',
-                userSelect: 'none',
-              }}
-            >
-              ⚡ first
-            </span>
-          )}
 
           {/* Comments */}
           <button

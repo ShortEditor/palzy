@@ -3,7 +3,6 @@ import {
   setDoc,
   doc,
   deleteDoc,
-  updateDoc,
   query,
   where,
   onSnapshot,

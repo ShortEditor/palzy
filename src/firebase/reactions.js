@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, deleteDoc, updateDoc, increment } from 'firebase/firestore'
+import { doc, getDoc, runTransaction, increment } from 'firebase/firestore'
 import { db } from './config'
 import { getUserProfile } from './users'
 import { createNotification } from './notifications'
@@ -17,48 +17,53 @@ const rxnRef  = (postId, userId) => doc(db, 'likes', `${postId}_rxn_${userId}`)
 const cntRef  = (postId)         => doc(db, 'likes', `${postId}_emojiCounts`)
 
 /**
- * Toggle an emoji reaction. Returns the new emoji or null (removed).
+ * Toggle an emoji reaction (atomic transaction).
+ * Returns the new emoji or null (removed).
  */
 export async function toggleEmojiReaction(postId, userId, emoji) {
   const rxnDoc = rxnRef(postId, userId)
   const cntDoc = cntRef(postId)
 
-  const existing = await getDoc(rxnDoc)
+  const result = await runTransaction(db, async (tx) => {
+    const [existingSnap, cntSnap] = await Promise.all([
+      tx.get(rxnDoc),
+      tx.get(cntDoc),
+    ])
 
-  let finalEmoji = null
+    if (existingSnap.exists()) {
+      const old = existingSnap.data().emoji
 
-  if (existing.exists()) {
-    const old = existing.data().emoji
-
-    if (old === emoji) {
-      // Toggle off
-      await deleteDoc(rxnDoc)
-      try { await updateDoc(cntDoc, { [old]: increment(-1) }) } catch { /* counts doc may not exist */ }
-      return null
-    } else {
-      // Swap emoji
-      await setDoc(rxnDoc, { postId, userId, emoji })
-      try {
-        await updateDoc(cntDoc, { [old]: increment(-1), [emoji]: increment(1) })
-      } catch {
-        await setDoc(cntDoc, { [emoji]: 1 })
+      if (old === emoji) {
+        // Toggle off — remove reaction and decrement count
+        tx.delete(rxnDoc)
+        if (cntSnap.exists()) {
+          tx.update(cntDoc, { [old]: increment(-1) })
+        }
+        return null
+      } else {
+        // Swap emoji — update reaction doc, decrement old, increment new
+        tx.set(rxnDoc, { postId, userId, emoji })
+        if (cntSnap.exists()) {
+          tx.update(cntDoc, { [old]: increment(-1), [emoji]: increment(1) })
+        } else {
+          tx.set(cntDoc, { [emoji]: 1 })
+        }
+        return emoji
       }
-      finalEmoji = emoji
-    }
-  } else {
-    // New reaction
-    await setDoc(rxnDoc, { postId, userId, emoji })
-    const cntSnap = await getDoc(cntDoc)
-    if (cntSnap.exists()) {
-      await updateDoc(cntDoc, { [emoji]: increment(1) })
     } else {
-      await setDoc(cntDoc, { [emoji]: 1 })
+      // New reaction — create reaction doc and increment count
+      tx.set(rxnDoc, { postId, userId, emoji })
+      if (cntSnap.exists()) {
+        tx.update(cntDoc, { [emoji]: increment(1) })
+      } else {
+        tx.set(cntDoc, { [emoji]: 1 })
+      }
+      return emoji
     }
-    finalEmoji = emoji
-  }
+  })
 
-  // Notify post author if a reaction was set
-  if (finalEmoji) {
+  // Notify post author if a reaction was set (fire-and-forget, outside transaction)
+  if (result) {
     getDoc(doc(db, 'posts', postId))
       .then(pSnap => {
         const postData = pSnap.data()
@@ -73,7 +78,7 @@ export async function toggleEmojiReaction(postId, userId, emoji) {
                 fromPhotoURL: reactor?.photoURL || '',
                 postId,
                 postContent: postData.content || '',
-                emoji: finalEmoji,
+                emoji: result,
               })
             })
             .catch(() => {})
@@ -82,7 +87,7 @@ export async function toggleEmojiReaction(postId, userId, emoji) {
       .catch(() => {})
   }
 
-  return finalEmoji
+  return result
 }
 
 /** Get aggregate emoji counts for a post. */
