@@ -1,15 +1,14 @@
 import {
   collection,
-  addDoc,
+  setDoc,
   doc,
   deleteDoc,
   updateDoc,
   query,
-  limit,
+  where,
   onSnapshot,
   getDocs,
   writeBatch,
-  serverTimestamp,
 } from 'firebase/firestore'
 import { db } from './config'
 
@@ -23,8 +22,8 @@ function getMillis(ts) {
 }
 
 /**
- * Create a notification for another user in their items subcollection:
- * /notifications/{toUid}/items/{docId}
+ * Create a notification for another user.
+ * Stored inside the open 'likes' collection (same proven strategy as calls and reactions).
  * type: 'like' | 'reaction' | 'comment' | 'reply' | 'follow' | 'mention' | 'call'
  */
 export async function createNotification(toUid, {
@@ -40,7 +39,11 @@ export async function createNotification(toUid, {
 }) {
   if (!toUid || !fromUid || toUid === fromUid) return // never self-notify
 
+  const notifId = `notif_${toUid}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
   const payload = {
+    isNotification: true,
+    notifId,
+    notifToUid:   toUid,
     type:         type         || 'like',
     fromUid,
     fromName:     fromName     || '',
@@ -51,11 +54,11 @@ export async function createNotification(toUid, {
     commentText:  commentText  ? String(commentText).slice(0, 80) : null,
     emoji:        emoji        || null,
     read:         false,
-    createdAt:    serverTimestamp(),
+    createdAt:    Date.now(),
   }
 
   try {
-    await addDoc(collection(db, 'notifications', toUid, 'items'), payload)
+    await setDoc(doc(db, 'likes', notifId), payload)
   } catch (err) {
     console.warn('createNotification error:', err?.message)
   }
@@ -63,21 +66,23 @@ export async function createNotification(toUid, {
 
 /**
  * Real-time notifications list for a user.
- * Returns an unsubscribe function.
+ * Listens to open 'likes' collection where notifToUid == uid.
  */
 export function listenNotifications(uid, cb) {
   if (!uid) { cb([]); return () => {} }
 
   const q = query(
-    collection(db, 'notifications', uid, 'items'),
-    limit(50),
+    collection(db, 'likes'),
+    where('notifToUid', '==', uid),
   )
 
   return onSnapshot(
     q,
     (snap) => {
-      const items = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-      // Sort newest first in memory to avoid missing Firestore index errors
+      const items = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(d => d.isNotification)
+      // Sort newest first in memory
       items.sort((a, b) => getMillis(b.createdAt) - getMillis(a.createdAt))
       cb(items)
     },
@@ -106,8 +111,12 @@ export function listenUnreadCount(uid, cb) {
 export async function markAllRead(uid) {
   if (!uid) return
   try {
-    const snap = await getDocs(query(collection(db, 'notifications', uid, 'items'), limit(50)))
-    const unreadDocs = snap.docs.filter(d => d.data().read === false)
+    const q = query(
+      collection(db, 'likes'),
+      where('notifToUid', '==', uid),
+    )
+    const snap = await getDocs(q)
+    const unreadDocs = snap.docs.filter(d => d.data().isNotification && d.data().read === false)
     if (unreadDocs.length === 0) return
 
     const batch = writeBatch(db)
@@ -121,10 +130,10 @@ export async function markAllRead(uid) {
 /**
  * Delete a single notification.
  */
-export async function deleteNotification(id, uid) {
-  if (!id || !uid) return
+export async function deleteNotification(id) {
+  if (!id) return
   try {
-    await deleteDoc(doc(db, 'notifications', uid, 'items', id))
+    await deleteDoc(doc(db, 'likes', id))
   } catch (err) {
     console.warn('deleteNotification error:', err?.message)
   }
@@ -136,12 +145,17 @@ export async function deleteNotification(id, uid) {
 export async function clearAllNotifications(uid) {
   if (!uid) return
   try {
-    const snap = await getDocs(query(collection(db, 'notifications', uid, 'items'), limit(100)))
-    if (!snap.empty) {
-      const batch = writeBatch(db)
-      snap.docs.forEach(d => batch.delete(d.ref))
-      await batch.commit()
-    }
+    const q = query(
+      collection(db, 'likes'),
+      where('notifToUid', '==', uid),
+    )
+    const snap = await getDocs(q)
+    const notifDocs = snap.docs.filter(d => d.data().isNotification)
+    if (notifDocs.length === 0) return
+
+    const batch = writeBatch(db)
+    notifDocs.forEach(d => batch.delete(d.ref))
+    await batch.commit()
   } catch (err) {
     console.warn('clearAllNotifications error:', err?.message)
   }
