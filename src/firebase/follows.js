@@ -141,21 +141,32 @@ export async function getRecommendations(currentUid, count = 10) {
   const myFollowingIds = await getFollowingIds(currentUid)
   const exclude = new Set([currentUid, ...myFollowingIds])
 
+  // Get current user's profile for branch-matching
+  let myProfile = null
+  try { myProfile = await getUserProfile(currentUid) } catch {}
+
   if (myFollowingIds.length === 0) {
-    // New user — fall back to recent users
-    const snap = await getDocs(query(collection(db, 'users'), limit(count + 5)))
-    return snap.docs
+    // New user — fall back to recent users, prioritise same branch
+    const snap = await getDocs(query(collection(db, 'users'), limit(count + 10)))
+    const users = snap.docs
       .map(d => ({ uid: d.id, ...d.data(), mutualCount: 0, mutualSamples: [] }))
       .filter(u => !exclude.has(u.uid))
-      .slice(0, count)
+    // Boost same-branch users to the top for new users
+    users.sort((a, b) => {
+      const aMatch = myProfile?.branch && a.branch === myProfile.branch ? 1 : 0
+      const bMatch = myProfile?.branch && b.branch === myProfile.branch ? 1 : 0
+      return bMatch - aMatch || Math.random() - 0.5
+    })
+    return users.slice(0, count)
   }
 
   // 2. For each person I follow, get who THEY follow (friends-of-friends)
   const candidateScore = {}  // uid → mutual count
   const candidateMutuals = {} // uid → [mutual uid, ...]
 
+  // Check up to 30 friends (was 15) for wider graph coverage
   const followingLists = await Promise.all(
-    myFollowingIds.slice(0, 15).map(uid => getFollowingIds(uid)) // cap at 15 to limit reads
+    myFollowingIds.slice(0, 30).map(uid => getFollowingIds(uid))
   )
 
   followingLists.forEach((friendsFollowing, i) => {
@@ -170,19 +181,24 @@ export async function getRecommendations(currentUid, count = 10) {
     })
   })
 
-  // 3. Sort candidates by mutual count
+  // 3. Sort candidates by mutual count + branch affinity + small jitter
   const sortedCandidates = Object.entries(candidateScore)
-    .sort(([, a], [, b]) => b - a)
+    .map(([uid, score]) => ({
+      uid,
+      score: score + (Math.random() * 0.8),  // jitter for variety on each visit
+    }))
+    .sort((a, b) => b.score - a.score)
     .slice(0, count + 5)
-    .map(([uid]) => uid)
+    .map(c => c.uid)
 
   if (sortedCandidates.length === 0) {
-    // Fallback: same-branch suggestions
-    const snap = await getDocs(query(collection(db, 'users'), limit(count + 5)))
-    return snap.docs
+    // Fallback: recent users with shuffle
+    const snap = await getDocs(query(collection(db, 'users'), limit(count + 10)))
+    const users = snap.docs
       .map(d => ({ uid: d.id, ...d.data(), mutualCount: 0, mutualSamples: [] }))
       .filter(u => !exclude.has(u.uid))
-      .slice(0, count)
+      .sort(() => Math.random() - 0.5)
+    return users.slice(0, count)
   }
 
   // 4. Fetch profiles for sorted candidates
@@ -195,6 +211,7 @@ export async function getRecommendations(currentUid, count = 10) {
   for (const snap of profileDocs) {
     if (!snap.exists()) continue
     const uid = snap.id
+    const profile = snap.data()
     const mutualUids = (candidateMutuals[uid] ?? []).slice(0, 2)
     const mutualProfileDocs = await Promise.all(
       mutualUids.map(muid => getDoc(doc(db, 'users', muid)))
@@ -203,14 +220,19 @@ export async function getRecommendations(currentUid, count = 10) {
       .filter(s => s.exists())
       .map(s => ({ uid: s.id, ...s.data() }))
 
+    // Branch affinity: +2 to score if same branch as current user
+    const branchBonus = (myProfile?.branch && profile.branch === myProfile.branch) ? 2 : 0
+
     results.push({
       uid,
-      ...snap.data(),
-      mutualCount: candidateScore[uid] ?? 0,
+      ...profile,
+      mutualCount: (candidateScore[uid] ?? 0) + branchBonus,
       mutualSamples,
     })
   }
 
+  // Final sort by enriched mutual count
+  results.sort((a, b) => b.mutualCount - a.mutualCount)
   return results.slice(0, count)
 }
 

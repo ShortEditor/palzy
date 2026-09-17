@@ -63,17 +63,67 @@ export async function deletePost(postId) {
 }
 
 // ─── Hybrid ranked feed ──────────────────────────────────────
-const FEED_POOL_SIZE   = 60   // raw posts fetched before scoring
-const FEED_PAGE_SIZE   = 5    // posts returned per call (optimized for fast initial load)
+const FEED_POOL_SIZE   = 80   // raw posts fetched before scoring
+const FEED_PAGE_SIZE   = 5    // posts returned per call
 
-function scorePost(post) {
-  const ageMs = Date.now() - (post.createdAt?.toMillis?.() ?? Date.now())
+// Session cache: scored pool is built once per refresh, paginated from memory
+let _cachedPool   = []
+let _cacheSession = null  // unique key per session (reset on refresh / cursor=null)
+
+function scorePost(post, sessionSeed) {
+  const ageMs    = Date.now() - (post.createdAt?.toMillis?.() ?? Date.now())
   const ageHours = ageMs / 3_600_000
-  const recencyBonus = Math.max(0, 50 - ageHours) // decays to 0 at 50h
-  return (post.likeCount ?? 0) * 3 + (post.commentCount ?? 0) * 2 + recencyBonus
+
+  // ── Recency: strong boost for <6h, smooth decay to 0 at 72h ──
+  const recencyBonus = ageHours < 6
+    ? 60 - ageHours * 2            // 60→48 in first 6 hours
+    : Math.max(0, 48 * Math.exp(-0.04 * (ageHours - 6)))  // exponential decay
+
+  // ── Engagement signals ──
+  const likes    = post.likeCount    ?? 0
+  const comments = post.commentCount ?? 0
+  const engagement = likes * 3 + comments * 4
+
+  // ── Engagement density: engagement-per-hour (rewards quick virality) ──
+  const density = ageHours > 0.5 ? (likes + comments) / ageHours : (likes + comments) * 2
+
+  // ── Content type boost: visual posts get +8, quotes +5 ──
+  const typeBoost = post.type === 'image' ? 8
+                  : post.type === 'quote' ? 5
+                  : 0
+
+  // ── Follow boost ──
+  const followBoost = post._isFollowed ? 20 : 0
+
+  // ── Controlled randomness: jitter ±12 so refreshes feel fresh ──
+  // Uses a deterministic-ish hash per post+session so pagination stays stable
+  const hash = simpleHash(post.id + sessionSeed)
+  const jitter = (hash % 2400 - 1200) / 100  // range: -12 to +12
+
+  return recencyBonus + engagement + density * 2 + typeBoost + followBoost + jitter
+}
+
+/** Simple numeric hash for deterministic randomness within a session */
+function simpleHash(str) {
+  let h = 0
+  for (let i = 0; i < str.length; i++) {
+    h = ((h << 5) - h + str.charCodeAt(i)) | 0
+  }
+  return Math.abs(h)
 }
 
 export async function getFeedPosts(cursor = null, currentUid = null, followingIds = []) {
+  // ── Return from cache on paginated requests ──
+  if (cursor !== null && _cachedPool.length > 0) {
+    const startIndex = cursor
+    const page = _cachedPool.slice(startIndex, startIndex + FEED_PAGE_SIZE)
+    const nextCursor = startIndex + FEED_PAGE_SIZE
+    const hasMore = nextCursor < _cachedPool.length
+    return { posts: page, nextCursor, hasMore }
+  }
+
+  // ── Fresh fetch (first load or refresh) ──
+  const sessionSeed = String(Date.now()) + Math.random().toString(36).slice(2)
   const seenIds = new Set()
   const pool = []
 
@@ -123,13 +173,20 @@ export async function getFeedPosts(cursor = null, currentUid = null, followingId
   })
 
   // ── 3. Score + sort ────────────────────────────────────────
-  const scored = pool.map(p => ({ ...p, _score: scorePost(p) + (p._isFollowed ? 15 : 0) }))
+  const scored = pool.map(p => {
+    const s = scorePost(p, sessionSeed)
+    // Clean internal flags before returning
+    const { _isFollowed, ...clean } = p
+    return { ...clean, _score: s }
+  })
   scored.sort((a, b) => b._score - a._score)
 
-  // ── 4. Cursor-based pagination ─────────────────────────────
-  const startIndex = cursor ?? 0
-  const page = scored.slice(startIndex, startIndex + FEED_PAGE_SIZE)
-  const nextCursor = startIndex + FEED_PAGE_SIZE
+  // ── 4. Cache for this session & return first page ──────────
+  _cachedPool = scored
+  _cacheSession = sessionSeed
+
+  const page = scored.slice(0, FEED_PAGE_SIZE)
+  const nextCursor = FEED_PAGE_SIZE
   const hasMore = nextCursor < scored.length
 
   return { posts: page, nextCursor, hasMore }
