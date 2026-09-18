@@ -3,4 +3,4 @@ Allow: /
 Disallow: /admin
 Disallow: /setup-username
 
-Sitemap: https://palzy.vercel.app/sitemap.xml
+Sitemap: https://www.palzy.website/sitemap.xml
