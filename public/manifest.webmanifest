@@ -1,0 +1,42 @@
+{
+  "name": "Palzy",
+  "short_name": "Palzy",
+  "description": "The social feed built for your college crowd. Post, vibe, and connect with batchmates.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d0d14",
+  "theme_color": "#a078ff",
+  "lang": "en",
+  "scope": "/",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "categories": ["social", "education"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Home Feed",
+      "short_name": "Feed",
+      "description": "Jump straight to your feed",
+      "url": "/",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Campus Board",
+      "short_name": "Campus",
+      "description": "View doubts, notes and trending posts",
+      "url": "/campus",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Explore",
+      "short_name": "Explore",
+      "description": "Search people and posts",
+      "url": "/explore",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

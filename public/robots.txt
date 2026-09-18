@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /setup-username
+
+Sitemap: https://palzy.vercel.app/sitemap.xml
