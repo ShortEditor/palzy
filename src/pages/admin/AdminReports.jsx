@@ -4,6 +4,7 @@ import { getUserProfile } from '../../firebase/users'
 import { getPost } from '../../firebase/posts'
 import { formatDistanceToNow } from 'date-fns'
 import Avatar from '../../components/Avatar'
+import Icon from '../../components/Icon'
 import toast from 'react-hot-toast'
 
 const REASONS = ['Spam', 'Harassment', 'Inappropriate content', 'Misinformation', 'Other']
@@ -100,9 +101,9 @@ export default function AdminReports() {
               id={`admin-reports-filter-${f}`}
               className={`btn btn-sm ${filter === f ? 'btn-primary' : 'btn-outline'}`}
               onClick={() => setFilter(f)}
-              style={{ textTransform: 'capitalize' }}
+              style={{ textTransform: 'capitalize', display: 'inline-flex', alignItems: 'center', gap: 5 }}
             >
-              {f === 'pending' ? '🚩 Pending' : '📋 All'}
+              {f === 'pending' ? <><Icon name="flag" size={13} /> Pending</> : <><Icon name="clipboard" size={13} /> All</>}
             </button>
           ))}
         </div>
@@ -112,7 +113,7 @@ export default function AdminReports() {
         <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-12)' }}><div className="spinner spinner-lg" /></div>
       ) : filtered.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state-icon">✅</div>
+          <div className="empty-state-icon" style={{ color: 'var(--brand-green)' }}><Icon name="checkCircle" size={36} /></div>
           <div className="empty-state-title">All clear!</div>
           <div className="empty-state-body">No {filter === 'pending' ? 'pending' : ''} reports right now.</div>
         </div>
@@ -133,9 +134,9 @@ export default function AdminReports() {
                 {/* Status badge */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--space-4)', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                    {report.status === 'pending'   && <span className="badge badge-red">🚩 Pending</span>}
+                    {report.status === 'pending'   && <span className="badge badge-red" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Icon name="flag" size={11} /> Pending</span>}
                     {report.status === 'dismissed' && <span className="badge" style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}>Dismissed</span>}
-                    {report.status === 'resolved'  && <span className="badge badge-green">✅ Resolved</span>}
+                    {report.status === 'resolved'  && <span className="badge badge-green" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Icon name="check" size={11} /> Resolved</span>}
                     <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>
                       Reason: <strong style={{ color: 'var(--text-secondary)' }}>{report.reason}</strong>
                     </span>
@@ -174,8 +175,9 @@ export default function AdminReports() {
                       className="btn btn-outline btn-sm"
                       onClick={() => handleDismiss(report.id)}
                       disabled={actionId === report.id}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}
                     >
-                      {actionId === report.id ? <div className="spinner" style={{ width: 12, height: 12, borderWidth: 2 }} /> : '👍 Dismiss'}
+                      {actionId === report.id ? <div className="spinner" style={{ width: 12, height: 12, borderWidth: 2 }} /> : <><Icon name="thumbsUp" size={13} /> Dismiss</>}
                     </button>
                     {post && (
                       <button
@@ -183,8 +185,9 @@ export default function AdminReports() {
                         className="btn btn-danger btn-sm"
                         onClick={() => handleResolve(report.id, report.postId)}
                         disabled={actionId === report.id}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}
                       >
-                        🗑️ Delete post &amp; Resolve
+                        <Icon name="trash" size={13} /> Delete post &amp; Resolve
                       </button>
                     )}
                   </div>

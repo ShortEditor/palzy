@@ -10,6 +10,7 @@ import {
 } from 'firebase/auth'
 import { auth, googleProvider } from '../firebase/config'
 import { getUserProfile } from '../firebase/users'
+import Icon from '../components/Icon'
 import toast from 'react-hot-toast'
 
 const AuthContext = createContext(null)
@@ -30,7 +31,7 @@ export function AuthProvider({ children }) {
           const profile = await getUserProfile(user.uid)
           setUserProfile(profile)
 
-          // 🎂 Anniversary ping (once per session)
+          // Anniversary ping (once per session)
           if (profile?.createdAt && !sessionStorage.getItem('palzy_anniv_shown')) {
             const created = profile.createdAt.toDate ? profile.createdAt.toDate() : new Date(profile.createdAt)
             const now = new Date()
@@ -38,9 +39,9 @@ export function AuthProvider({ children }) {
               const years = now.getFullYear() - created.getFullYear()
               sessionStorage.setItem('palzy_anniv_shown', '1')
               setTimeout(() => {
-                toast(`🎂 ${years > 0 ? `${years} year${years > 1 ? 's' : ''} on Palzy today!` : 'Happy Palzy birthday!'} 🎉`, {
+                toast(`${years > 0 ? `${years} year${years > 1 ? 's' : ''} on Palzy today!` : 'Happy Palzy birthday!'}`, {
                   duration: 6000,
-                  icon: '🎂',
+                  icon: <Icon name="cake" size={20} />,
                   style: { fontWeight: 600 },
                 })
               }, 2000) // slight delay so the page settles first

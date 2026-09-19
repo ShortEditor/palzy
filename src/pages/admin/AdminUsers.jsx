@@ -50,7 +50,7 @@ export default function AdminUsers() {
     try {
       await setUserVerified(uid, !currentlyVerified)
       setUsers(prev => prev.map(u => u.uid === uid ? { ...u, isVerified: !currentlyVerified } : u))
-      toast.success(currentlyVerified ? 'Blue tick removed.' : '✅ Blue tick granted!')
+      toast.success(currentlyVerified ? 'Blue tick removed.' : 'Blue tick granted!', { icon: <Icon name="badgeCheck" size={16} /> })
     } catch {
       toast.error('Action failed.')
     } finally {
@@ -64,7 +64,7 @@ export default function AdminUsers() {
     try {
       await setUserAdmin(uid, !currentlyAdmin)
       setUsers(prev => prev.map(u => u.uid === uid ? { ...u, isAdmin: !currentlyAdmin } : u))
-      toast.success(currentlyAdmin ? 'Admin access revoked.' : '⚡ Admin access granted!')
+      toast.success(currentlyAdmin ? 'Admin access revoked.' : 'Admin access granted!', { icon: <Icon name="zap" size={16} /> })
     } catch {
       toast.error('Action failed.')
     } finally {

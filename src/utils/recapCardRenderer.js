@@ -1,4 +1,4 @@
-﻿// Palzy — Weekly Recap Card Generator
+// Palzy — Weekly Recap Card Generator
 // Renders a 1080x1080 canvas card showing the user"s week stats
 // Returns a PNG data URL (lossless, owner-downloadable)
 
@@ -86,7 +86,7 @@ export async function renderRecapCard({ name, username, photoURL, stats }) {
   const statItems = [
     { label: "Posts", value: stats.postCount, icon: "✦", color: "#a078ff" },
     { label: "Likes Received", value: stats.likesReceived, icon: "♥", color: "#e91e8c" },
-    { label: "Streak", value: `${stats.streakCount} days`, icon: "🔥", color: "#f97316" },
+    { label: "Streak", value: `${stats.streakCount} days`, icon: "★", color: "#f97316" },
     { label: "New Followers", value: stats.newFollowers, icon: "✺", color: "#0bc5de" },
   ]
 

@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
-import { EMOJIS, EMOJI_LABELS, toggleEmojiReaction, getEmojiCounts } from '../firebase/reactions'
+import { EMOJIS, EMOJI_LABELS, EMOJI_ICON_MAP, toggleEmojiReaction, getEmojiCounts } from '../firebase/reactions'
+import Icon from './Icon'
+
 
 /**
  * Emoji reaction bar — 5 emojis below post content.
@@ -78,7 +80,7 @@ export default function ReactionBar({ postId, userId, initialReaction }) {
               transform: active ? 'scale(1.08)' : 'scale(1)',
             }}
           >
-            <span>{emoji}</span>
+            <Icon name={EMOJI_ICON_MAP[emoji]} size={15} />
             {count > 0 && (
               <span style={{ fontSize: 11, lineHeight: 1 }}>{count}</span>
             )}

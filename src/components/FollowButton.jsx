@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { followUser, unfollowUser, isFollowing as checkFollowing } from '../firebase/follows'
 import toast from 'react-hot-toast'
+import Icon from './Icon'
 
 /**
  * Reusable Follow / Unfollow button.
@@ -50,7 +51,7 @@ export default function FollowButton({ targetUid, initialState, onToggle, size =
     try {
       if (next) {
         await followUser(currentUser.uid, targetUid)
-        toast.success('Following! 🎉')
+        toast.success('Following!', { icon: <Icon name="confetti" size={16} /> })
       } else {
         await unfollowUser(currentUser.uid, targetUid)
         toast('Unfollowed.')

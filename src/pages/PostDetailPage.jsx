@@ -356,7 +356,7 @@ export default function PostDetailPage() {
       {/* Threaded comments */}
       {topLevel.length === 0 ? (
         <div className="empty-state" style={{ padding: 'var(--space-10)' }}>
-          <div className="empty-state-icon">💬</div>
+          <div className="empty-state-icon" style={{ color: 'var(--text-muted)' }}><Icon name="comment" size={36} /></div>
           <div className="empty-state-body">No replies yet — be the first!</div>
         </div>
       ) : (

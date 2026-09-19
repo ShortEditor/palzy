@@ -1,4 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
+import Icon from './Icon'
+
+const PILLS = [
+  { icon: 'zap', label: 'Instant load' },
+  { icon: 'mobile', label: 'Home screen' },
+  { icon: 'bell', label: 'Notifications' },
+]
 
 export default function InstallBanner() {
   const [show, setShow] = useState(false)
@@ -108,14 +115,18 @@ export default function InstallBanner() {
 
         {/* Pills */}
         <div style={{ display:'flex', gap:8, flexWrap:'wrap', justifyContent:'center' }}>
-          {['⚡ Instant load','📲 Home screen','🔔 Notifications'].map(f => (
-            <span key={f} style={{
+          {PILLS.map(p => (
+            <span key={p.label} style={{
               fontSize:11, fontWeight:600,
               background:'rgba(255,255,255,0.06)',
               border:'1px solid rgba(255,255,255,0.1)',
               borderRadius:99, padding:'4px 12px',
               color:'rgba(255,255,255,0.55)',
-            }}>{f}</span>
+              display:'inline-flex', alignItems:'center', gap:5,
+            }}>
+              <Icon name={p.icon} size={13} />
+              {p.label}
+            </span>
           ))}
         </div>
 

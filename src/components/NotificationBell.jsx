@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { listenUnreadCount } from '../firebase/notifications'
+import Icon from './Icon'
 
 export default function NotificationBell() {
   const { currentUser } = useAuth()
@@ -35,7 +36,7 @@ export default function NotificationBell() {
         fontSize: 18,
       }}
     >
-      🔔
+      <Icon name="bell" size={18} />
       {unread > 0 && (
         <span
           style={{

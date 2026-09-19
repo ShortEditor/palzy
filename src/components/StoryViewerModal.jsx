@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { deleteStory, markStoryAsViewed, getStoryViewers } from '../firebase/stories'
 import Avatar from './Avatar'
 import VerifiedBadge from './VerifiedBadge'
+import Icon from './Icon'
 import toast from 'react-hot-toast'
 
 export default function StoryViewerModal({ userGroups = [], initialUserIndex = 0, isOpen, onClose, onDeleteStory }) {
@@ -204,11 +205,11 @@ export default function StoryViewerModal({ userGroups = [], initialUserIndex = 0
                 onClick={onClose}
                 style={{
                   background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none',
-                  borderRadius: '50%', width: 34, height: 34, cursor: 'pointer', fontSize: 16,
+                  borderRadius: '50%', width: 34, height: 34, cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}
               >
-                ✕
+                <Icon name="close" size={16} />
               </button>
             </div>
           </div>
@@ -246,7 +247,7 @@ export default function StoryViewerModal({ userGroups = [], initialUserIndex = 0
                 backdropFilter: 'blur(10px)',
               }}
             >
-              👁️ {viewers.length} {viewers.length === 1 ? 'view' : 'views'}
+              <Icon name="eye" size={14} /> {viewers.length} {viewers.length === 1 ? 'view' : 'views'}
             </button>
           </div>
         )}

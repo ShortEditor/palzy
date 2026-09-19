@@ -1,10 +1,11 @@
-﻿import { useState, useEffect } from "react"
+import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
 import { useAuth } from "../contexts/AuthContext"
 import { getWeeklyLeaderboard } from "../firebase/leaderboard"
 import Avatar from "./Avatar"
+import Icon from "./Icon"
 
-const MEDAL = ["🥇", "🥈", "🥉"]
+const MEDAL_COLORS = ["#f59e0b", "#94a3b8", "#d97706"]
 
 export default function LeaderboardCard() {
   const { userProfile } = useAuth()
@@ -36,7 +37,7 @@ export default function LeaderboardCard() {
   return (
     <div className="suggestions-sidebar-card" style={{ padding: "var(--space-5)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", marginBottom: "var(--space-4)" }}>
-        <span style={{ fontSize: 18 }}>🏆</span>
+        <span style={{ color: "#f59e0b", display: "flex" }}><Icon name="trophy" size={18} /></span>
         <span style={{ fontFamily: "var(--font-fun)", fontWeight: 700, fontSize: "var(--font-size-sm)", color: "var(--text-primary)" }}>
           Top Posters This Week
         </span>
@@ -49,8 +50,8 @@ export default function LeaderboardCard() {
             to={`/u/${entry.username}`}
             style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "var(--space-3)" }}
           >
-            <span style={{ fontSize: 16, width: 20, textAlign: "center", flexShrink: 0 }}>
-              {MEDAL[i] ?? `#${i + 1}`}
+            <span style={{ fontSize: 13, width: 20, textAlign: "center", flexShrink: 0, display: "flex", justifyContent: "center", alignItems: "center", color: MEDAL_COLORS[i] || "var(--text-muted)", fontWeight: 700 }}>
+              {i < 3 ? <Icon name="medal" size={16} /> : `#${i + 1}`}
             </span>
             <Avatar src={entry.photoURL} name={entry.name} size="sm" />
             <div style={{ flex: 1, minWidth: 0 }}>

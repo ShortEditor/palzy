@@ -5,6 +5,7 @@ import {
   addCallerIce, addCalleeIce, setCallStatus,
   listenToCall, listenForIncomingCalls, ICE_CONFIG,
 } from '../firebase/calls'
+import Icon from '../components/Icon'
 import toast from 'react-hot-toast'
 
 const CallContext = createContext(null)
@@ -169,7 +170,7 @@ export function CallProvider({ children }) {
       // Listen for answer + callee ICE
       callUnsubRef.current = listenToCall(callId, async (data) => {
         if (data.status === 'declined' || data.status === 'ended') {
-          if (data.status === 'declined') toast('Call declined 📵', { icon: '📵' })
+          if (data.status === 'declined') toast('Call declined', { icon: <Icon name="phoneOff" size={18} /> })
           cleanup()
           return
         }
@@ -187,7 +188,7 @@ export function CallProvider({ children }) {
       setTimeout(() => {
         if (callIdRef.current === callId && callState === 'ringing_out') {
           setCallStatus(callId, 'missed').catch(() => {})
-          toast('No answer 📴', { icon: '📴' })
+          toast('No answer', { icon: <Icon name="phoneOff" size={18} /> })
           cleanup()
         }
       }, 45_000)
@@ -291,7 +292,7 @@ export function CallProvider({ children }) {
     // setSinkId is supported in desktop Chrome/Edge (not Firefox/Safari or mobile browsers)
     if (typeof audio.setSinkId !== 'function') {
       toast('Speaker switching isn\'t supported on this mobile browser. Use phone volume buttons or system audio control.', {
-        icon: '📱',
+        icon: <Icon name="mobile" size={18} />,
         id: 'speaker-mobile-info',
       })
       return
@@ -319,7 +320,7 @@ export function CallProvider({ children }) {
       if (err.name === 'NotAllowedError') {
         toast.error('Speaker access denied — allow audio output in browser settings.')
       } else {
-        toast('Speaker selection not available on this device.', { icon: '🎧' })
+        toast('Speaker selection not available on this device.', { icon: <Icon name="volume" size={18} /> })
       }
     }
   }, [isSpeaker])

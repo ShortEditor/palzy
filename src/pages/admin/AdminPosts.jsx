@@ -96,7 +96,7 @@ export default function AdminPosts() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="empty-state"><div className="empty-state-icon">📭</div><div className="empty-state-body">No posts found.</div></div>
+        <div className="empty-state"><div className="empty-state-icon" style={{ color: 'var(--text-muted)' }}><Icon name="envelope" size={36} /></div><div className="empty-state-body">No posts found.</div></div>
       ) : (
         <div style={{ display: 'grid', gap: 'var(--space-4)' }}>
           {filtered.map(post => {
@@ -131,11 +131,15 @@ export default function AdminPosts() {
                   )}
 
                   {/* Stats */}
-                  <div style={{ display: 'flex', gap: 'var(--space-4)', marginTop: 'var(--space-3)', color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)' }}>
-                    <span>❤️ {post.likeCount ?? 0}</span>
-                    <span>💬 {post.commentCount ?? 0}</span>
-                    <span className="badge" style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}>
-                      {post.type === 'image' ? '📷 Image' : '✍️ Text'}
+                  <div style={{ display: 'flex', gap: 'var(--space-4)', marginTop: 'var(--space-3)', color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)', alignItems: 'center' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: '#ff453a' }}>
+                      <Icon name="heartFilled" size={13} fill={true} /> {post.likeCount ?? 0}
+                    </span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <Icon name="comment" size={13} /> {post.commentCount ?? 0}
+                    </span>
+                    <span className="badge" style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      {post.type === 'image' ? <><Icon name="camera" size={12} /> Image</> : <><Icon name="pencil" size={12} /> Text</>}
                     </span>
                   </div>
                 </div>

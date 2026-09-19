@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import Icon from './Icon'
 
 /**
  * Renders post/comment text with:
@@ -75,7 +76,7 @@ export default function RichText({ text, className = '', style = {} }) {
               style={{ color: 'var(--brand-accent)', textDecoration: 'none' }}
               onClick={e => e.stopPropagation()}
             >
-              🔗 {display}{seg.url.length > 45 ? '…' : ''}
+              <Icon name="link" size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /> {display}{seg.url.length > 45 ? '…' : ''}
             </a>
           )
         }

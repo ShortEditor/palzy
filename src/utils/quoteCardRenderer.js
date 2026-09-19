@@ -2,7 +2,7 @@
 
 // ─── Ratio Definitions ───────────────────────────────────────────────────────
 export const RATIOS = {
-  square:    { id: 'square',    label: '1:1',  W: 1080, H: 1080, icon: '⬜' },
+  square:    { id: 'square',    label: '1:1',  W: 1080, H: 1080, icon: '□' },
   portrait:  { id: 'portrait',  label: '4:5',  W: 1080, H: 1350, icon: '▬' },
   landscape: { id: 'landscape', label: '16:9', W: 1080, H: 608,  icon: '▭' },
 }

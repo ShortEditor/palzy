@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useCall } from '../contexts/CallContext'
 import Avatar from './Avatar'
 import VerifiedBadge from './VerifiedBadge'
+import Icon from './Icon'
 
 const PhoneIcon = ({ size = 16 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
@@ -106,10 +107,10 @@ export default function QuickCallModal({ isOpen, onClose }) {
             style={{
               background: 'var(--bg-input)', border: 'none', borderRadius: '50%',
               width: 30, height: 30, color: 'var(--text-muted)', cursor: 'pointer',
-              fontWeight: 700, fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
           >
-            ✕
+            <Icon name="close" size={14} />
           </button>
         </div>
 
@@ -135,9 +136,9 @@ export default function QuickCallModal({ isOpen, onClose }) {
             {query && (
               <button
                 onClick={() => setQuery('')}
-                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14 }}
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0 }}
               >
-                ✕
+                <Icon name="close" size={13} />
               </button>
             )}
           </div>
@@ -160,8 +161,8 @@ export default function QuickCallModal({ isOpen, onClose }) {
               No users found matching "{query}"
             </div>
           ) : !query.trim() && results.length === 0 ? (
-            <div style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
-              Type a name or @username above to make an instant voice call 📞
+            <div style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              Type a name or @username above to make an instant voice call <Icon name="phone" size={14} />
             </div>
           ) : (
             results.map(user => (

@@ -221,7 +221,7 @@ export default function ProfilePage() {
       a.href = dataUrl
       a.download = `palzy-recap-${profile.username}.png`
       a.click()
-      toast.success('Recap card downloaded! 🎉', { id: toastId })
+      toast.success('Recap card downloaded!', { id: toastId, icon: <Icon name="confetti" size={16} /> })
     } catch (err) {
       console.error(err)
       toast.error('Could not generate recap.', { id: toastId })
@@ -338,7 +338,7 @@ export default function ProfilePage() {
           {profile.year && profile.showYear !== false && (
             <span className="profile-meta-item badge badge-green">{profile.year}</span>
           )}
-          {/* 🔥 Streak badge */}
+          {/* Streak badge */}
           {(profile.streakCount ?? 0) > 0 && (
             <span
               className="profile-meta-item"
@@ -351,19 +351,19 @@ export default function ProfilePage() {
                 fontSize: 'var(--font-size-xs)', fontWeight: 700, cursor: 'default',
               }}
             >
-              🔥 {profile.streakCount}
+              <Icon name="fire" size={13} /> {profile.streakCount}
             </span>
           )}
-          {/* 📊 Weekly recap — own profile only */}
+          {/* Weekly recap — own profile only */}
           {isOwn && (
             <button
               id="btn-generate-recap"
               className="btn btn-ghost btn-sm"
               onClick={handleGenerateRecap}
               title="Download your weekly recap card"
-              style={{ fontSize: 'var(--font-size-xs)', padding: '3px 10px', borderRadius: 99 }}
+              style={{ fontSize: 'var(--font-size-xs)', padding: '3px 10px', borderRadius: 99, display: 'inline-flex', alignItems: 'center', gap: 4 }}
             >
-              📊 Recap
+              <Icon name="chart" size={13} /> Recap
             </button>
           )}
         </div>
@@ -609,18 +609,20 @@ function CallButtonOnProfile({ profile }) {
           padding: 16, fontSize: 13, lineHeight: 1.55,
           color: 'var(--text-secondary)',
         }}>
-          <div style={{ fontWeight: 800, color: 'var(--text-primary)', marginBottom: 10, fontSize: 14 }}>
-            📞 How voice calls work
+          <div style={{ fontWeight: 800, color: 'var(--text-primary)', marginBottom: 10, fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Icon name="phone" size={15} /> How voice calls work
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {[
-              { icon: '🔗', text: 'Calls are peer-to-peer via WebRTC — no call servers, completely free.' },
-              { icon: '🎙️', text: 'Both you and the other person must allow microphone access when prompted.' },
-              { icon: '🌐', text: 'Best supported on Chrome or Edge. Firefox and Safari may have issues.' },
+              { icon: 'link', text: 'Calls are peer-to-peer via WebRTC — no call servers, completely free.' },
+              { icon: 'microphone', text: 'Both you and the other person must allow microphone access when prompted.' },
+              { icon: 'globe', text: 'Best supported on Chrome or Edge. Firefox and Safari may have issues.' },
             ].map((item, i) => (
               <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                <span style={{ flexShrink: 0 }}>{item.icon}</span>
+                <span style={{ flexShrink: 0, display: 'flex', color: 'var(--brand-primary)', marginTop: 2 }}>
+                  <Icon name={item.icon} size={14} />
+                </span>
                 <span>{item.text}</span>
               </div>
             ))}
@@ -630,12 +632,12 @@ function CallButtonOnProfile({ profile }) {
             marginTop: 12, padding: '10px 12px', borderRadius: 10,
             background: 'rgba(255,149,0,0.1)', border: '1px solid rgba(255,149,0,0.2)',
           }}>
-            <div style={{ fontWeight: 700, color: '#ff9500', marginBottom: 6, fontSize: 12 }}>
-              ⚠️ Common issues
+            <div style={{ fontWeight: 700, color: '#ff9500', marginBottom: 6, fontSize: 12, display: 'flex', alignItems: 'center', gap: 5 }}>
+              <Icon name="warning" size={13} /> Common issues
             </div>
             <ul style={{ margin: 0, paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
               {[
-                'No audio → mic may be blocked. Click the 🔒 icon in the browser address bar to allow it.',
+                'No audio → mic may be blocked. Click the lock icon in the browser address bar to allow it.',
                 'Call failed → one side may be on a strict firewall. Try mobile data instead of Wi-Fi.',
                 'Mic in use → close other apps (Zoom, Meet, Teams) that are using your mic.',
                 'Speaker toggle only works in Chrome/Edge — not Firefox/Safari/mobile browsers.',

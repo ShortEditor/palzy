@@ -7,16 +7,17 @@ import { listenNotifications, markAllRead, clearAllNotifications, deleteNotifica
 import Avatar from '../components/Avatar'
 import FollowButton from '../components/FollowButton'
 import Icon from '../components/Icon'
+import { EMOJI_ICON_MAP } from '../firebase/reactions'
 import toast from 'react-hot-toast'
 
 const TYPE_CONFIG = {
-  like:     { icon: '❤️', text: 'liked your post' },
-  reaction: { icon: '🔥', text: 'reacted to your post' },
-  comment:  { icon: '💬', text: 'commented on your post' },
-  reply:    { icon: '↩️', text: 'replied to your comment' },
-  follow:   { icon: '👤', text: 'started following you' },
-  mention:  { icon: '@',  text: 'mentioned you' },
-  call:     { icon: '📞', text: 'missed voice call from' },
+  like:     { iconName: 'heartFilled', color: '#ff453a', text: 'liked your post' },
+  reaction: { iconName: 'fire', color: '#f59e0b', text: 'reacted to your post' },
+  comment:  { iconName: 'comment', color: '#0bc5de', text: 'commented on your post' },
+  reply:    { iconName: 'reply', color: '#a078ff', text: 'replied to your comment' },
+  follow:   { iconName: 'user', color: '#30d158', text: 'started following you' },
+  mention:  { iconName: 'atSign', color: '#a078ff', text: 'mentioned you' },
+  call:     { iconName: 'phone', color: '#30d158', text: 'missed voice call from' },
 }
 
 export default function NotificationsPage() {
@@ -94,7 +95,7 @@ export default function NotificationsPage() {
         marginBottom: 'var(--space-3)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-          <span style={{ fontSize: 22 }}>🔔</span>
+          <span style={{ color: 'var(--brand-primary)', display: 'flex' }}><Icon name="bell" size={22} /></span>
           <h1 style={{ fontSize: 'var(--font-size-xl)', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
             Notifications
           </h1>
@@ -136,9 +137,9 @@ export default function NotificationsPage() {
             width: 72, height: 72, borderRadius: '50%',
             background: 'var(--bg-card)', border: '1px solid var(--border-subtle)',
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 32, marginBottom: 'var(--space-3)',
+            color: 'var(--brand-primary)', marginBottom: 'var(--space-3)',
           }}>
-            🔔
+            <Icon name="bell" size={32} />
           </div>
           <h3 style={{ margin: '0 0 6px', color: 'var(--text-primary)', fontWeight: 700, fontSize: 16 }}>
             No notifications yet
@@ -149,8 +150,9 @@ export default function NotificationsPage() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
         {notifications.map(n => {
-          const config = TYPE_CONFIG[n.type] || { icon: '📣', text: 'interacted with you' }
-          const displayIcon = n.type === 'reaction' && n.emoji ? n.emoji : config.icon
+          const config = TYPE_CONFIG[n.type] || { iconName: 'megaphone', color: 'var(--brand-primary)', text: 'interacted with you' }
+          const iconName = n.type === 'reaction' && n.emoji && EMOJI_ICON_MAP[n.emoji] ? EMOJI_ICON_MAP[n.emoji] : config.iconName
+          const iconColor = config.color || 'var(--text-secondary)'
           const isUnread = !n.read
 
           return (
@@ -177,13 +179,13 @@ export default function NotificationsPage() {
                 </Link>
                 <span style={{
                   position: 'absolute', bottom: -2, right: -2,
-                  fontSize: 13, lineHeight: 1,
                   background: 'var(--bg-card)',
                   border: '1px solid var(--border-subtle)',
-                  borderRadius: '50%', padding: '2px',
+                  borderRadius: '50%', padding: '3px',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: iconColor,
                 }}>
-                  {displayIcon}
+                  <Icon name={iconName} size={11} fill={iconName === 'heartFilled'} />
                 </span>
               </div>
 
@@ -253,9 +255,9 @@ export default function NotificationsPage() {
                     onClick={() => startCall(n.fromUid, { name: n.fromName, username: n.fromUsername, photoURL: n.fromPhotoURL })}
                     disabled={callState !== 'idle'}
                     className="btn btn-primary btn-sm"
-                    style={{ fontSize: 12, padding: '4px 10px', borderRadius: 16 }}
+                    style={{ fontSize: 12, padding: '4px 10px', borderRadius: 16, display: 'inline-flex', alignItems: 'center', gap: 4 }}
                   >
-                    📞 Call
+                    <Icon name="phone" size={13} /> Call
                   </button>
                 )}
 
@@ -266,13 +268,14 @@ export default function NotificationsPage() {
                   style={{
                     background: 'none', border: 'none',
                     color: 'var(--text-muted)', cursor: 'pointer',
-                    fontSize: 16, padding: '2px 4px',
+                    padding: '2px 4px',
                     opacity: 0.6,
+                    display: 'flex', alignItems: 'center',
                   }}
                   onMouseEnter={e => e.currentTarget.style.opacity = '1'}
                   onMouseLeave={e => e.currentTarget.style.opacity = '0.6'}
                 >
-                  ✕
+                  <Icon name="close" size={14} />
                 </button>
               </div>
             </div>

@@ -7,6 +7,11 @@ export const EMOJIS = ['😂', '🔥', '😮', '👏', '😢']
 export const EMOJI_LABELS = {
   '😂': 'Haha', '🔥': 'Fire', '😮': 'Wow', '👏': 'Clap', '😢': 'Sad',
 }
+/** Maps emoji data-keys → Icon component names for SVG rendering */
+export const EMOJI_ICON_MAP = {
+  '😂': 'emojiLaugh', '🔥': 'fire', '😮': 'emojiWow', '👏': 'emojiClap', '😢': 'emojiSad',
+}
+
 
 // ── Storage layout (inside the already-open 'likes' collection) ──────────────
 // User reaction : likes/{postId}_rxn_{userId}  →  { postId, userId, emoji }

@@ -67,7 +67,7 @@ export default function QuoteCardEditor({ onClose, onPostCreated }) {
         imageURL,
         quoteMetadata: { templateId, fontId, layoutId, ratioId, text: quoteText.trim(), attribution: attribution.trim() },
       })
-      toast.success('Quote posted! ✦')
+      toast.success('Quote posted!', { icon: <Icon name="sparkles" size={16} /> })
       onPostCreated?.(newPost)
       onClose()
     } catch (err) {
@@ -103,7 +103,7 @@ export default function QuoteCardEditor({ onClose, onPostCreated }) {
           background: 'var(--bg-elevated)', flexShrink: 0,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-            <span style={{ fontSize: 16, color: 'var(--brand-primary)' }}>✦</span>
+            <Icon name="sparkles" size={16} className="" style={{ color: 'var(--brand-primary)' }} />
             <span style={{ fontWeight: 700, fontSize: 'var(--font-size-base)' }}>Quote Card</span>
           </div>
           <button className="btn btn-ghost btn-icon" onClick={onClose} aria-label="Close"><Icon name="x" size={18} /></button>
@@ -292,7 +292,7 @@ export default function QuoteCardEditor({ onClose, onPostCreated }) {
                 >
                   {submitting
                     ? <><div className="spinner" style={{ width: 15, height: 15, borderWidth: 2 }} /> Posting…</>
-                    : <><span>✦</span> Post Quote Card</>
+                    : <><Icon name="sparkles" size={15} /> Post Quote Card</>
                   }
                 </button>
               </div>

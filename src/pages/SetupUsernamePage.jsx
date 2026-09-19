@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { isUsernameTaken, createUserProfile } from '../firebase/users'
 import { uploadImage } from '../utils/cloudinary'
 import { useDropzone } from 'react-dropzone'
+import Icon from '../components/Icon'
 import toast from 'react-hot-toast'
 
 const BRANCHES = ['CSE', 'ECE']
@@ -80,7 +81,7 @@ export default function SetupUsernamePage() {
       })
 
       await refreshProfile()
-      toast.success('Welcome to Palzy! 🎓')
+      toast.success('Welcome to Palzy!', { icon: <Icon name="graduationCap" size={16} /> })
       navigate('/', { replace: true })
     } catch (err) {
       console.error(err)
@@ -104,7 +105,7 @@ export default function SetupUsernamePage() {
     <div className="auth-page">
       <div className="auth-card" style={{ maxWidth: 500 }}>
         <div className="auth-logo">
-          <div className="auth-logo-icon">✨</div>
+          <div className="auth-logo-icon"><Icon name="sparkles" size={28} /></div>
           <h1 className="auth-title" style={{ fontSize: 'var(--font-size-2xl)' }}>Set up your profile</h1>
           <p className="auth-subtitle">This is how your batchmates will see you.</p>
         </div>
@@ -130,8 +131,8 @@ export default function SetupUsernamePage() {
               {avatarPreview
                 ? <img src={avatarPreview} alt="Avatar preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 : (
-                  <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                    <span style={{ fontSize: '1.5rem' }}>📷</span>
+                  <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, color: 'var(--text-muted)' }}>
+                    <Icon name="camera" size={26} />
                     <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.2 }}>Upload photo</span>
                   </div>
                 )

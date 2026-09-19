@@ -130,8 +130,10 @@ function CampusBoardSection({ currentUser, userProfile, fetchFunction, emptyTitl
           <button
             className="btn btn-ghost btn-sm"
             onClick={() => applyFilter('', '')}
-            style={{ fontSize: 11, color: 'var(--text-muted)', padding: '3px 8px' }}
-          >✕ Clear</button>
+            style={{ fontSize: 11, color: 'var(--text-muted)', padding: '3px 8px', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+          >
+            <Icon name="close" size={11} /> Clear
+          </button>
         )}
       </div>
 
@@ -141,7 +143,7 @@ function CampusBoardSection({ currentUser, userProfile, fetchFunction, emptyTitl
         </div>
       ) : posts.length === 0 ? (
         <div className="empty-state" style={{ marginTop: 'var(--space-10)' }}>
-          <div className="empty-state-icon" style={{ fontSize: 36 }}>{emptyIcon}</div>
+          <div className="empty-state-icon" style={{ display: 'flex', justifyContent: 'center', color: 'var(--brand-primary)' }}>{emptyIcon}</div>
           <div className="empty-state-title">{emptyTitle}</div>
           <div className="empty-state-body">{emptyBody}</div>
         </div>
@@ -158,7 +160,9 @@ function CampusBoardSection({ currentUser, userProfile, fetchFunction, emptyTitl
           <div ref={loaderRef} style={{ height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {loadingMore && <div className="spinner" />}
             {!hasMore && posts.length > 0 && (
-              <span style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)' }}>All caught up! 🎓</span>
+              <span style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                All caught up! <Icon name="graduationCap" size={14} />
+              </span>
             )}
           </div>
         </>
@@ -168,6 +172,13 @@ function CampusBoardSection({ currentUser, userProfile, fetchFunction, emptyTitl
 }
 
 // ── CampusPage ────────────────────────────────────────────────
+const TAB_ICONS = {
+  'Doubts': 'question',
+  'Notes': 'document',
+  'Collabs': 'handshake',
+  'Hot This Week': 'fire',
+}
+
 export default function CampusPage() {
   const { currentUser, userProfile } = useAuth()
   const [activeTab, setActiveTab]   = useState('Doubts')
@@ -226,11 +237,8 @@ export default function CampusPage() {
       {/* Tabs */}
       <div style={{ display: 'flex', borderBottom: '1px solid var(--border-subtle)', padding: '0 var(--space-3)' }}>
         {TABS.map(tab => (
-          <button key={tab} style={tabStyle(tab)} onClick={() => setActiveTab(tab)}>
-            {tab === 'Doubts' && '❓ '}
-            {tab === 'Notes' && '📝 '}
-            {tab === 'Collabs' && '🤝 '}
-            {tab === 'Hot This Week' && '🔥 '}
+          <button key={tab} style={{ ...tabStyle(tab), display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }} onClick={() => setActiveTab(tab)}>
+            <Icon name={TAB_ICONS[tab]} size={15} />
             {tab}
           </button>
         ))}
@@ -244,7 +252,7 @@ export default function CampusPage() {
           fetchFunction={getDoubtPosts}
           emptyTitle="No doubts yet"
           emptyBody="Have a query? Create a post and toggle Doubt so peers can help you out."
-          emptyIcon="❓"
+          emptyIcon={<Icon name="question" size={36} />}
         />
       )}
 
@@ -256,7 +264,7 @@ export default function CampusPage() {
           fetchFunction={getNotesPosts}
           emptyTitle="No class notes yet"
           emptyBody="Share summaries, syllabus sheets, or resources. Make a post and toggle Note to add it here."
-          emptyIcon="📝"
+          emptyIcon={<Icon name="document" size={36} />}
         />
       )}
 
@@ -268,7 +276,7 @@ export default function CampusPage() {
           fetchFunction={getCollabPosts}
           emptyTitle="No collabs yet"
           emptyBody="Looking for a project partner or study group? Post and toggle Collab to list it here."
-          emptyIcon="🤝"
+          emptyIcon={<Icon name="handshake" size={36} />}
         />
       )}
 
@@ -283,7 +291,9 @@ export default function CampusPage() {
             </div>
           ) : hotPosts.length === 0 ? (
             <div className="empty-state" style={{ marginTop: 'var(--space-10)' }}>
-              <div className="empty-state-icon" style={{ fontSize: 36 }}>🔥</div>
+              <div className="empty-state-icon" style={{ display: 'flex', justifyContent: 'center', color: '#f59e0b' }}>
+                <Icon name="fire" size={36} />
+              </div>
               <div className="empty-state-title">No trending vibes yet</div>
               <div className="empty-state-body">Interact with posts to heat things up!</div>
             </div>

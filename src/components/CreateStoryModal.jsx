@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { createStory, STORY_GRADIENTS, STORY_FONTS } from '../firebase/stories'
 import toast from 'react-hot-toast'
+import Icon from './Icon'
 
 export default function CreateStoryModal({ isOpen, onClose, onCreated }) {
   const { currentUser } = useAuth()
@@ -42,7 +43,7 @@ export default function CreateStoryModal({ isOpen, onClose, onCreated }) {
         fontId: selectedFont,
       })
 
-      toast.success('Story shared! ✨')
+      toast.success('Story shared!', { icon: <Icon name="confetti" size={16} /> })
       setText('')
       onCreated?.()
       onClose()
@@ -93,7 +94,7 @@ export default function CreateStoryModal({ isOpen, onClose, onCreated }) {
             backdropFilter: 'blur(10px)', transition: 'transform 0.1s active',
           }}
         >
-          ✕
+          <Icon name="close" size={18} />
         </button>
 
         {/* Floating Quick Action Buttons */}
@@ -108,7 +109,7 @@ export default function CreateStoryModal({ isOpen, onClose, onCreated }) {
               justifyContent: 'center', gap: 4, backdropFilter: 'blur(10px)',
             }}
           >
-            🔤 {currentFontObj.name}
+            <Icon name="textFont" size={14} /> {currentFontObj.name}
           </button>
 
           {/* Color cycler */}
@@ -122,7 +123,7 @@ export default function CreateStoryModal({ isOpen, onClose, onCreated }) {
             }}
             title="Change Background"
           >
-            🎨
+            <Icon name="palette" size={16} />
           </button>
         </div>
       </div>
@@ -180,7 +181,7 @@ export default function CreateStoryModal({ isOpen, onClose, onCreated }) {
             transition: 'all 0.15s ease',
           }}
         >
-          {loading ? 'Sharing...' : 'Share Story ➔'}
+          {loading ? 'Sharing...' : <><span>Share Story</span> <Icon name="arrowRight" size={16} /></>}
         </button>
       </div>
     </div>

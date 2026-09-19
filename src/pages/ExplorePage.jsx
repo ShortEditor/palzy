@@ -97,9 +97,8 @@ export default function ExplorePage() {
 
       <div style={{ display: 'flex', borderBottom: '1px solid var(--border-subtle)', padding: '0 var(--space-3)' }}>
         {TABS.map(tab => (
-          <button key={tab} style={tabStyle(tab)} onClick={() => setActiveTab(tab)}>
-            {tab === 'Explore' && '🔍 '}
-            {tab === 'Leaderboard' && '🏆 '}
+          <button key={tab} style={{ ...tabStyle(tab), display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }} onClick={() => setActiveTab(tab)}>
+            <Icon name={tab === 'Explore' ? 'search' : 'trophy'} size={15} />
             {tab}
           </button>
         ))}

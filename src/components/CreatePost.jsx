@@ -136,7 +136,7 @@ export default function CreatePost({ onPostCreated }) {
       setText('')
       removeImage()
       setIsDoubt(false); setIsNote(false); setIsCollab(false)
-      toast.success('Posted! 🎉')
+      toast.success('Posted!', { icon: <Icon name="confetti" size={16} /> })
       onPostCreated?.(newPost)
     } catch (err) {
       console.error(err)
@@ -223,7 +223,7 @@ export default function CreatePost({ onPostCreated }) {
           {imagePreview && (
             <div className="image-preview-wrap">
               <img src={imagePreview} alt="Selected image preview" />
-              <button className="image-preview-remove" onClick={removeImage} aria-label="Remove image" type="button">✕</button>
+              <button className="image-preview-remove" onClick={removeImage} aria-label="Remove image" type="button"><Icon name="close" size={14} /></button>
             </div>
           )}
 
@@ -242,7 +242,7 @@ export default function CreatePost({ onPostCreated }) {
                   border: isDoubt ? '1px solid rgba(245,158,11,0.4)' : '1px solid var(--border-subtle)',
                 }}
               >
-                ❓ {isDoubt ? 'Doubt ✓' : 'Doubt?'}
+                <Icon name="question" size={13} /> {isDoubt ? 'Doubt ✓' : 'Doubt?'}
               </button>
 
               {/* Note toggle */}
@@ -257,7 +257,7 @@ export default function CreatePost({ onPostCreated }) {
                   border: isNote ? '1px solid var(--brand-primary-cont)' : '1px solid var(--border-subtle)',
                 }}
               >
-                📝 {isNote ? 'Note ✓' : 'Note?'}
+                <Icon name="document" size={13} /> {isNote ? 'Note ✓' : 'Note?'}
               </button>
 
               {/* Collab toggle */}
@@ -272,7 +272,7 @@ export default function CreatePost({ onPostCreated }) {
                   border: isCollab ? '1px solid rgba(16,185,129,0.4)' : '1px solid var(--border-subtle)',
                 }}
               >
-                🤝 {isCollab ? 'Collab ✓' : 'Collab?'}
+                <Icon name="handshake" size={13} /> {isCollab ? 'Collab ✓' : 'Collab?'}
               </button>
             </div>
           )}
@@ -284,7 +284,7 @@ export default function CreatePost({ onPostCreated }) {
                 <Icon name="image" size={20} />
               </button>
               <button id="btn-add-quote" type="button" className="btn btn-ghost btn-icon" onClick={() => setShowQuoteEditor(true)} disabled={submitting} title="Create Quote Card" aria-label="Create Quote Card" style={{ fontSize: 15 }}>
-                ✦
+                <Icon name="sparkles" size={15} />
               </button>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>

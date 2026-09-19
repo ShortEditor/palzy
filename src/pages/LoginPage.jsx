@@ -88,7 +88,7 @@ export default function LoginPage() {
     setLoading(true)
     try {
       await signUpWithEmail(suEmail.trim(), suPassword, suName.trim())
-      toast.success('Account created! Pick a username 🎉')
+      toast.success('Account created! Pick a username', { icon: <Icon name="confetti" size={16} /> })
       navigate('/setup-username', { replace: true })
     } catch (err) {
       toast.error(friendlyError(err.code))
@@ -103,7 +103,7 @@ export default function LoginPage() {
     setLoading(true)
     try {
       await resetPassword(fpEmail.trim())
-      toast.success('Password reset link sent! Check your inbox 📬')
+      toast.success('Password reset link sent! Check your inbox', { icon: <Icon name="envelope" size={16} /> })
       setTab('signin')
     } catch (err) {
       toast.error(friendlyError(err.code))

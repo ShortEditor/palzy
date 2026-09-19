@@ -73,7 +73,7 @@ const PostCard = memo(function PostCard({ post, authorProfile, isLiked: initialL
     setSubmittingReport(true)
     try {
       const ok = await reportPost(post.id, currentUser.uid, reportReason)
-      if (ok) toast.success('Report submitted. Thanks! 🚩')
+      if (ok) toast.success('Report submitted. Thanks!', { icon: <Icon name="flag" size={16} /> })
       else    toast('You already reported this post.')
       setReporting(false)
       setReportReason('')
@@ -91,7 +91,7 @@ const PostCard = memo(function PostCard({ post, authorProfile, isLiked: initialL
     try {
       const result = await shareToStory(post.imageURL, post.content)
       if (result === 'shared') {
-        toast.success('Shared! Select Instagram → Story 📲')
+        toast.success('Shared! Select Instagram → Story', { icon: <Icon name="mobile" size={16} /> })
       } else if (result === 'downloaded') {
         toast.success(
           canNativeShare()
@@ -122,7 +122,7 @@ const PostCard = memo(function PostCard({ post, authorProfile, isLiked: initialL
       a.download = `palzy-post-${post.id}.${ext}`
       a.click()
       URL.revokeObjectURL(url)
-      toast.success('Image downloaded! ✓')
+      toast.success('Image downloaded!', { icon: <Icon name="download" size={16} /> })
     } catch {
       toast.error('Could not download image.')
     } finally {
@@ -200,13 +200,13 @@ const PostCard = memo(function PostCard({ post, authorProfile, isLiked: initialL
         {Array.isArray(post.tags) && post.tags.length > 0 && (
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 'var(--space-2)' }}>
             {post.tags.includes('doubt') && (
-              <span style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 99, padding: '2px 10px' }}>❓ Doubt</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 99, padding: '2px 10px', display: 'inline-flex', alignItems: 'center', gap: 3 }}><Icon name="question" size={11} /> Doubt</span>
             )}
             {post.tags.includes('note') && (
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--brand-primary-cont)', background: 'var(--brand-primary-glow)', border: '1px solid var(--brand-primary-cont)', borderRadius: 99, padding: '2px 10px' }}>📝 Note</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--brand-primary-cont)', background: 'var(--brand-primary-glow)', border: '1px solid var(--brand-primary-cont)', borderRadius: 99, padding: '2px 10px', display: 'inline-flex', alignItems: 'center', gap: 3 }}><Icon name="document" size={11} /> Note</span>
             )}
             {post.tags.includes('collab') && (
-              <span style={{ fontSize: 11, fontWeight: 700, color: '#10b981', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 99, padding: '2px 10px' }}>🤝 Collab</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#10b981', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 99, padding: '2px 10px', display: 'inline-flex', alignItems: 'center', gap: 3 }}><Icon name="handshake" size={11} /> Collab</span>
             )}
           </div>
         )}
@@ -233,7 +233,7 @@ const PostCard = memo(function PostCard({ post, authorProfile, isLiked: initialL
             fontSize: 'var(--font-size-xs)', color: 'var(--brand-primary-dim)',
             fontWeight: 600, marginTop: 'var(--space-1)',
           }}>
-            <span style={{ fontSize: 11 }}>✦</span> Quote Card
+            <Icon name="sparkles" size={11} /> Quote Card
           </div>
         )}
 
