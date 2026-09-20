@@ -22,8 +22,19 @@ export async function isUsernameTaken(username) {
   return !snap.empty
 }
 
+// ─── Check if a college PIN is already claimed ───────────────
+export async function isCollegePinTaken(pin) {
+  const q = query(
+    collection(db, 'users'),
+    where('collegePin', '==', pin.trim().toUpperCase()),
+    limit(1),
+  )
+  const snap = await getDocs(q)
+  return !snap.empty
+}
+
 // ─── Create user profile on first login ──────────────────────
-export async function createUserProfile(uid, { username, name, photoURL, branch, year, bio = '', showBranch = true, showYear = true }) {
+export async function createUserProfile(uid, { username, name, photoURL, branch, year, bio = '', showBranch = true, showYear = true, collegePin = '' }) {
   await setDoc(doc(db, 'users', uid), {
     username: username.toLowerCase(),
     name,
@@ -33,6 +44,7 @@ export async function createUserProfile(uid, { username, name, photoURL, branch,
     bio,
     showBranch,
     showYear,
+    collegePin: collegePin ? collegePin.trim().toUpperCase() : '',
     followerCount: 0,
     followingCount: 0,
     createdAt: serverTimestamp(),
@@ -62,7 +74,7 @@ export function invalidateUserCache(uid) {
 // ─── Allowed fields for profile updates (blocks privilege escalation) ─────
 const ALLOWED_PROFILE_FIELDS = new Set([
   'name', 'username', 'photoURL', 'bannerURL', 'bio',
-  'branch', 'year', 'showBranch', 'showYear',
+  'branch', 'year', 'showBranch', 'showYear', 'collegePin',
   'stories', 'streakCount', 'streakLastDate', 'streakBestEver',
   'followerCount', 'followingCount',
 ])

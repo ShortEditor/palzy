@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { isUsernameTaken, createUserProfile } from '../firebase/users'
+import { isUsernameTaken, isCollegePinTaken, createUserProfile } from '../firebase/users'
 import { uploadImage } from '../utils/cloudinary'
 import { useDropzone } from 'react-dropzone'
 import Icon from '../components/Icon'
@@ -22,12 +22,14 @@ export default function SetupUsernamePage() {
   }, [userProfile, navigate])
 
   const [username, setUsername]       = useState('')
+  const [collegePin, setCollegePin]   = useState('')
   const [branch, setBranch]           = useState('')
   const [year, setYear]               = useState('')
   const [bio, setBio]                 = useState('')
   const [avatarFile, setAvatarFile]   = useState(null)
   const [avatarPreview, setAvatarPreview] = useState(currentUser?.photoURL || '')
   const [usernameStatus, setUsernameStatus] = useState('idle') // 'idle'|'checking'|'ok'|'taken'|'invalid'
+  const [pinStatus, setPinStatus]     = useState('idle')       // 'idle'|'checking'|'ok'|'taken'|'invalid'
   const [submitting, setSubmitting]   = useState(false)
 
   // Debounced username check
@@ -42,6 +44,20 @@ export default function SetupUsernamePage() {
     }, 500)
     return () => clearTimeout(timer)
   }, [username])
+
+  // Debounced college PIN check
+  useEffect(() => {
+    if (!collegePin) { setPinStatus('idle'); return }
+    const trimmed = collegePin.trim()
+    if (trimmed.length < 4 || trimmed.length > 20) { setPinStatus('invalid'); return }
+
+    setPinStatus('checking')
+    const timer = setTimeout(async () => {
+      const taken = await isCollegePinTaken(trimmed)
+      setPinStatus(taken ? 'taken' : 'ok')
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [collegePin])
 
   // Avatar dropzone
   const onDrop = useCallback((accepted) => {
@@ -60,7 +76,7 @@ export default function SetupUsernamePage() {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    if (usernameStatus !== 'ok') return
+    if (usernameStatus !== 'ok' || pinStatus !== 'ok') return
 
     setSubmitting(true)
     try {
@@ -78,6 +94,7 @@ export default function SetupUsernamePage() {
         bio,
         showBranch: true,
         showYear: true,
+        collegePin: collegePin.trim(),
       })
 
       await refreshProfile()
@@ -100,6 +117,16 @@ export default function SetupUsernamePage() {
   }[usernameStatus]
 
   const usernameColor = { ok: 'var(--brand-green)', taken: 'var(--brand-red)', invalid: 'var(--brand-red)' }[usernameStatus] ?? 'var(--text-muted)'
+
+  const pinHelperText = {
+    idle:     'Enter the unique PIN provided by your institution.',
+    checking: 'Checking PIN…',
+    ok:       'PIN verified ✓',
+    taken:    'This PIN has already been claimed by another student.',
+    invalid:  'PIN must be 4–20 characters.',
+  }[pinStatus]
+
+  const pinColor = { ok: 'var(--brand-green)', taken: 'var(--brand-red)', invalid: 'var(--brand-red)' }[pinStatus] ?? 'var(--text-muted)'
 
   return (
     <div className="auth-page">
@@ -161,6 +188,33 @@ export default function SetupUsernamePage() {
             <span style={{ fontSize: 'var(--font-size-xs)', color: usernameColor }}>{usernameHelperText}</span>
           </div>
 
+          {/* College PIN */}
+          <div className="form-group">
+            <label className="form-label" htmlFor="college-pin">College PIN *</label>
+            <div style={{ position: 'relative' }}>
+              <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex' }}>
+                <Icon name="shield" size={16} />
+              </span>
+              <input
+                id="college-pin"
+                className={`form-input ${pinStatus === 'taken' || pinStatus === 'invalid' ? 'error' : ''}`}
+                style={{ paddingLeft: '2.5rem', fontFamily: 'var(--font-mono, monospace)', letterSpacing: '0.1em' }}
+                type="text"
+                placeholder="Enter institution PIN"
+                value={collegePin}
+                onChange={e => setCollegePin(e.target.value.replace(/\s/g, ''))}
+                maxLength={20}
+                required
+              />
+              {pinStatus === 'ok' && (
+                <span style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--brand-green)', display: 'flex' }}>
+                  <Icon name="check" size={16} />
+                </span>
+              )}
+            </div>
+            <span style={{ fontSize: 'var(--font-size-xs)', color: pinColor }}>{pinHelperText}</span>
+          </div>
+
           {/* Branch & Year row */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
             <div className="form-group">
@@ -198,7 +252,7 @@ export default function SetupUsernamePage() {
             id="btn-complete-profile"
             type="submit"
             className="btn btn-primary btn-lg"
-            disabled={usernameStatus !== 'ok' || submitting}
+            disabled={usernameStatus !== 'ok' || pinStatus !== 'ok' || submitting}
             style={{ marginTop: 'var(--space-2)' }}
           >
             {submitting ? <><div className="spinner" />Setting up…</> : 'Complete Profile →'}

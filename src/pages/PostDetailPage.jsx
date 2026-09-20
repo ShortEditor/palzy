@@ -260,10 +260,10 @@ export default function PostDetailPage() {
   })
 
   const postTime   = post.createdAt?.toDate?.()
-  const displayName = post.authorName || author?.name || 'Unknown'
-  const handle      = post.authorUsername || author?.username || '...'
-  const photoURL    = post.authorPhotoURL || author?.photoURL || ''
-  const isVerified  = post.authorIsVerified !== undefined ? post.authorIsVerified : (author?.isVerified ?? false)
+  const displayName = author?.name || post.authorName || 'Unknown'
+  const handle      = author?.username || post.authorUsername || '...'
+  const photoURL    = author?.photoURL || post.authorPhotoURL || ''
+  const isVerified  = author?.isVerified ?? post.authorIsVerified ?? false
 
   return (
     <div className="feed-column">

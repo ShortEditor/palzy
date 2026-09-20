@@ -134,10 +134,10 @@ const PostCard = memo(function PostCard({ post, authorProfile, isLiked: initialL
     navigate(`/post/${post.id}`)
   }
 
-  const displayName = post.authorName || authorProfile?.name || 'Unknown'
-  const handle      = post.authorUsername || authorProfile?.username || '...'
-  const photoURL    = post.authorPhotoURL || authorProfile?.photoURL || ''
-  const isVerified  = post.authorIsVerified !== undefined ? post.authorIsVerified : (authorProfile?.isVerified ?? false)
+  const displayName = authorProfile?.name || post.authorName || 'Unknown'
+  const handle      = authorProfile?.username || post.authorUsername || '...'
+  const photoURL    = authorProfile?.photoURL || post.authorPhotoURL || ''
+  const isVerified  = authorProfile?.isVerified ?? post.authorIsVerified ?? false
 
   return (
     <article

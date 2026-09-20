@@ -26,6 +26,7 @@ const PrivacyPage        = lazy(() => import('./pages/PrivacyPage'))
 const TermsPage          = lazy(() => import('./pages/TermsPage'))
 const AboutPage          = lazy(() => import('./pages/AboutPage'))
 const HelpPage           = lazy(() => import('./pages/HelpPage'))
+const VerifyPinPage      = lazy(() => import('./pages/VerifyPinPage'))
 
 function PageLoader() {
   return (
@@ -65,6 +66,7 @@ export default function App() {
         {/* Auth required, no profile needed */}
         <Route element={<ProtectedRoute requireProfile={false} />}>
           <Route path="/setup-username" element={<SetupUsernamePage />} />
+          <Route path="/verify-pin" element={<VerifyPinPage />} />
         </Route>
 
         {/* ── Admin routes ─────────────────────────────── */}
