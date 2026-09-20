@@ -30,10 +30,19 @@ function extractHashtags(text) {
 const POSTS_PER_PAGE = 15
 
 // ─── Create a new post ───────────────────────────────────────
-export async function createPost({ authorId, content, imageURL = null, quoteMetadata = null, tags = [] }) {
+export async function createPost({ authorId, content, imageURL = null, imageURLs = null, imageRatio = null, quoteMetadata = null, tags = [] }) {
   const author = await getUserProfile(authorId)
-  const type = quoteMetadata ? 'quote' : (imageURL ? 'image' : 'text')
-  const postRef = await addDoc(collection(db, 'posts'), {
+
+  // Determine post type
+  let type = 'text'
+  if (quoteMetadata) type = 'quote'
+  else if (imageURLs && imageURLs.length > 1) type = 'carousel'
+  else if (imageURL || (imageURLs && imageURLs.length === 1)) type = 'image'
+
+  // For single-image carousel, flatten to legacy imageURL for backward compat
+  const finalImageURL = imageURLs?.length === 1 ? imageURLs[0] : imageURL
+
+  const postData = {
     authorId,
     authorName: author?.name ?? '',
     authorUsername: author?.username ?? '',
@@ -43,14 +52,19 @@ export async function createPost({ authorId, content, imageURL = null, quoteMeta
     authorYear: author?.year ?? '',
     type,
     content: content?.trim() ?? '',
-    imageURL,
+    imageURL: finalImageURL,
     tags: tags.length > 0 ? tags : [],
     hashtags: extractHashtags(content?.trim() ?? ''),
     ...(quoteMetadata ? { quoteMetadata } : {}),
+    // Carousel-specific fields
+    ...(imageURLs && imageURLs.length > 1 ? { imageURLs, imageRatio: imageRatio || '1:1' } : {}),
+    ...(imageRatio && type === 'image' ? { imageRatio } : {}),
     likeCount: 0,
     commentCount: 0,
     createdAt: serverTimestamp(),
-  })
+  }
+
+  const postRef = await addDoc(collection(db, 'posts'), postData)
   const snap = await getDoc(postRef)
   // Fire-and-forget streak update (non-blocking)
   updateStreak(authorId).catch(() => {})
@@ -87,8 +101,9 @@ function scorePost(post, sessionSeed) {
   // ── Engagement density: engagement-per-hour (rewards quick virality) ──
   const density = ageHours > 0.5 ? (likes + comments) / ageHours : (likes + comments) * 2
 
-  // ── Content type boost: visual posts get +8, quotes +5 ──
-  const typeBoost = post.type === 'image' ? 8
+  // ── Content type boost: carousel +10, image +8, quotes +5 ──
+  const typeBoost = post.type === 'carousel' ? 10
+                  : post.type === 'image' ? 8
                   : post.type === 'quote' ? 5
                   : 0
 

@@ -8,6 +8,7 @@ import Avatar from '../components/Avatar'
 import Icon from '../components/Icon'
 import VerifiedBadge from '../components/VerifiedBadge'
 import RichText from '../components/RichText'
+import ImageCarousel from '../components/ImageCarousel'
 import toast from 'react-hot-toast'
 
 // ── Single comment / reply row ────────────────────────────────
@@ -294,9 +295,13 @@ export default function PostDetailPage() {
           />
         )}
 
-        {post.imageURL && (
-          <div className="post-image" style={{ marginBottom: 'var(--space-4)', borderRadius: 'var(--radius-lg)' }}>
-            <img src={post.imageURL} alt="Post image" />
+        {post.imageURLs && post.imageURLs.length > 1 ? (
+          <div style={{ marginBottom: 'var(--space-4)' }}>
+            <ImageCarousel imageURLs={post.imageURLs} imageRatio={post.imageRatio} />
+          </div>
+        ) : post.imageURL && (
+          <div className="post-image" style={{ marginBottom: 'var(--space-4)', borderRadius: 'var(--radius-lg)', ...(post.imageRatio ? { aspectRatio: post.imageRatio.replace(':', ' / ') } : {}) }}>
+            <img src={post.imageURL} alt="Post image" style={post.imageRatio ? { objectFit: 'cover', width: '100%', height: '100%' } : undefined} />
           </div>
         )}
 

@@ -12,6 +12,7 @@ import VerifiedBadge from './VerifiedBadge'
 import FollowButton from './FollowButton'
 import RichText from './RichText'
 import ReactionBar from './ReactionBar'
+import ImageCarousel from './ImageCarousel'
 import toast from 'react-hot-toast'
 
 const PostCard = memo(function PostCard({ post, authorProfile, isLiked: initialLiked = false, userEmojiReaction = null, onDelete }) {
@@ -219,10 +220,14 @@ const PostCard = memo(function PostCard({ post, authorProfile, isLiked: initialL
           emojiCounts={post.emojiCounts || {}}
         />
 
-        {/* Post image */}
-        {post.imageURL && (
-          <div className="post-image">
-            <img src={post.imageURL} alt="Post image" loading="lazy" />
+        {/* Post images — carousel or single */}
+        {post.imageURLs && post.imageURLs.length > 1 ? (
+          <div onClick={e => e.stopPropagation()}>
+            <ImageCarousel imageURLs={post.imageURLs} imageRatio={post.imageRatio} />
+          </div>
+        ) : post.imageURL && (
+          <div className="post-image" style={post.imageRatio ? { aspectRatio: post.imageRatio.replace(':', ' / ') } : undefined}>
+            <img src={post.imageURL} alt="Post image" loading="lazy" style={post.imageRatio ? { objectFit: 'cover', width: '100%', height: '100%' } : undefined} />
           </div>
         )}
 

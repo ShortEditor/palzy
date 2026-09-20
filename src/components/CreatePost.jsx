@@ -15,8 +15,9 @@ export default function CreatePost({ onPostCreated }) {
   const { currentUser, userProfile } = useAuth()
 
   const [text, setText]             = useState('')
-  const [imageFile, setImageFile]   = useState(null)
-  const [imagePreview, setImagePreview] = useState(null)
+  const [imageFiles, setImageFiles] = useState([])      // File[]
+  const [imagePreviews, setImagePreviews] = useState([]) // string[]
+  const [imageRatio, setImageRatio] = useState('1:1')
   const [submitting, setSubmitting] = useState(false)
   const [showQuoteEditor, setShowQuoteEditor] = useState(false)
   const [isDoubt, setIsDoubt]       = useState(false)
@@ -43,8 +44,11 @@ export default function CreatePost({ onPostCreated }) {
     return () => window.removeEventListener('focusComposer', handleFocus)
   }, [])
 
+  const MAX_IMAGES = 10
+  const RATIOS = ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3', '3:2']
+
   const charsLeft   = MAX_CHARS - text.length
-  const isEmpty     = !text.trim() && !imageFile
+  const isEmpty     = !text.trim() && imageFiles.length === 0
   const isOverLimit = text.length > MAX_CHARS
 
   // ── Mention search ──────────────────────────────────────────
@@ -107,44 +111,84 @@ export default function CreatePost({ onPostCreated }) {
     }, 0)
   }
 
-  // ── File handling ───────────────────────────────────────────
+  // ── File handling (multi-image) ─────────────────────────────
   function handleFileChange(e) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (!file.type.startsWith('image/')) { toast.error('Please pick an image.'); return }
-    setImageFile(file)
-    setImagePreview(URL.createObjectURL(file))
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+
+    const imageOnly = files.filter(f => f.type.startsWith('image/'))
+    if (imageOnly.length !== files.length) toast.error('Only images are allowed.')
+
+    const remaining = MAX_IMAGES - imageFiles.length
+    const toAdd = imageOnly.slice(0, remaining)
+    if (imageOnly.length > remaining) toast(`Max ${MAX_IMAGES} images. ${imageOnly.length - remaining} skipped.`)
+
+    setImageFiles(prev => [...prev, ...toAdd])
+    setImagePreviews(prev => [...prev, ...toAdd.map(f => URL.createObjectURL(f))])
     e.target.value = ''
   }
 
-  function removeImage() { setImageFile(null); setImagePreview(null) }
+  function removeImage(index) {
+    URL.revokeObjectURL(imagePreviews[index])
+    setImageFiles(prev => prev.filter((_, i) => i !== index))
+    setImagePreviews(prev => prev.filter((_, i) => i !== index))
+  }
+
+  function removeAllImages() {
+    imagePreviews.forEach(url => URL.revokeObjectURL(url))
+    setImageFiles([])
+    setImagePreviews([])
+    setImageRatio('1:1')
+  }
 
   function handleDrop(e) {
     e.preventDefault()
-    const file = e.dataTransfer.files?.[0]
-    if (file?.type.startsWith('image/')) { setImageFile(file); setImagePreview(URL.createObjectURL(file)) }
+    const files = Array.from(e.dataTransfer.files || []).filter(f => f.type.startsWith('image/'))
+    if (!files.length) return
+    const remaining = MAX_IMAGES - imageFiles.length
+    const toAdd = files.slice(0, remaining)
+    setImageFiles(prev => [...prev, ...toAdd])
+    setImagePreviews(prev => [...prev, ...toAdd.map(f => URL.createObjectURL(f))])
   }
 
   // ── Submit ──────────────────────────────────────────────────
   async function handleSubmit(e) {
     e?.preventDefault()
     const trimmed = text.trim()
-    if (!trimmed && !imageFile) { toast.error('Write something or add an image!'); return }
+    if (!trimmed && imageFiles.length === 0) { toast.error('Write something or add an image!'); return }
     if (text.length > MAX_CHARS) { toast.error('Post is too long!'); return }
 
     setSubmitting(true)
     try {
+      // Upload all images in parallel
       let imageURL = null
-      if (imageFile) imageURL = await uploadImage(imageFile, 'posts', currentUser.uid)
+      let imageURLs = null
+      if (imageFiles.length > 0) {
+        const urls = await Promise.all(
+          imageFiles.map(f => uploadImage(f, 'posts', currentUser.uid))
+        )
+        if (urls.length === 1) {
+          imageURL = urls[0]
+        } else {
+          imageURLs = urls
+        }
+      }
 
       const tags = []
       if (isDoubt)  tags.push('doubt')
       if (isNote)   tags.push('note')
       if (isCollab) tags.push('collab')
 
-      const newPost = await createPost({ authorId: currentUser.uid, content: trimmed, imageURL, tags })
+      const newPost = await createPost({
+        authorId: currentUser.uid,
+        content: trimmed,
+        imageURL,
+        imageURLs,
+        imageRatio: imageFiles.length > 0 ? imageRatio : null,
+        tags,
+      })
       setText('')
-      removeImage()
+      removeAllImages()
       setIsDoubt(false); setIsNote(false); setIsCollab(false)
       toast.success('Posted!', { icon: <Icon name="confetti" size={16} /> })
       onPostCreated?.(newPost)
@@ -169,7 +213,7 @@ export default function CreatePost({ onPostCreated }) {
   return (
     <>
       <div className="create-post-bar" onDrop={handleDrop} onDragOver={e => e.preventDefault()}>
-        <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} id="create-post-file-input" />
+        <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleFileChange} id="create-post-file-input" />
 
         <Avatar src={userProfile?.photoURL} name={userProfile?.name} size="md" />
 
@@ -229,12 +273,63 @@ export default function CreatePost({ onPostCreated }) {
             </div>
           )}
 
-          {/* Image preview */}
-          {imagePreview && (
-            <div className="image-preview-wrap">
-              <img src={imagePreview} alt="Selected image preview" />
-              <button className="image-preview-remove" onClick={removeImage} aria-label="Remove image" type="button"><Icon name="close" size={14} /></button>
-            </div>
+          {/* ── Image thumbnails strip ────────────────────────── */}
+          {imagePreviews.length > 0 && (
+            <>
+              <div className="carousel-thumbs">
+                {imagePreviews.map((src, i) => (
+                  <div className="carousel-thumb" key={i}>
+                    <img src={src} alt={`Image ${i + 1}`} />
+                    <button
+                      className="carousel-thumb-remove"
+                      onClick={() => removeImage(i)}
+                      type="button"
+                      aria-label={`Remove image ${i + 1}`}
+                    >
+                      <Icon name="close" size={10} />
+                    </button>
+                  </div>
+                ))}
+                {/* Add more button */}
+                {imageFiles.length < MAX_IMAGES && (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{
+                      flexShrink: 0, width: 72, height: 72,
+                      borderRadius: 'var(--radius-md)',
+                      border: '2px dashed var(--border-normal)',
+                      background: 'none', cursor: 'pointer',
+                      display: 'flex', flexDirection: 'column',
+                      alignItems: 'center', justifyContent: 'center',
+                      gap: 2, color: 'var(--text-muted)',
+                      transition: 'border-color 0.15s',
+                    }}
+                    aria-label="Add more images"
+                  >
+                    <Icon name="plus" size={18} />
+                    <span style={{ fontSize: 9, fontWeight: 600 }}>{imageFiles.length}/{MAX_IMAGES}</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Aspect ratio picker */}
+              <div className="ratio-picker">
+                <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Icon name="image" size={12} /> Ratio:
+                </span>
+                {RATIOS.map(r => (
+                  <button
+                    key={r}
+                    type="button"
+                    className={`ratio-pill ${imageRatio === r ? 'active' : ''}`}
+                    onClick={() => setImageRatio(r)}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+            </>
           )}
 
           {/* Tag pills row */}
@@ -290,7 +385,7 @@ export default function CreatePost({ onPostCreated }) {
           {/* Action row */}
           <div className="create-post-actions">
             <div className="create-post-tools">
-              <button id="btn-add-image" type="button" className="btn btn-ghost btn-icon" onClick={() => fileInputRef.current?.click()} disabled={!!imageFile || submitting} title="Add image" aria-label="Add image">
+              <button id="btn-add-image" type="button" className="btn btn-ghost btn-icon" onClick={() => fileInputRef.current?.click()} disabled={imageFiles.length >= MAX_IMAGES || submitting} title={`Add images (${imageFiles.length}/${MAX_IMAGES})`} aria-label="Add images">
                 <Icon name="image" size={20} />
               </button>
               <button id="btn-add-quote" type="button" className="btn btn-ghost btn-icon" onClick={() => setShowQuoteEditor(true)} disabled={submitting} title="Create Quote Card" aria-label="Create Quote Card" style={{ fontSize: 15 }}>
