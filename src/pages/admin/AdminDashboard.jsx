@@ -61,7 +61,7 @@ export default function AdminDashboard() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-5)', marginBottom: 'var(--space-10)' }}>
         <StatCard label="Total Users"   icon="users"   value={loading ? null : stats?.totalUsers}   color="var(--brand-primary)" to="/admin/users" />
         <StatCard label="Total Posts"   icon="image"   value={loading ? null : stats?.totalPosts}   color="var(--brand-accent)"  to="/admin/posts" />
-        <StatCard label="Open Reports"  icon="flag"    value={loading ? null : stats?.totalReports} color="var(--brand-red)"     to="/admin/reports" />
+        <StatCard label="Open Reports"  icon="flag"    value={loading ? null : stats?.pendingReports} color="var(--brand-red)"     to="/admin/reports" />
       </div>
 
       {/* Quick actions */}

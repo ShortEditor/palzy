@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useCall } from '../contexts/CallContext'
@@ -406,115 +406,113 @@ export default function ProfilePage() {
 
       {/* Edit Profile Modal */}
       {editing && (
-        <div className="modal-overlay" onClick={() => setEditing(false)}>
-          <div className="modal-box animate-slide-up" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <span className="font-semibold">Edit Profile</span>
-              <button className="btn btn-ghost btn-icon" onClick={() => setEditing(false)} aria-label="Close"><Icon name="close" size={18} /></button>
+        <EditProfileDialog onClose={() => setEditing(false)}>
+          <div className="modal-header">
+            <span className="font-semibold">Edit Profile</span>
+            <button className="btn btn-ghost btn-icon" onClick={() => setEditing(false)} aria-label="Close"><Icon name="close" size={18} /></button>
+          </div>
+          <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+            {/* Banner upload */}
+            <div className="form-group">
+              <label className="form-label">Cover Banner</label>
+              <label
+                htmlFor="edit-banner"
+                style={{
+                  display: 'block', width: '100%', height: 100,
+                  borderRadius: 'var(--radius-md)', overflow: 'hidden',
+                  cursor: 'pointer', position: 'relative',
+                  background: editBannerPreview
+                    ? `url(${editBannerPreview}) center/cover`
+                    : 'linear-gradient(135deg, var(--brand-primary), var(--brand-accent))',
+                  border: '1.5px dashed var(--border-normal)',
+                }}
+              >
+                <div style={{
+                  position: 'absolute', inset: 0, display: 'flex',
+                  alignItems: 'center', justifyContent: 'center',
+                  background: 'rgba(0,0,0,0.35)',
+                  color: '#fff', fontSize: 'var(--font-size-xs)', gap: 6,
+                }}>
+                  <Icon name="image" size={16} />
+                  {editBannerPreview ? 'Change banner' : 'Upload banner image'}
+                </div>
+              </label>
+              <input id="edit-banner" type="file" accept="image/*" style={{ display: 'none' }} onChange={handleEditBannerChange} />
             </div>
-            <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
-              {/* Banner upload */}
+
+            {/* Avatar */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-3)' }}>
+              <label htmlFor="edit-avatar" style={{ cursor: 'pointer', position: 'relative' }}>
+                <Avatar src={editAvatarPreview} name={profile.name} size="xl" />
+                <div style={{ position: 'absolute', bottom: 0, right: 0, background: 'var(--brand-primary)', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--bg-card)' }}>
+                  <Icon name="pencil" size={12} />
+                </div>
+              </label>
+              <input id="edit-avatar" type="file" accept="image/*" style={{ display: 'none' }} onChange={handleEditAvatarChange} />
+              <span className="text-xs text-muted">Tap to change photo</span>
+            </div>
+
+            {/* Bio */}
+            <div className="form-group">
+              <label className="form-label" htmlFor="edit-bio">Bio</label>
+              <textarea id="edit-bio" className="form-input form-textarea" value={editBio} onChange={e => setEditBio(e.target.value)} maxLength={160} rows={3} placeholder="Tell your batchmates about yourself…" />
+              <span className="form-hint">{editBio.length}/160</span>
+            </div>
+
+            {/* Branch & Year */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
               <div className="form-group">
-                <label className="form-label">Cover Banner</label>
-                <label
-                  htmlFor="edit-banner"
+                <label className="form-label" htmlFor="edit-branch">Branch</label>
+                <select id="edit-branch" className="form-input form-select" value={editBranch} onChange={e => setEditBranch(e.target.value)}>
+                  <option value="">None</option>
+                  {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="edit-year">Year</label>
+                <select id="edit-year" className="form-input form-select" value={editYear} onChange={e => setEditYear(e.target.value)}>
+                  <option value="">None</option>
+                  {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {/* Academic Visibility */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+              <span className="form-label" style={{ marginBottom: 2 }}>Academic Visibility</span>
+              <label className="flex items-center gap-2" style={{ fontSize: 'var(--font-size-sm)', cursor: 'pointer', color: 'var(--text-primary)' }}>
+                <input
+                  type="checkbox"
+                  checked={editShowBranch}
+                  onChange={e => setEditShowBranch(e.target.checked)}
                   style={{
-                    display: 'block', width: '100%', height: 100,
-                    borderRadius: 'var(--radius-md)', overflow: 'hidden',
-                    cursor: 'pointer', position: 'relative',
-                    background: editBannerPreview
-                      ? `url(${editBannerPreview}) center/cover`
-                      : 'linear-gradient(135deg, var(--brand-primary), var(--brand-accent))',
-                    border: '1.5px dashed var(--border-normal)',
+                    accentColor: 'var(--brand-primary)',
+                    width: 16, height: 16, cursor: 'pointer'
                   }}
-                >
-                  <div style={{
-                    position: 'absolute', inset: 0, display: 'flex',
-                    alignItems: 'center', justifyContent: 'center',
-                    background: 'rgba(0,0,0,0.35)',
-                    color: '#fff', fontSize: 'var(--font-size-xs)', gap: 6,
-                  }}>
-                    <Icon name="image" size={16} />
-                    {editBannerPreview ? 'Change banner' : 'Upload banner image'}
-                  </div>
-                </label>
-                <input id="edit-banner" type="file" accept="image/*" style={{ display: 'none' }} onChange={handleEditBannerChange} />
-              </div>
-
-              {/* Avatar */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-3)' }}>
-                <label htmlFor="edit-avatar" style={{ cursor: 'pointer', position: 'relative' }}>
-                  <Avatar src={editAvatarPreview} name={profile.name} size="xl" />
-                  <div style={{ position: 'absolute', bottom: 0, right: 0, background: 'var(--brand-primary)', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--bg-card)' }}>
-                    <Icon name="pencil" size={12} />
-                  </div>
-                </label>
-                <input id="edit-avatar" type="file" accept="image/*" style={{ display: 'none' }} onChange={handleEditAvatarChange} />
-                <span className="text-xs text-muted">Tap to change photo</span>
-              </div>
-
-              {/* Bio */}
-              <div className="form-group">
-                <label className="form-label" htmlFor="edit-bio">Bio</label>
-                <textarea id="edit-bio" className="form-input form-textarea" value={editBio} onChange={e => setEditBio(e.target.value)} maxLength={160} rows={3} placeholder="Tell your batchmates about yourself…" />
-                <span className="form-hint">{editBio.length}/160</span>
-              </div>
-
-              {/* Branch & Year */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="edit-branch">Branch</label>
-                  <select id="edit-branch" className="form-input form-select" value={editBranch} onChange={e => setEditBranch(e.target.value)}>
-                    <option value="">None</option>
-                    {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="edit-year">Year</label>
-                  <select id="edit-year" className="form-input form-select" value={editYear} onChange={e => setEditYear(e.target.value)}>
-                    <option value="">None</option>
-                    {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              {/* Academic Visibility */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                <span className="form-label" style={{ marginBottom: 2 }}>Academic Visibility</span>
-                <label className="flex items-center gap-2" style={{ fontSize: 'var(--font-size-sm)', cursor: 'pointer', color: 'var(--text-primary)' }}>
-                  <input
-                    type="checkbox"
-                    checked={editShowBranch}
-                    onChange={e => setEditShowBranch(e.target.checked)}
-                    style={{
-                      accentColor: 'var(--brand-primary)',
-                      width: 16, height: 16, cursor: 'pointer'
-                    }}
-                  />
-                  Show Branch ({editBranch || 'None'}) on profile
-                </label>
-                <label className="flex items-center gap-2" style={{ fontSize: 'var(--font-size-sm)', cursor: 'pointer', color: 'var(--text-primary)', marginTop: 2 }}>
-                  <input
-                    type="checkbox"
-                    checked={editShowYear}
-                    onChange={e => setEditShowYear(e.target.checked)}
-                    style={{
-                      accentColor: 'var(--brand-primary)',
-                      width: 16, height: 16, cursor: 'pointer'
-                    }}
-                  />
-                  Show Year ({editYear || 'None'}) on profile
-                </label>
-              </div>
-            </div>
-            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
-              <button id="btn-cancel-edit" className="btn btn-outline" onClick={() => setEditing(false)}>Cancel</button>
-              <button id="btn-save-profile" className="btn btn-primary" onClick={handleSave} disabled={saving}>
-                {saving ? <><div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> Saving…</> : 'Save changes'}
-              </button>
+                />
+                Show Branch ({editBranch || 'None'}) on profile
+              </label>
+              <label className="flex items-center gap-2" style={{ fontSize: 'var(--font-size-sm)', cursor: 'pointer', color: 'var(--text-primary)', marginTop: 2 }}>
+                <input
+                  type="checkbox"
+                  checked={editShowYear}
+                  onChange={e => setEditShowYear(e.target.checked)}
+                  style={{
+                    accentColor: 'var(--brand-primary)',
+                    width: 16, height: 16, cursor: 'pointer'
+                  }}
+                />
+                Show Year ({editYear || 'None'}) on profile
+              </label>
             </div>
           </div>
-        </div>
+          <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
+            <button id="btn-cancel-edit" className="btn btn-outline" onClick={() => setEditing(false)}>Cancel</button>
+            <button id="btn-save-profile" className="btn btn-primary" onClick={handleSave} disabled={saving}>
+              {saving ? <><div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> Saving…</> : 'Save changes'}
+            </button>
+          </div>
+        </EditProfileDialog>
       )}
 
       {/* Image Crop Modal */}
@@ -536,6 +534,70 @@ export default function ProfilePage() {
           onClose={() => setFollowModal(null)}
         />
       )}
+    </div>
+  )
+}
+
+// ── Focus-trapping edit profile dialog ─────────────────────────
+function EditProfileDialog({ onClose, children }) {
+  const dialogRef = useRef(null)
+  const previousFocus = useRef(null)
+
+  useEffect(() => {
+    // Remember what had focus before opening
+    previousFocus.current = document.activeElement
+
+    // Focus the first focusable element inside the dialog
+    const dialog = dialogRef.current
+    if (!dialog) return
+
+    const focusable = dialog.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    )
+    if (focusable.length) focusable[0].focus()
+
+    // Escape key handler
+    function handleKeyDown(e) {
+      if (e.key === 'Escape') { onClose(); return }
+
+      // Focus trap: keep Tab inside the dialog
+      if (e.key === 'Tab') {
+        const first = focusable[0]
+        const last = focusable[focusable.length - 1]
+        if (e.shiftKey) {
+          if (document.activeElement === first) { e.preventDefault(); last.focus() }
+        } else {
+          if (document.activeElement === last) { e.preventDefault(); first.focus() }
+        }
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    // Prevent body scroll while modal is open
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = ''
+      // Return focus to the element that triggered the dialog
+      if (previousFocus.current && previousFocus.current.focus) {
+        previousFocus.current.focus()
+      }
+    }
+  }, [onClose])
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div
+        ref={dialogRef}
+        className="modal-box animate-slide-up"
+        onClick={e => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Edit Profile"
+      >
+        {children}
+      </div>
     </div>
   )
 }

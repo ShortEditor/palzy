@@ -22,6 +22,10 @@ const AdminDashboard     = lazy(() => import('./pages/admin/AdminDashboard'))
 const AdminUsers         = lazy(() => import('./pages/admin/AdminUsers'))
 const AdminPosts         = lazy(() => import('./pages/admin/AdminPosts'))
 const AdminReports       = lazy(() => import('./pages/admin/AdminReports'))
+const PrivacyPage        = lazy(() => import('./pages/PrivacyPage'))
+const TermsPage          = lazy(() => import('./pages/TermsPage'))
+const AboutPage          = lazy(() => import('./pages/AboutPage'))
+const HelpPage           = lazy(() => import('./pages/HelpPage'))
 
 function PageLoader() {
   return (
@@ -55,6 +59,8 @@ export default function App() {
       <Routes>
         {/* Public */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/terms" element={<TermsPage />} />
 
         {/* Auth required, no profile needed */}
         <Route element={<ProtectedRoute requireProfile={false} />}>
@@ -81,6 +87,8 @@ export default function App() {
             <Route path="/tag/:tag"          element={<HashtagPage />} />
             <Route path="/post/:postId"      element={<PostDetailPage />} />
             <Route path="/u/:username"       element={<ProfilePage />} />
+            <Route path="/about"             element={<AboutPage />} />
+            <Route path="/help"              element={<HelpPage />} />
           </Route>
         </Route>
 

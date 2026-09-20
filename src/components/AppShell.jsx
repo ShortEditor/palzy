@@ -122,7 +122,11 @@ function AppShellInner({ children }) {
             letterSpacing: '-0.01em',
             padding: '0.8rem 1.5rem',
           }}
-          onClick={() => navigate('/')}
+          onClick={() => {
+            navigate('/')
+            // Dispatch after a tick so FeedPage + CreatePost are mounted
+            setTimeout(() => window.dispatchEvent(new CustomEvent('focusComposer')), 100)
+          }}
         >
           <Icon name="plus" size={18} /> Post Vibe
         </button>

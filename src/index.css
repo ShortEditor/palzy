@@ -359,24 +359,24 @@ body, .clay-card, .clay-input, .sidebar, .topbar, .bottom-nav, .page-header,
 .btn:active { transform: scale(0.95) !important; }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--vibe-coral), #ff8e6b);
+  background: linear-gradient(135deg, #d93535, #c94e20);
   color: #fff;
   /* 3D press shadow from concept */
-  box-shadow: 0 5px 0 var(--vibe-coral-shadow),
-              0 8px 20px rgba(255, 107, 107, 0.30),
+  box-shadow: 0 5px 0 #a82a2a,
+              0 8px 20px rgba(217, 53, 53, 0.30),
               inset 1px 1px 0 rgba(255,255,255,0.25);
   font-family: var(--font-fun);
 }
 .btn-primary:hover {
   transform: translateY(-3px) !important;
-  box-shadow: 0 8px 0 var(--vibe-coral-shadow),
-              0 16px 28px rgba(255, 107, 107, 0.40),
+  box-shadow: 0 8px 0 #a82a2a,
+              0 16px 28px rgba(217, 53, 53, 0.40),
               inset 1px 1px 0 rgba(255,255,255,0.30);
   text-decoration: none;
 }
 .btn-primary:active {
   transform: translateY(2px) !important;
-  box-shadow: 0 2px 0 var(--vibe-coral-shadow) !important;
+  box-shadow: 0 2px 0 #a82a2a !important;
 }
 
 .btn-outline {

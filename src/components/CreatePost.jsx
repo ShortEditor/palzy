@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { createPost } from '../firebase/posts'
 import { uploadImage } from '../utils/cloudinary'
@@ -32,6 +32,16 @@ export default function CreatePost({ onPostCreated }) {
 
   const textareaRef = useRef(null)
   const fileInputRef = useRef(null)
+
+  // Listen for "Post Vibe" sidebar button → auto-focus composer
+  useEffect(() => {
+    function handleFocus() {
+      textareaRef.current?.focus()
+      textareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+    window.addEventListener('focusComposer', handleFocus)
+    return () => window.removeEventListener('focusComposer', handleFocus)
+  }, [])
 
   const charsLeft   = MAX_CHARS - text.length
   const isEmpty     = !text.trim() && !imageFile

@@ -150,8 +150,16 @@ export default function SuggestionsSidebar() {
       {/* Footer */}
       <div style={{ marginTop: 'var(--space-5)', fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', lineHeight: 1.8 }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 12px' }}>
-          {['Privacy', 'Terms', 'About', 'Help'].map(l => (
-            <span key={l} style={{ cursor: 'pointer' }}>{l}</span>
+          {[
+            { label: 'Privacy', to: '/privacy' },
+            { label: 'Terms', to: '/terms' },
+            { label: 'About', to: '/about' },
+            { label: 'Help', to: '/help' },
+          ].map(l => (
+            <Link key={l.label} to={l.to} style={{ color: 'var(--text-muted)', textDecoration: 'none' }}
+              onMouseEnter={e => e.target.style.color = 'var(--text-brand)'}
+              onMouseLeave={e => e.target.style.color = 'var(--text-muted)'}
+            >{l.label}</Link>
           ))}
         </div>
         <div style={{ marginTop: 'var(--space-2)' }}>© 2026 Palzy · Made for college</div>

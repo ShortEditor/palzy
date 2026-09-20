@@ -15,8 +15,8 @@ export default function InstallBanner() {
     // Don't show if already installed as standalone PWA
     if (window.matchMedia('(display-mode: standalone)').matches) return
     if (window.navigator.standalone === true) return
-    // Don't show if dismissed this session
-    if (sessionStorage.getItem('pwa-dismissed')) return
+    // Don't show if dismissed (persisted across tabs via localStorage)
+    if (localStorage.getItem('pwa-dismissed')) return
 
     function activate(e) {
       promptRef.current = e
@@ -34,7 +34,17 @@ export default function InstallBanner() {
     // Otherwise listen for it (fires within a few seconds on Chrome)
     const handler = (e) => activate(e)
     window.addEventListener('beforeinstallprompt', handler)
-    return () => window.removeEventListener('beforeinstallprompt', handler)
+
+    // Listen for dismiss in other tabs
+    const storageHandler = (e) => {
+      if (e.key === 'pwa-dismissed') setShow(false)
+    }
+    window.addEventListener('storage', storageHandler)
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler)
+      window.removeEventListener('storage', storageHandler)
+    }
   }, [])
 
   async function handleInstall() {
@@ -48,7 +58,7 @@ export default function InstallBanner() {
   }
 
   function handleDismiss() {
-    sessionStorage.setItem('pwa-dismissed', '1')
+    localStorage.setItem('pwa-dismissed', '1')
     setShow(false)
   }
 

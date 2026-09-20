@@ -37,12 +37,12 @@ export async function getAdminStats() {
   const [usersSnap, postsSnap, reportsSnap] = await Promise.all([
     getCountFromServer(collection(db, 'users')),
     getCountFromServer(collection(db, 'posts')),
-    getCountFromServer(collection(db, 'reports')),
+    getCountFromServer(query(collection(db, 'reports'), where('status', '==', 'pending'))),
   ])
   return {
-    totalUsers:   usersSnap.data().count,
-    totalPosts:   postsSnap.data().count,
-    totalReports: reportsSnap.data().count,
+    totalUsers:     usersSnap.data().count,
+    totalPosts:     postsSnap.data().count,
+    pendingReports: reportsSnap.data().count,
   }
 }
 

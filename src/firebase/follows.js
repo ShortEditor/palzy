@@ -226,13 +226,14 @@ export async function getRecommendations(currentUid, count = 10) {
     results.push({
       uid,
       ...profile,
-      mutualCount: (candidateScore[uid] ?? 0) + branchBonus,
+      mutualCount: candidateScore[uid] ?? 0,
+      _sortScore: (candidateScore[uid] ?? 0) + branchBonus,
       mutualSamples,
     })
   }
 
-  // Final sort by enriched mutual count
-  results.sort((a, b) => b.mutualCount - a.mutualCount)
+  // Final sort by enriched score (mutuals + branch affinity), display only actual mutuals
+  results.sort((a, b) => b._sortScore - a._sortScore)
   return results.slice(0, count)
 }
 

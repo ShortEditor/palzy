@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import Icon from '../components/Icon'
 import toast from 'react-hot-toast'
@@ -199,10 +199,10 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPass(p => !p)}
-                  style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '1rem' }}
+                  style={{ position: 'absolute', right: '0.25rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   aria-label={showPass ? 'Hide password' : 'Show password'}
                 >
-                  {showPass ? <Icon name="close" size={16} /> : <Icon name="info" size={16} />}
+                  {showPass ? <Icon name="eyeOff" size={18} /> : <Icon name="eye" size={18} />}
                 </button>
               </div>
             </div>
@@ -280,10 +280,10 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPass(p => !p)}
-                  style={{ position: 'absolute', right: '0.75rem', top: showPass || !suPassword ? '50%' : '35%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '1rem' }}
+                  style={{ position: 'absolute', right: '0.25rem', top: showPass || !suPassword ? '50%' : '35%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   aria-label={showPass ? 'Hide password' : 'Show password'}
                 >
-                  {showPass ? <Icon name="close" size={16} /> : <Icon name="info" size={16} />}
+                  {showPass ? <Icon name="eyeOff" size={18} /> : <Icon name="eye" size={18} />}
                 </button>
               </div>
               <PasswordStrength password={suPassword} />
@@ -368,6 +368,10 @@ export default function LoginPage() {
         <p style={{ marginTop: 'var(--space-5)', textAlign: 'center', fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>
           Student project · Your data stays within this app only.
         </p>
+        <div style={{ marginTop: 'var(--space-2)', textAlign: 'center', fontSize: 'var(--font-size-xs)', display: 'flex', justifyContent: 'center', gap: 'var(--space-3)' }}>
+          <Link to="/privacy" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Privacy</Link>
+          <Link to="/terms" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Terms</Link>
+        </div>
       </div>
     </div>
   )
