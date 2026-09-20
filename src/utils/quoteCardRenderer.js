@@ -209,7 +209,7 @@ export function renderQuoteCard(canvas, { text, attribution, templateId, fontId,
   ctx.font = `600 30px "Baloo 2", "Inter", sans-serif`
   ctx.fillStyle = tmpl.mutedColor
   ctx.textAlign = 'center'
-  ctx.fillText('palzy', W / 2, H - 44)
+  ctx.fillText('palzy.website', W / 2, H - 44)
   ctx.globalAlpha = prevAlpha
 }
 

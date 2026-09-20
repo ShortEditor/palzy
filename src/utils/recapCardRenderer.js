@@ -125,7 +125,7 @@ export async function renderRecapCard({ name, username, photoURL, stats }) {
   ctx.font = "600 26px Baloo 2, Inter, sans-serif"
   ctx.fillStyle = "rgba(255,255,255,0.25)"
   ctx.textAlign = "center"
-  ctx.fillText("palzy.app", W / 2, H - 50)
+  ctx.fillText("palzy.website", W / 2, H - 50)
 
   return canvas.toDataURL("image/png")
 }
