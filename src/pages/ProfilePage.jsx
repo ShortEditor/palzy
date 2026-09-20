@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useCall } from '../contexts/CallContext'
 import { getUserByUsername, updateUserProfile } from '../firebase/users'
@@ -403,6 +403,26 @@ export default function ProfilePage() {
           )}
         </>
       )}
+
+      {/* Support & Legal Links */}
+      <div style={{
+        margin: 'var(--space-8) var(--space-4) var(--space-8)',
+        padding: 'var(--space-4)',
+        background: 'var(--bg-secondary)',
+        borderRadius: 'var(--radius-lg)',
+        border: '1px solid var(--border-subtle)',
+        textAlign: 'center',
+        fontSize: 'var(--font-size-xs)',
+        color: 'var(--text-muted)',
+      }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '8px 16px', marginBottom: 'var(--space-2)' }}>
+          <Link to="/about" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: 500 }}>About</Link>
+          <Link to="/help" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: 500 }}>Help Center</Link>
+          <Link to="/privacy" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: 500 }}>Privacy Policy</Link>
+          <Link to="/terms" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: 500 }}>Terms of Service</Link>
+        </div>
+        <div>Palzy · Made for college · © 2026</div>
+      </div>
 
       {/* Edit Profile Modal */}
       {editing && (

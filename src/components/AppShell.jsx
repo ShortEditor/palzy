@@ -13,6 +13,7 @@ import NotificationBell from './NotificationBell'
 import IncomingCallModal from './IncomingCallModal'
 import ActiveCallUI from './ActiveCallUI'
 import QuickCallModal from './QuickCallModal'
+import MobileMenuModal from './MobileMenuModal'
 import toast from 'react-hot-toast'
 
 function AppShellInner({ children }) {
@@ -21,6 +22,7 @@ function AppShellInner({ children }) {
   const navigate = useNavigate()
   const location = useLocation()
   const [quickCallOpen, setQuickCallOpen] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [unreadNotifications, setUnreadNotifications] = useState(0)
 
   useEffect(() => {
@@ -217,13 +219,13 @@ function AppShellInner({ children }) {
                 </NavLink>
               )}
               <button
-                id="btn-logout-mobile"
+                id="btn-mobile-menu"
                 className="btn btn-ghost btn-icon"
-                onClick={handleLogout}
-                title="Logout"
-                aria-label="Logout"
+                onClick={() => setMobileMenuOpen(true)}
+                title="Menu"
+                aria-label="Open menu"
               >
-                <Icon name="logout" size={18} />
+                <Icon name="menu" size={20} />
               </button>
             </div>
           </header>
@@ -281,6 +283,7 @@ function AppShellInner({ children }) {
       <IncomingCallModal />
       <ActiveCallUI />
       <QuickCallModal isOpen={quickCallOpen} onClose={() => setQuickCallOpen(false)} />
+      <MobileMenuModal isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
 
       {/* Hidden audio element for remote voice stream */}
       <audio ref={useCallAudio()} autoPlay playsInline style={{ display: 'none' }} />
