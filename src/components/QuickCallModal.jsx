@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { getAllUsersForSearch, filterUsersLocally } from '../firebase/users'
-import { getRecommendations } from '../firebase/follows'
+import { getRecommendations, getFollowingIds, getFollowerIds } from '../firebase/follows'
+import { getUserProfile } from '../firebase/users'
 import { useAuth } from '../contexts/AuthContext'
 import { useCall } from '../contexts/CallContext'
 import Avatar from './Avatar'
@@ -25,22 +26,65 @@ export default function QuickCallModal({ isOpen, onClose }) {
   const { callState, startCall } = useCall()
   const [query, setQuery] = useState('')
   const [allUsers, setAllUsers] = useState([])
-  const [suggestions, setSuggestions] = useState([])
+  const [connections, setConnections] = useState([])   // following + followers (deduplicated, ordered)
+  const [suggestions, setSuggestions] = useState([])   // friend-of-friend recs
   const [loading, setLoading] = useState(false)
   const inputRef = useRef(null)
 
-  // Pre-fetch users + recommendations on modal open
+  // Pre-fetch users + connections + recommendations on modal open
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 100)
       setLoading(true)
+      const uid = currentUser?.uid
       Promise.all([
         getAllUsersForSearch(),
-        currentUser?.uid ? getRecommendations(currentUser.uid, 6) : Promise.resolve([]),
+        uid ? getFollowingIds(uid) : Promise.resolve([]),
+        uid ? getFollowerIds(uid)  : Promise.resolve([]),
+        uid ? getRecommendations(uid, 8) : Promise.resolve([]),
       ])
-        .then(([users, recs]) => {
+        .then(async ([users, followingIds, followerIds, recs]) => {
           setAllUsers(users)
-          setSuggestions(recs.filter(u => u.uid !== currentUser?.uid))
+
+          // Build an ordered, deduplicated connections list:
+          // 1. Mutual follows first (you follow them AND they follow you)
+          // 2. People you follow
+          // 3. Your followers (who you don't follow back yet)
+          const followerSet  = new Set(followerIds)
+          const followingSet = new Set(followingIds)
+          const seen         = new Set([uid])
+
+          // Fetch profiles for all connections efficiently using the already-fetched allUsers list
+          const userMap = new Map(users.map(u => [u.uid, u]))
+
+          const ordered = []
+
+          // Mutuals first
+          for (const id of followingIds) {
+            if (!seen.has(id) && followerSet.has(id)) {
+              const profile = userMap.get(id)
+              if (profile) { ordered.push({ ...profile, _rel: 'mutual' }); seen.add(id) }
+            }
+          }
+          // Followed-but-not-following-back
+          for (const id of followingIds) {
+            if (!seen.has(id)) {
+              const profile = userMap.get(id)
+              if (profile) { ordered.push({ ...profile, _rel: 'following' }); seen.add(id) }
+            }
+          }
+          // Followers you don't follow back
+          for (const id of followerIds) {
+            if (!seen.has(id)) {
+              const profile = userMap.get(id)
+              if (profile) { ordered.push({ ...profile, _rel: 'follower' }); seen.add(id) }
+            }
+          }
+
+          setConnections(ordered)
+
+          // Suggestions = recs that are not already in connections
+          setSuggestions(recs.filter(u => u.uid !== uid && !seen.has(u.uid)))
         })
         .catch(console.error)
         .finally(() => setLoading(false))
@@ -51,11 +95,9 @@ export default function QuickCallModal({ isOpen, onClose }) {
 
   // Instant in-memory search results (0ms delay)
   const results = useMemo(() => {
-    if (!query.trim()) {
-      return suggestions.length > 0 ? suggestions : filterUsersLocally(allUsers, '', currentUser?.uid, 10)
-    }
+    if (!query.trim()) return null   // null = show the sectioned list
     return filterUsersLocally(allUsers, query, currentUser?.uid, 20)
-  }, [allUsers, query, suggestions, currentUser?.uid])
+  }, [allUsers, query, currentUser?.uid])
 
   if (!isOpen) return null
 
@@ -65,6 +107,8 @@ export default function QuickCallModal({ isOpen, onClose }) {
     onClose()
     startCall(user.uid, user)
   }
+
+  const relLabel = { mutual: 'Mutual', following: 'Following', follower: 'Follower' }
 
   return (
     <div
@@ -146,71 +190,130 @@ export default function QuickCallModal({ isOpen, onClose }) {
 
         {/* Results list */}
         <div style={{ overflowY: 'auto', padding: '8px 12px', flex: 1, minHeight: 180 }}>
-          {!query.trim() && results.length > 0 && (
-            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', padding: '6px 12px 10px', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-              Suggested Friends
-            </div>
-          )}
-
           {loading ? (
             <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
-              Searching…
+              Loading…
             </div>
-          ) : query.trim() && results.length === 0 ? (
-            <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
-              No users found matching "{query}"
-            </div>
-          ) : !query.trim() && results.length === 0 ? (
+
+          ) : results !== null ? (
+            // ── Search results ──
+            results.length === 0 ? (
+              <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
+                No users found matching &quot;{query}&quot;
+              </div>
+            ) : (
+              results.map(user => <UserRow key={user.uid} user={user} busy={busy} onCall={handleStartCall} />)
+            )
+
+          ) : connections.length === 0 && suggestions.length === 0 ? (
+            // ── Empty state ──
             <div style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
               Type a name or @username above to make an instant voice call <Icon name="phone" size={14} />
             </div>
-          ) : (
-            results.map(user => (
-              <div
-                key={user.uid}
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '10px 12px', borderRadius: 14,
-                  transition: 'background 0.15s',
-                }}
-                className="hover-bg-input"
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-                  <Avatar src={user.photoURL} name={user.name} size="md" />
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <span className="truncate">{user.name}</span>
-                      {user.isVerified && <VerifiedBadge size={13} />}
-                    </div>
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }} className="truncate">
-                      @{user.username}
-                    </div>
-                  </div>
-                </div>
 
-                <button
-                  onClick={() => handleStartCall(user)}
-                  disabled={busy}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 6,
-                    padding: '7px 16px', borderRadius: 18,
-                    background: busy ? 'var(--bg-input)' : 'linear-gradient(135deg, #30d158, #1a9944)',
-                    color: busy ? 'var(--text-muted)' : '#fff',
-                    border: 'none', cursor: busy ? 'not-allowed' : 'pointer',
-                    fontWeight: 700, fontSize: 13,
-                    boxShadow: busy ? 'none' : '0 4px 12px rgba(48,209,88,0.35)',
-                    transition: 'transform 0.15s',
-                    flexShrink: 0,
-                  }}
-                >
-                  <PhoneIcon size={14} />
-                  Call
-                </button>
-              </div>
-            ))
+          ) : (
+            // ── Sectioned default list: connections first, then suggestions ──
+            <>
+              {connections.length > 0 && (
+                <>
+                  <SectionLabel label="Following & Followers" />
+                  {connections.map(user => (
+                    <UserRow
+                      key={user.uid}
+                      user={user}
+                      busy={busy}
+                      onCall={handleStartCall}
+                      badge={relLabel[user._rel]}
+                    />
+                  ))}
+                </>
+              )}
+
+              {suggestions.length > 0 && (
+                <>
+                  <SectionLabel label="Suggested Friends" topBorder={connections.length > 0} />
+                  {suggestions.map(user => (
+                    <UserRow key={user.uid} user={user} busy={busy} onCall={handleStartCall} />
+                  ))}
+                </>
+              )}
+            </>
           )}
         </div>
       </div>
     </div>
   )
 }
+
+function SectionLabel({ label, topBorder = false }) {
+  return (
+    <div style={{
+      fontSize: 11, fontWeight: 700, color: 'var(--text-muted)',
+      padding: topBorder ? '12px 12px 8px' : '6px 12px 8px',
+      textTransform: 'uppercase', letterSpacing: 0.5,
+      borderTop: topBorder ? '1px solid var(--border-subtle)' : 'none',
+      marginTop: topBorder ? 6 : 0,
+    }}>
+      {label}
+    </div>
+  )
+}
+
+function UserRow({ user, busy, onCall, badge }) {
+  return (
+    <div
+      style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '10px 12px', borderRadius: 14,
+        transition: 'background 0.15s',
+      }}
+      className="hover-bg-input"
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+        <Avatar src={user.photoURL} name={user.name} size="md" />
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span className="truncate">{user.name}</span>
+            {user.isVerified && <VerifiedBadge size={13} />}
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 5 }} className="truncate">
+            @{user.username}
+            {badge && (
+              <span style={{
+                fontSize: 10, fontWeight: 700, padding: '1px 6px',
+                borderRadius: 99, background: 'var(--bg-elevated)',
+                color: badge === 'Mutual' ? 'var(--brand-primary)' : 'var(--text-muted)',
+                border: '1px solid var(--border-subtle)',
+                lineHeight: 1.5,
+              }}>
+                {badge}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <button
+        onClick={() => onCall(user)}
+        disabled={busy}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '7px 16px', borderRadius: 18,
+          background: busy ? 'var(--bg-input)' : 'linear-gradient(135deg, #30d158, #1a9944)',
+          color: busy ? 'var(--text-muted)' : '#fff',
+          border: 'none', cursor: busy ? 'not-allowed' : 'pointer',
+          fontWeight: 700, fontSize: 13,
+          boxShadow: busy ? 'none' : '0 4px 12px rgba(48,209,88,0.35)',
+          transition: 'transform 0.15s',
+          flexShrink: 0,
+        }}
+      >
+        <svg width={14} height={14} viewBox="0 0 24 24" fill="currentColor">
+          <path d="M6.62 10.79c1.44 2.83 3.76 5.15 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+        </svg>
+        Call
+      </button>
+    </div>
+  )
+}
+
