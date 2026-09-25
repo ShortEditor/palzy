@@ -19,26 +19,40 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isAuth();
 
-      // Anyone can create their own doc — but CANNOT set privileged fields
-      allow create: if isAuth() && uid() == userId
-        && !('isAdmin'    in request.resource.data)
-        && !('isVerified' in request.resource.data)
-        && !('banned'     in request.resource.data);
+      // Helper: rejects any write that touches privilege-escalation fields.
+      // isAdmin, isVerified, banned can ONLY be written by an existing admin
+      // via the admin panel (which calls setUserAdmin / setUserBanned).
+      // Regular users and the auth flow can never set these.
+      function noPrivilegedFields() {
+        let prohibited = ['isAdmin', 'isVerified', 'banned'];
+        return !request.resource.data.keys().hasAny(prohibited);
+      }
 
-      // Owner can update own doc — but NOT isAdmin/isVerified/banned
-      allow update: if isAuth() && uid() == userId
-        && !('isAdmin'    in request.resource.data.diff(resource.data).affectedKeys())
-        && !('isVerified' in request.resource.data.diff(resource.data).affectedKeys())
-        && !('banned'     in request.resource.data.diff(resource.data).affectedKeys());
+      function noPrivilegedFieldsChanged() {
+        let prohibited = ['isAdmin', 'isVerified', 'banned'];
+        return !request.resource.data.diff(resource.data).affectedKeys().hasAny(prohibited);
+      }
+
+      // User can create their own document — privileged fields forbidden entirely
+      allow create: if isAuth()
+        && uid() == userId
+        && noPrivilegedFields();
+
+      // User can update their own document — cannot touch privileged fields
+      allow update: if isAuth()
+        && uid() == userId
+        && noPrivilegedFieldsChanged();
 
       // Follow system: any authenticated user can update ONLY counter fields on any profile
       allow update: if isAuth()
         && request.resource.data.diff(resource.data).affectedKeys()
              .hasOnly(['followerCount', 'followingCount']);
 
-      // Admin can update anything
+      // Admin can update anything on any user document
+      // (isAdmin() reads from Firestore itself so a user cannot fake it client-side)
       allow update: if isAdmin();
     }
+
 
     // ─── Posts ────────────────────────────────────────────────
     match /posts/{postId} {

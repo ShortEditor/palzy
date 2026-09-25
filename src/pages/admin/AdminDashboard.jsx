@@ -75,14 +75,6 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* How to make someone admin */}
-      <div style={{ background: 'rgba(108,99,255,0.08)', border: '1px solid var(--border-brand)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)' }}>
-        <div style={{ fontWeight: 700, marginBottom: 'var(--space-2)', color: 'var(--text-brand)', display: 'flex', alignItems: 'center', gap: 6 }}><Icon name="info" size={14} /> How to grant admin access</div>
-        <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', lineHeight: 1.7 }}>
-          Open <strong style={{ color: 'var(--text-primary)' }}>Firebase Console → Firestore → users → {'{uid}'}</strong> and add the field:<br />
-          <code style={{ background: 'var(--bg-elevated)', padding: '2px 8px', borderRadius: 4, color: 'var(--brand-primary-dim)', fontFamily: 'monospace' }}>isAdmin: true</code> (boolean)
-        </div>
-      </div>
     </div>
   )
 }
