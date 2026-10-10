@@ -125,11 +125,11 @@ export default function SetupUsernamePage() {
   const usernameColor = { ok: 'var(--brand-green)', taken: 'var(--brand-red)', invalid: 'var(--brand-red)' }[usernameStatus] ?? 'var(--text-muted)'
 
   const pinHelperText = {
-    idle:     'Enter your student number: college 170, branch CM, CS or EC.',
+    idle:     'Enter your college PIN.',
     checking: 'Checking PIN…',
-    ok:       'PIN format accepted and available ✓',
+    ok:       'PIN available ✓',
     taken:    'This PIN has already been claimed by another student.',
-    invalid:  'Use 24170-CM-017 or 26170CM001.',
+    invalid:  'Wrong PIN number',
     error:    'Could not check availability. Please try again.',
   }[pinStatus]
 
@@ -207,7 +207,7 @@ export default function SetupUsernamePage() {
                 className={`form-input ${pinStatus === 'taken' || pinStatus === 'invalid' ? 'error' : ''}`}
                 style={{ paddingLeft: '2.5rem', fontFamily: 'var(--font-mono, monospace)', letterSpacing: '0.1em' }}
                 type="text"
-                placeholder="24170-CM-017 or 26170CM001"
+                placeholder="Enter your PIN"
                 value={collegePin}
                 onChange={e => setCollegePin(e.target.value.toUpperCase())}
                 maxLength={20}
