@@ -8,6 +8,7 @@ import AppShell from './components/AppShell'
 // ── Eagerly loaded (shown immediately / auth flow) ────────────
 import LoginPage from './pages/LoginPage'
 import SetupUsernamePage from './pages/SetupUsernamePage'
+import LandingPage from './pages/LandingPage'
 
 // ── Lazy loaded (only fetched when navigated to) ──────────────
 const FeedPage           = lazy(() => import('./pages/FeedPage'))
@@ -36,6 +37,11 @@ function PageLoader() {
   )
 }
 
+function HomeEntry() {
+  const { currentUser } = useAuth()
+  return currentUser ? <ProtectedRoute requireProfile={true} /> : <LandingPage />
+}
+
 function AppShellWrapper() {
   return (
     <AppShell>
@@ -59,6 +65,10 @@ export default function App() {
     <Suspense fallback={<PageLoader />}>
       <Routes>
         {/* Public */}
+        <Route path="/welcome" element={<LandingPage />} />
+        <Route path="/" element={<HomeEntry />}>
+          <Route element={<AppShellWrapper />}><Route index element={<FeedPage />} /></Route>
+        </Route>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/terms" element={<TermsPage />} />
@@ -82,7 +92,6 @@ export default function App() {
         {/* Auth + profile required — main app */}
         <Route element={<ProtectedRoute requireProfile={true} />}>
           <Route element={<AppShellWrapper />}>
-            <Route path="/"                  element={<FeedPage />} />
             <Route path="/explore"           element={<ExplorePage />} />
             <Route path="/campus"            element={<CampusPage />} />
             <Route path="/notifications"     element={<NotificationsPage />} />
