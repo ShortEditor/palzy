@@ -35,11 +35,13 @@ service cloud.firestore {
       // Regular users and the auth flow can never set these.
       function noPrivilegedFields() {
         let prohibited = ['isAdmin', 'isVerified', 'banned'];
-        return !request.resource.data.keys().hasAny(prohibited);
+        return !request.resource.data.keys().hasAny(prohibited) &&
+          request.resource.data.get('followerCount', 0) == 0 &&
+          request.resource.data.get('followingCount', 0) == 0;
       }
 
       function noPrivilegedFieldsChanged() {
-        let prohibited = ['isAdmin', 'isVerified', 'banned'];
+        let prohibited = ['isAdmin', 'isVerified', 'banned', 'followerCount', 'followingCount'];
         return !request.resource.data.diff(resource.data).affectedKeys().hasAny(prohibited);
       }
 
@@ -55,11 +57,6 @@ service cloud.firestore {
         && noPrivilegedFieldsChanged()
         && validChangedCollegePin();
 
-      // Follow system: any authenticated user can update ONLY counter fields on any profile
-      allow update: if isAuth()
-        && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(['followerCount', 'followingCount']);
-
       // Admin can update anything on any user document
       // (isAdmin() reads from Firestore itself so a user cannot fake it client-side)
       allow update: if isAdmin();
@@ -70,13 +67,14 @@ service cloud.firestore {
     match /posts/{postId} {
       allow read:   if isAuth();
       allow create: if isAuth() && !isBanned()
-        && request.resource.data.authorId == uid();
+        && request.resource.data.authorId == uid()
+        && request.resource.data.get('likeCount', 0) == 0
+        && request.resource.data.get('commentCount', 0) == 0
+        && request.resource.data.get('emojiCounts', {}) == {};
       allow delete: if isAuth()
         && (resource.data.authorId == uid() || isAdmin());
-      // Allow updating counter fields and emojiCounts
-      allow update: if isAuth()
-        && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(['likeCount', 'commentCount', 'emojiCounts']);
+      // Counts are derived from likes/comments, never client-written aggregates.
+      allow update: if false;
 
       // ─── Comments (subcollection) ────────────────────────
       match /comments/{commentId} {
@@ -97,31 +95,29 @@ service cloud.firestore {
     match /likes/{likeId} {
       allow read: if isAuth();
 
-      // Ordinary like: likeId = postId_userId, data must have userId == auth.uid
-      allow create: if isAuth()
-        && resource == null
-        && request.resource.data.userId == uid();
-
-      // Delete own like only
-      allow delete: if isAuth()
-        && resource.data.userId == uid();
-
-      // ── Emoji reactions: likeId = postId_rxn_userId ──
-      // Create/update own reaction
-      allow create: if isAuth()
-        && request.resource.data.userId == uid()
-        && request.resource.data.emoji is string;
-
-      // ── Emoji count aggregates: likeId = postId_emojiCounts ──
-      // Any authenticated user can update counts (incremented during reaction toggle)
-      allow create: if isAuth()
-        && likeId.matches('.*_emojiCounts');
-      allow update: if isAuth()
-        && likeId.matches('.*_emojiCounts');
+      function ownEngagement() {
+        return request.resource.data.userId == uid() &&
+          request.resource.data.postId is string &&
+          exists(/databases/$(database)/documents/posts/$(request.resource.data.postId)) &&
+          ((likeId == request.resource.data.postId + '_' + uid() &&
+            request.resource.data.keys().hasOnly(['postId', 'userId', 'createdAt'])) ||
+           (likeId == request.resource.data.postId + '_rxn_' + uid() &&
+            request.resource.data.keys().hasOnly(['postId', 'userId', 'emoji']) &&
+            request.resource.data.emoji in ['😂', '🔥', '😮', '👏', '😢']));
+      }
+      allow create: if isAuth() && ownEngagement();
+      allow update: if isAuth() && ownEngagement() &&
+        resource.data.userId == uid() &&
+        resource.data.postId == request.resource.data.postId;
+      allow delete: if isAuth() && resource.data.userId == uid() &&
+        (likeId == resource.data.postId + '_' + uid() ||
+         likeId == resource.data.postId + '_rxn_' + uid());
 
       // ── Notifications: likeId starts with notif_ ──
       // Only the sender can create a notification (fromUid == auth.uid)
       allow create: if isAuth()
+        && likeId.matches('^notif_.*')
+        && !request.resource.data.keys().hasAny(['userId'])
         && request.resource.data.isNotification == true
         && request.resource.data.fromUid == uid();
 
@@ -138,19 +134,24 @@ service cloud.firestore {
 
       // ── Story views: likeId = storyview_storyId_viewerId ──
       allow create: if isAuth()
+        && likeId.matches('^storyview_.*')
+        && !request.resource.data.keys().hasAny(['userId', 'emoji'])
         && request.resource.data.isStoryView == true
         && request.resource.data.viewerId == uid();
 
       // ── Calls: likeId = call_callId ──
       // Only the caller can create a call document
       allow create: if isAuth()
+        && likeId.matches('^call_.*')
+        && !request.resource.data.keys().hasAny(['userId', 'emoji'])
         && request.resource.data.isCall == true
         && request.resource.data.callerId == uid();
 
       // Caller or callee can update a call document
       allow update: if isAuth()
         && resource.data.isCall == true
-        && (resource.data.callerId == uid() || resource.data.calleeId == uid());
+        && (resource.data.callerId == uid() || resource.data.calleeId == uid())
+        && !request.resource.data.keys().hasAny(['userId', 'emoji']);
 
       // Either party can delete/end a call
       allow delete: if isAuth()
@@ -165,7 +166,12 @@ service cloud.firestore {
 
       // Only the follower (you) can create a follow document
       allow create: if isAuth()
-        && request.resource.data.followerId == uid();
+        && request.resource.data.followerId == uid()
+        && request.resource.data.followeeId is string
+        && request.resource.data.followeeId != uid()
+        && followId == uid() + '_' + request.resource.data.followeeId
+        && request.resource.data.keys().hasOnly(['followerId', 'followeeId', 'createdAt'])
+        && exists(/databases/$(database)/documents/users/$(request.resource.data.followeeId));
 
       // Only the follower can unfollow (delete)
       allow delete: if isAuth()
