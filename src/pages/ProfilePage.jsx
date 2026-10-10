@@ -64,11 +64,14 @@ export default function ProfilePage() {
     getUserByUsername(username).then(async p => {
       if (!p) { setNotFound(true); setLoading(false); return }
       
-      // Fetch fresh, accurate follow counts and heal database if they drifted
+      // Derive follow counts without writing aggregate fields
       const syncedCounts = await syncFollowCounts(p.uid)
       if (syncedCounts) {
         p.followerCount = syncedCounts.followerCount
         p.followingCount = syncedCounts.followingCount
+      } else {
+        p.followerCount = null
+        p.followingCount = null
       }
       
       setProfile(p)
@@ -299,7 +302,7 @@ export default function ProfilePage() {
             style={{ padding: 0, fontWeight: 'normal', fontSize: 'var(--font-size-sm)' }}
             onClick={() => setFollowModal('followers')}
           >
-            <strong style={{ color: 'var(--text-primary)' }}>{profile.followerCount ?? 0}</strong>&nbsp;
+            <strong style={{ color: 'var(--text-primary)' }}>{profile.followerCount ?? "?"}</strong>&nbsp;
             <span style={{ color: 'var(--text-muted)' }}>Followers</span>
           </button>
           <button
@@ -307,7 +310,7 @@ export default function ProfilePage() {
             style={{ padding: 0, fontWeight: 'normal', fontSize: 'var(--font-size-sm)' }}
             onClick={() => setFollowModal('following')}
           >
-            <strong style={{ color: 'var(--text-primary)' }}>{profile.followingCount ?? 0}</strong>&nbsp;
+            <strong style={{ color: 'var(--text-primary)' }}>{profile.followingCount ?? "?"}</strong>&nbsp;
             <span style={{ color: 'var(--text-muted)' }}>Following</span>
           </button>
         </div>
