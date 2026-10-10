@@ -1,3 +1,4 @@
+import { normalizeCollegePin } from '../utils/collegePin'
 import { useState, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
@@ -48,15 +49,20 @@ export default function SetupUsernamePage() {
   // Debounced college PIN check
   useEffect(() => {
     if (!collegePin) { setPinStatus('idle'); return }
-    const trimmed = collegePin.trim()
-    if (trimmed.length < 4 || trimmed.length > 20) { setPinStatus('invalid'); return }
+    const trimmed = normalizeCollegePin(collegePin)
+    if (!trimmed) { setPinStatus('invalid'); return }
 
     setPinStatus('checking')
+    let cancelled = false
     const timer = setTimeout(async () => {
-      const taken = await isCollegePinTaken(trimmed)
-      setPinStatus(taken ? 'taken' : 'ok')
+      try {
+        const taken = await isCollegePinTaken(trimmed)
+        if (!cancelled) setPinStatus(taken ? 'taken' : 'ok')
+      } catch {
+        if (!cancelled) setPinStatus('error')
+      }
     }, 500)
-    return () => clearTimeout(timer)
+    return () => { cancelled = true; clearTimeout(timer) }
   }, [collegePin])
 
   // Avatar dropzone
@@ -119,11 +125,12 @@ export default function SetupUsernamePage() {
   const usernameColor = { ok: 'var(--brand-green)', taken: 'var(--brand-red)', invalid: 'var(--brand-red)' }[usernameStatus] ?? 'var(--text-muted)'
 
   const pinHelperText = {
-    idle:     'Enter the unique PIN provided by your institution.',
+    idle:     'Enter your student number: college 170, branch CM, CS or EC.',
     checking: 'Checking PIN…',
-    ok:       'PIN verified ✓',
+    ok:       'PIN format accepted and available ✓',
     taken:    'This PIN has already been claimed by another student.',
-    invalid:  'PIN must be 4–20 characters.',
+    invalid:  'Use 24170-CM-017 or 26170CM001.',
+    error:    'Could not check availability. Please try again.',
   }[pinStatus]
 
   const pinColor = { ok: 'var(--brand-green)', taken: 'var(--brand-red)', invalid: 'var(--brand-red)' }[pinStatus] ?? 'var(--text-muted)'
@@ -200,9 +207,9 @@ export default function SetupUsernamePage() {
                 className={`form-input ${pinStatus === 'taken' || pinStatus === 'invalid' ? 'error' : ''}`}
                 style={{ paddingLeft: '2.5rem', fontFamily: 'var(--font-mono, monospace)', letterSpacing: '0.1em' }}
                 type="text"
-                placeholder="Enter institution PIN"
+                placeholder="24170-CM-017 or 26170CM001"
                 value={collegePin}
-                onChange={e => setCollegePin(e.target.value.replace(/\s/g, ''))}
+                onChange={e => setCollegePin(e.target.value.toUpperCase())}
                 maxLength={20}
                 required
               />
