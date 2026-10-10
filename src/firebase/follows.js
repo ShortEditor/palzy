@@ -9,9 +9,6 @@ import {
   getDocs,
   limit,
   serverTimestamp,
-  updateDoc,
-  increment,
-  getCountFromServer,
 } from 'firebase/firestore'
 import { db } from './config'
 import { getUserProfile } from './users'
@@ -26,15 +23,6 @@ export async function followUser(followerId, followeeId) {
     followeeId,
     createdAt: serverTimestamp(),
   })
-  // Increment counters — these may fail if rules are not yet deployed,
-  // so we catch individually and don't block the follow from succeeding
-  try {
-    await updateDoc(doc(db, 'users', followerId), { followingCount: increment(1) })
-  } catch {}
-  try {
-    await updateDoc(doc(db, 'users', followeeId), { followerCount: increment(1) })
-  } catch {}
-
   // Notify the person being followed (fire-and-forget)
   getUserProfile(followerId).then(follower => {
     if (!follower) return
@@ -51,12 +39,7 @@ export async function followUser(followerId, followeeId) {
 // ─── Unfollow a user ──────────────────────────────────────────
 export async function unfollowUser(followerId, followeeId) {
   await deleteDoc(doc(db, 'follows', `${followerId}_${followeeId}`))
-  try {
-    await updateDoc(doc(db, 'users', followerId), { followingCount: increment(-1) })
-  } catch {}
-  try {
-    await updateDoc(doc(db, 'users', followeeId), { followerCount: increment(-1) })
-  } catch {}
+
 }
 
 // ─── Check if you follow someone ─────────────────────────────
@@ -69,14 +52,14 @@ export async function isFollowing(followerId, followeeId) {
 export async function getFollowingIds(uid) {
   const q = query(collection(db, 'follows'), where('followerId', '==', uid))
   const snap = await getDocs(q)
-  return snap.docs.map(d => d.data().followeeId)
+  return snap.docs.filter(d => d.id === `${uid}_${d.data().followeeId}` && d.data().followeeId !== uid).map(d => d.data().followeeId)
 }
 
 // ─── Get all UIDs that follow this user ──────────────────────
 export async function getFollowerIds(uid) {
   const q = query(collection(db, 'follows'), where('followeeId', '==', uid))
   const snap = await getDocs(q)
-  return snap.docs.map(d => d.data().followerId)
+  return snap.docs.filter(d => d.id === `${d.data().followerId}_${uid}` && d.data().followerId !== uid).map(d => d.data().followerId)
 }
 
 // ─── Get full profiles of followers ──────────────────────────
@@ -263,31 +246,16 @@ export async function syncFollowCounts(uid) {
     const followingQuery = query(collection(db, 'follows'), where('followerId', '==', uid))
     
     const [followerSnap, followingSnap] = await Promise.all([
-      getCountFromServer(followerQuery),
-      getCountFromServer(followingQuery)
+      getDocs(followerQuery),
+      getDocs(followingQuery)
     ])
     
-    const actualFollowerCount = followerSnap.data().count
-    const actualFollowingCount = followingSnap.data().count
+    const actualFollowerCount = followerSnap.docs.filter(d => d.id === `${d.data().followerId}_${uid}` && d.data().followerId !== uid).length
+    const actualFollowingCount = followingSnap.docs.filter(d => d.id === `${uid}_${d.data().followeeId}` && d.data().followeeId !== uid).length
     
-    // Get current user profile
-    const userDocRef = doc(db, 'users', uid)
-    const userSnap = await getDoc(userDocRef)
-    
-    if (userSnap.exists()) {
-      const userData = userSnap.data()
-      if (userData.followerCount !== actualFollowerCount || userData.followingCount !== actualFollowingCount) {
-        await updateDoc(userDocRef, {
-          followerCount: actualFollowerCount,
-          followingCount: actualFollowingCount
-        })
-        console.log(`Synced follow counts for ${uid}: Followers=${actualFollowerCount}, Following=${actualFollowingCount}`)
-      }
-    }
     return { followerCount: actualFollowerCount, followingCount: actualFollowingCount }
   } catch (err) {
     console.error('Error syncing follow counts:', err)
     return null
   }
 }
-
