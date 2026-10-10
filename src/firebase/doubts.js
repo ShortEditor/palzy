@@ -1,3 +1,4 @@
+import { withPostCounts } from './counts'
 import { collection, query, orderBy, limit, startAfter, getDocs } from "firebase/firestore"
 import { db } from "./config"
 
@@ -32,5 +33,5 @@ export async function getDoubtPosts(cursor = null, branch = null, year = null) {
   const hasMore = snap.docs.length === FETCH_POOL
   const nextCursor = snap.docs[snap.docs.length - 1] ?? null
 
-  return { posts, nextCursor, hasMore }
+  return { posts: await withPostCounts(posts), nextCursor, hasMore }
 }
