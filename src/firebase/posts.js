@@ -5,7 +5,6 @@ import {
   deleteDoc,
   getDoc,
   getDocs,
-  updateDoc,
   query,
   orderBy,
   limit,
@@ -13,10 +12,10 @@ import {
   where,
   serverTimestamp,
   runTransaction,
-  increment,
   writeBatch,
 } from 'firebase/firestore'
 import { db } from './config'
+import { withPostCounts } from './counts'
 import { getUserProfile, updateStreak } from './users'
 import { createNotification } from './notifications'
 
@@ -188,7 +187,8 @@ export async function getFeedPosts(cursor = null, currentUid = null, followingId
   })
 
   // ── 3. Score + sort ────────────────────────────────────────
-  const scored = pool.map(p => {
+  const countedPool = await withPostCounts(pool)
+  const scored = countedPool.map(p => {
     const s = scorePost(p, sessionSeed)
     // Clean internal flags before returning
     const { _isFollowed, ...clean } = p
@@ -225,7 +225,7 @@ export async function getUserPosts(userId, cursor = null) {
     )
   }
   const snap = await getDocs(q)
-  const posts = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+  const posts = await withPostCounts(snap.docs.map(d => ({ id: d.id, ...d.data() })))
   const nextCursor = snap.docs[snap.docs.length - 1] ?? null
   return { posts, nextCursor, hasMore: snap.docs.length === POSTS_PER_PAGE }
 }
@@ -234,7 +234,7 @@ export async function getUserPosts(userId, cursor = null) {
 export async function getPost(postId) {
   const snap = await getDoc(doc(db, 'posts', postId))
   if (!snap.exists()) return null
-  return { id: snap.id, ...snap.data() }
+  return (await withPostCounts([{ id: snap.id, ...snap.data() }]))[0]
 }
 
 // ─── Like / Unlike (atomic transaction) ─────────────────────
@@ -247,11 +247,9 @@ export async function toggleLike(postId, userId) {
     const [likeSnap, postSnap] = await Promise.all([tx.get(likeRef), tx.get(postRef)])
     if (likeSnap.exists()) {
       tx.delete(likeRef)
-      tx.update(postRef, { likeCount: increment(-1) })
       return false // unliked
     } else {
       tx.set(likeRef, { postId, userId, createdAt: serverTimestamp() })
-      tx.update(postRef, { likeCount: increment(1) })
       return { authorId: postSnap.data()?.authorId, content: postSnap.data()?.content }
     }
   })
@@ -319,7 +317,6 @@ export async function addCommentToPost(postId, { authorId, text, parentId = null
     parentId: parentId ?? null,
     createdAt: serverTimestamp(),
   })
-  await updateDoc(postRef, { commentCount: increment(1) })
 
   // Find target author to notify
   let targetAuthorId = postAuthorId
@@ -369,7 +366,6 @@ export async function deleteComment(postId, commentId) {
   repliesSnap.docs.forEach(d => batch.delete(d.ref))
   batch.delete(doc(db, 'posts', postId, 'comments', commentId))
   const totalDeleted = repliesSnap.docs.length + 1
-  batch.update(doc(db, 'posts', postId), { commentCount: increment(-totalDeleted) })
 
   await batch.commit()
   return totalDeleted
