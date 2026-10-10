@@ -9,7 +9,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test:pin": "node --test tests/collegePin.test.js",
-    "test:rules": "npx firebase-tools@14.15.2 emulators:exec --only firestore --project demo-palzy-pin --config firebase.test.json \"node --test tests/pinRules.test.js\""
+    "test:rules": "npm install --no-save --package-lock=false @firebase/rules-unit-testing@5.0.1 && npx firebase-tools@14.15.2 emulators:exec --only firestore --project demo-palzy-pin --config firebase.test.json \"node --test tests/pinRules.test.js\""
   },
   "dependencies": {
     "browser-image-compression": "^2.0.2",
@@ -23,7 +23,6 @@
     "react-router-dom": "^7.18.1"
   },
   "devDependencies": {
-    "@firebase/rules-unit-testing": "^5.0.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
