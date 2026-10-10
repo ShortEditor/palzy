@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:pin": "node --test tests/collegePin.test.js",
+    "test:rules": "npm install --no-save --package-lock=false @firebase/rules-unit-testing@5.0.1 && npx firebase-tools@14.15.2 emulators:exec --only firestore --project demo-palzy-pin --config firebase.test.json \"node --test tests/pinRules.test.js\""
   },
   "dependencies": {
     "browser-image-compression": "^2.0.2",

@@ -11,6 +11,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore'
 import { db } from './config'
+import { normalizeCollegePin, collegePinVariants } from '../utils/collegePin'
 
 // ─── Check if a username is already taken ────────────────────
 export async function isUsernameTaken(username) {
@@ -24,9 +25,11 @@ export async function isUsernameTaken(username) {
 
 // ─── Check if a college PIN is already claimed ───────────────
 export async function isCollegePinTaken(pin) {
+  const variants = collegePinVariants(pin)
+  if (!variants.length) throw new Error('Invalid college PIN format')
   const q = query(
     collection(db, 'users'),
-    where('collegePin', '==', pin.trim().toUpperCase()),
+    where('collegePin', 'in', variants),
     limit(1),
   )
   const snap = await getDocs(q)
@@ -35,6 +38,8 @@ export async function isCollegePinTaken(pin) {
 
 // ─── Create user profile on first login ──────────────────────
 export async function createUserProfile(uid, { username, name, photoURL, branch, year, bio = '', showBranch = true, showYear = true, collegePin = '' }) {
+  const normalizedPin = normalizeCollegePin(collegePin)
+  if (!normalizedPin) throw new Error('Invalid college PIN format')
   await setDoc(doc(db, 'users', uid), {
     username: username.toLowerCase(),
     name,
@@ -44,7 +49,7 @@ export async function createUserProfile(uid, { username, name, photoURL, branch,
     bio,
     showBranch,
     showYear,
-    collegePin: collegePin ? collegePin.trim().toUpperCase() : '',
+    collegePin: normalizedPin,
     followerCount: 0,
     followingCount: 0,
     createdAt: serverTimestamp(),
@@ -81,6 +86,11 @@ const ALLOWED_PROFILE_FIELDS = new Set([
 
 // ─── Update profile fields ───────────────────────────────────
 export async function updateUserProfile(uid, updates) {
+  if (Object.hasOwn(updates, 'collegePin')) {
+    const pin = normalizeCollegePin(updates.collegePin)
+    if (!pin) throw new Error('Invalid college PIN format')
+    updates = { ...updates, collegePin: pin }
+  }
   const cleanUpdates = {}
   Object.keys(updates).forEach(key => {
     if (updates[key] !== undefined && ALLOWED_PROFILE_FIELDS.has(key)) {
@@ -176,6 +186,5 @@ export async function searchUsers(rawQuery, limitCount = 20) {
   const allUsers = await getAllUsersForSearch()
   return filterUsersLocally(allUsers, rawQuery, null, limitCount)
 }
-
 
 

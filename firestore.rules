@@ -15,6 +15,16 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(uid())).data.get('banned', false) == true;
     }
 
+    // Accept both student-number formats for college 170. Format does not prove enrollment.
+    function validCollegePin(data) {
+      return data.get('collegePin', null) is string &&
+        data.collegePin.matches('^[0-9]{2}170(-(CM|CS|EC)-[0-9]{3}|(CM|CS|EC)[0-9]{3})$');
+    }
+    function validChangedCollegePin() {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['collegePin']) ||
+        validCollegePin(request.resource.data);
+    }
+
     // ─── Users ────────────────────────────────────────────────
     match /users/{userId} {
       allow read: if isAuth();
@@ -36,12 +46,14 @@ service cloud.firestore {
       // User can create their own document — privileged fields forbidden entirely
       allow create: if isAuth()
         && uid() == userId
-        && noPrivilegedFields();
+        && noPrivilegedFields()
+        && validCollegePin(request.resource.data);
 
       // User can update their own document — cannot touch privileged fields
       allow update: if isAuth()
         && uid() == userId
-        && noPrivilegedFieldsChanged();
+        && noPrivilegedFieldsChanged()
+        && validChangedCollegePin();
 
       // Follow system: any authenticated user can update ONLY counter fields on any profile
       allow update: if isAuth()

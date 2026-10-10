@@ -1,3 +1,4 @@
+import { normalizeCollegePin } from '../utils/collegePin'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
@@ -21,15 +22,20 @@ export default function VerifyPinPage() {
   // Debounced PIN uniqueness check
   useEffect(() => {
     if (!pin) { setPinStatus('idle'); return }
-    const trimmed = pin.trim()
-    if (trimmed.length < 4 || trimmed.length > 20) { setPinStatus('invalid'); return }
+    const trimmed = normalizeCollegePin(pin)
+    if (!trimmed) { setPinStatus('invalid'); return }
 
     setPinStatus('checking')
+    let cancelled = false
     const timer = setTimeout(async () => {
-      const taken = await isCollegePinTaken(trimmed)
-      setPinStatus(taken ? 'taken' : 'ok')
+      try {
+        const taken = await isCollegePinTaken(trimmed)
+        if (!cancelled) setPinStatus(taken ? 'taken' : 'ok')
+      } catch {
+        if (!cancelled) setPinStatus('error')
+      }
     }, 500)
-    return () => clearTimeout(timer)
+    return () => { cancelled = true; clearTimeout(timer) }
   }, [pin])
 
   async function handleSubmit(e) {
@@ -42,7 +48,7 @@ export default function VerifyPinPage() {
         collegePin: pin.trim().toUpperCase(),
       })
       await refreshProfile()
-      toast.success('College PIN verified!', { icon: <Icon name="shield" size={16} /> })
+      toast.success('College PIN saved!', { icon: <Icon name="shield" size={16} /> })
       navigate('/', { replace: true })
     } catch (err) {
       console.error(err)
@@ -53,11 +59,12 @@ export default function VerifyPinPage() {
   }
 
   const helperText = {
-    idle:     'Enter the unique PIN provided by your institution.',
+    idle:     'Enter your college PIN.',
     checking: 'Checking PIN…',
-    ok:       'PIN verified ✓',
+    ok:       'PIN available ✓',
     taken:    'This PIN has already been claimed by another student.',
-    invalid:  'PIN must be 4–20 characters.',
+    invalid:  'Wrong PIN number',
+    error:    'Could not check availability. Please try again.',
   }[pinStatus]
 
   const helperColor = { ok: 'var(--brand-green)', taken: 'var(--brand-red)', invalid: 'var(--brand-red)' }[pinStatus] ?? 'var(--text-muted)'
@@ -67,9 +74,9 @@ export default function VerifyPinPage() {
       <div className="auth-card" style={{ maxWidth: 440 }}>
         <div className="auth-logo">
           <div className="auth-logo-icon"><Icon name="shield" size={28} /></div>
-          <h1 className="auth-title" style={{ fontSize: 'var(--font-size-2xl)' }}>Verify College PIN</h1>
+          <h1 className="auth-title" style={{ fontSize: 'var(--font-size-2xl)' }}>College student number</h1>
           <p className="auth-subtitle">
-            Hey {userProfile?.name || 'there'}! We now require a college PIN to keep Palzy exclusive to verified students.
+            Hey {userProfile?.name || 'there'}! We now require a college PIN to match your college student number.
           </p>
         </div>
 
@@ -88,7 +95,7 @@ export default function VerifyPinPage() {
                 type="text"
                 placeholder="Enter your PIN"
                 value={pin}
-                onChange={e => setPin(e.target.value.replace(/\s/g, ''))}
+                onChange={e => setPin(e.target.value.toUpperCase())}
                 maxLength={20}
                 required
                 autoFocus
@@ -115,7 +122,7 @@ export default function VerifyPinPage() {
             alignItems: 'flex-start',
           }}>
             <Icon name="info" size={14} style={{ flexShrink: 0, marginTop: 2 }} />
-            <span>Each PIN is unique and can only be used once. Contact your institution if you don't have one.</span>
+            <span>Enter your college student number. Availability does not confirm enrollment.</span>
           </div>
 
           <button
