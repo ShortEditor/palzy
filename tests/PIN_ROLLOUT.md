@@ -1,0 +1,11 @@
+PIN format changes
+- Accept YY170-CM-NNN / YY170-CS-NNN / YY170-EC-NNN and the same forms without hyphens.
+- New saves normalize to hyphens. Availability checks look for either stored format.
+- Existing users can keep their current PIN and edit other profile fields without migrating.
+- New profiles and changed PIN fields require a valid format in both client and rules.
+- Format validation does not verify enrollment, identity or PIN ownership.
+- Availability checks are not atomic reservations and do not eliminate a concurrent duplicate claim.
+- Read scope remains unchanged, per the owner's request.
+- Deploy frontend first, then Firestore rules after approval; Vercel will not deploy Firestore rules.
+- Android app shares backend but has separate code: old clients may still show permissive validation and get a denied save for invalid new PINs. Existing app users can continue with unchanged PINs.
+- Rollback: restore prior frontend and rules if needed. No bulk user-document migration is part of this PR.
