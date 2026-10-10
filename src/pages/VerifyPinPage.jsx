@@ -59,11 +59,11 @@ export default function VerifyPinPage() {
   }
 
   const helperText = {
-    idle:     'Enter your student number: college 170, branch CM, CS or EC.',
+    idle:     'Enter your college PIN.',
     checking: 'Checking PIN…',
-    ok:       'PIN format accepted and available ✓',
+    ok:       'PIN available ✓',
     taken:    'This PIN has already been claimed by another student.',
-    invalid:  'Use 24170-CM-017 or 26170CM001.',
+    invalid:  'Wrong PIN number',
     error:    'Could not check availability. Please try again.',
   }[pinStatus]
 
@@ -93,7 +93,7 @@ export default function VerifyPinPage() {
                 className={`form-input ${pinStatus === 'taken' || pinStatus === 'invalid' ? 'error' : ''}`}
                 style={{ paddingLeft: '2.5rem', fontFamily: 'var(--font-mono, monospace)', letterSpacing: '0.1em', fontSize: 'var(--font-size-lg)', textAlign: 'center' }}
                 type="text"
-                placeholder="24170-CM-017 or 26170CM001"
+                placeholder="Enter your PIN"
                 value={pin}
                 onChange={e => setPin(e.target.value.toUpperCase())}
                 maxLength={20}
@@ -122,7 +122,7 @@ export default function VerifyPinPage() {
             alignItems: 'flex-start',
           }}>
             <Icon name="info" size={14} style={{ flexShrink: 0, marginTop: 2 }} />
-            <span>Enter your college student number in either format. This checks its format and availability, not your enrollment.</span>
+            <span>Enter your college student number. Availability does not confirm enrollment.</span>
           </div>
 
           <button
