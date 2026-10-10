@@ -1,3 +1,4 @@
+import { withPostCounts } from './counts'
 import { collection, query, orderBy, limit, startAfter, getDocs } from 'firebase/firestore'
 import { db } from './config'
 
@@ -30,7 +31,7 @@ export async function getNotesPosts(cursor = null, branch = null, year = null) {
   const hasMore = snap.docs.length === FETCH_POOL
   const nextCursor = snap.docs[snap.docs.length - 1] ?? null
 
-  return { posts, nextCursor, hasMore }
+  return { posts: await withPostCounts(posts), nextCursor, hasMore }
 }
 
 // Fetch posts tagged with "collab" — client-side filter to avoid composite index
@@ -58,7 +59,7 @@ export async function getCollabPosts(cursor = null, branch = null, year = null) 
   const hasMore = snap.docs.length === FETCH_POOL
   const nextCursor = snap.docs[snap.docs.length - 1] ?? null
 
-  return { posts, nextCursor, hasMore }
+  return { posts: await withPostCounts(posts), nextCursor, hasMore }
 }
 
 export async function getHotPosts(branch = null, year = null) {
@@ -74,6 +75,7 @@ export async function getHotPosts(branch = null, year = null) {
   if (branch) posts = posts.filter(p => !p.authorBranch || p.authorBranch === branch)
   if (year)   posts = posts.filter(p => !p.authorYear   || p.authorYear   === year)
 
+  posts = await withPostCounts(posts)
   const ranked = posts.map(p => ({
     ...p,
     engagementScore: (p.likeCount ?? 0) * 2 + (p.commentCount ?? 0) * 3

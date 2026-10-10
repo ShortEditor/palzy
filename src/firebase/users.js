@@ -81,7 +81,6 @@ const ALLOWED_PROFILE_FIELDS = new Set([
   'name', 'username', 'photoURL', 'bannerURL', 'bio',
   'branch', 'year', 'showBranch', 'showYear', 'collegePin',
   'stories', 'streakCount', 'streakLastDate', 'streakBestEver',
-  'followerCount', 'followingCount',
 ])
 
 // ─── Update profile fields ───────────────────────────────────
@@ -186,5 +185,4 @@ export async function searchUsers(rawQuery, limitCount = 20) {
   const allUsers = await getAllUsersForSearch()
   return filterUsersLocally(allUsers, rawQuery, null, limitCount)
 }
-
 

@@ -1,3 +1,4 @@
+import { withPostCounts } from './counts'
 import {
   collection,
   getDocs,
@@ -65,7 +66,7 @@ export async function getAdminPosts(cursor = null, pageSize = 20) {
   let q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(pageSize))
   if (cursor) q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), startAfter(cursor), limit(pageSize))
   const snap = await getDocs(q)
-  const posts = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+  const posts = await withPostCounts(snap.docs.map(d => ({ id: d.id, ...d.data() })))
   return { posts, nextCursor: snap.docs[snap.docs.length - 1] ?? null, hasMore: snap.docs.length === pageSize }
 }
 

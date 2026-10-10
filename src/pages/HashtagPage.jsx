@@ -1,3 +1,4 @@
+import { withPostCounts } from '../firebase/counts'
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore'
@@ -29,7 +30,7 @@ export default function HashtagPage() {
           limit(30),
         )
         const snap = await getDocs(q)
-        const loaded = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        const loaded = await withPostCounts(snap.docs.map(d => ({ id: d.id, ...d.data() })))
         setPosts(loaded)
 
         if (currentUser && loaded.length > 0) {

@@ -8,16 +8,16 @@ import Icon from './Icon'
  * Self-loads aggregate counts from Firestore on mount.
  * Fully optimistic updates with rollback on error.
  */
-export default function ReactionBar({ postId, userId, initialReaction }) {
+export default function ReactionBar({ postId, userId, initialReaction, emojiCounts }) {
   const [userReaction, setUserReaction] = useState(initialReaction || null)
-  const [counts, setCounts] = useState({})
+  const [counts, setCounts] = useState(emojiCounts || {})
   const [loading, setLoading] = useState(false)
 
   // Load real counts from Firestore on mount
   useEffect(() => {
     if (!postId) return
-    getEmojiCounts(postId).then(setCounts).catch(() => {})
-  }, [postId])
+    if (!emojiCounts) getEmojiCounts(postId).then(setCounts).catch(() => {})
+  }, [postId, emojiCounts])
 
   async function handleReact(emoji, e) {
     e.stopPropagation()
