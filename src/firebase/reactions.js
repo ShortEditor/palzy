@@ -1,3 +1,4 @@
+import { invalidatePostCounts } from './counts'
 import { doc, getDoc, runTransaction, collection, query, where, getDocs } from 'firebase/firestore'
 import { db } from './config'
 import { getUserProfile } from './users'
