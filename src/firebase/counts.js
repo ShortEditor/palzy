@@ -16,13 +16,13 @@ export function invalidatePostCounts(postId) {
   countsCache.delete(postId)
 }
 
-export async function withPostCounts(posts) {
+export async function withPostCounts(posts, { refresh = false } = {}) {
   const now = Date.now()
   const fresh = new Map() // postId -> cached data
   const toFetch = []
   for (const post of posts) {
     const hit = countsCache.get(post.id)
-    if (hit && now - hit.time < COUNTS_TTL) fresh.set(post.id, hit.data)
+    if (!refresh && hit && now - hit.time < COUNTS_TTL) fresh.set(post.id, hit.data)
     else toFetch.push(post)
   }
 
