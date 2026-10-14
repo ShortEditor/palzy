@@ -99,6 +99,7 @@ export default function FeedPage() {
       setPosts(prev => cur ? [...prev, ...freshPosts] : freshPosts)
       setCursor(nextCursor)
       setHasMore(more)
+      if (cur === null && refresh) window.scrollTo({ top: 0, behavior: 'instant' })
     } catch (err) {
       console.error('Feed fetch error:', err)
       if (mountedRef.current) setError('Could not load the feed. Please try again.')
