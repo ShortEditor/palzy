@@ -19,6 +19,7 @@ export async function isUsernameTaken(username) {
   const q = query(
     collection(db, 'users'),
     where('username', '==', username.toLowerCase()),
+    limit(1),
   )
   const snap = await getDocs(q)
   return !snap.empty
@@ -111,6 +112,7 @@ export async function getUserByUsername(username) {
   const q = query(
     collection(db, 'users'),
     where('username', '==', username.toLowerCase()),
+    limit(1),
   )
   const snap = await getDocs(q)
   if (snap.empty) return null

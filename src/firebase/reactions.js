@@ -27,6 +27,7 @@ const rxnRef  = (postId, userId) => doc(db, 'likes', `${postId}_rxn_${userId}`)
 export async function toggleEmojiReaction(postId, userId, emoji) {
   const rxnDoc = rxnRef(postId, userId)
   if (!EMOJIS.includes(emoji)) throw new Error('Invalid reaction')
+  invalidatePostCounts(postId)
   const result = await runTransaction(db, async tx => {
     const existing = await tx.get(rxnDoc)
     if (existing.exists() && existing.data().emoji === emoji) {

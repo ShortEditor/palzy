@@ -15,7 +15,7 @@ import {
   writeBatch,
 } from 'firebase/firestore'
 import { db } from './config'
-import { withPostCounts } from './counts'
+import { withPostCounts, invalidatePostCounts } from './counts'
 import { getUserProfile, updateStreak } from './users'
 import { createNotification } from './notifications'
 
@@ -64,6 +64,7 @@ export async function createPost({ authorId, content, imageURL = null, imageURLs
   }
 
   const postRef = await addDoc(collection(db, 'posts'), postData)
+  invalidateFeedPool()
   const snap = await getDoc(postRef)
   // Fire-and-forget streak update (non-blocking)
   updateStreak(authorId).catch(() => {})
@@ -73,6 +74,8 @@ export async function createPost({ authorId, content, imageURL = null, imageURLs
 // ─── Delete a post (own posts only, enforced by security rules) ───
 export async function deletePost(postId) {
   await deleteDoc(doc(db, 'posts', postId))
+  invalidateFeedPool()
+  invalidatePostCounts(postId)
 }
 
 // ─── Hybrid ranked feed ──────────────────────────────────────
@@ -82,6 +85,19 @@ const FEED_PAGE_SIZE   = 5    // posts returned per call
 // Session cache: scored pool is built once per refresh, paginated from memory
 let _cachedPool   = []
 let _cacheSession = null  // unique key per session (reset on refresh / cursor=null)
+let _cacheTime    = 0     // when the pool was last built from Firestore
+
+// A fresh Home mount within this window reuses the pool instead of re-reading
+// every post + its like/comment records (the app's largest read cost).
+// Ranking and content are identical within the window; own posts/deletes
+// invalidate immediately, other users' new posts appear on the next build.
+const FEED_POOL_TTL = 3 * 60 * 1000 // 3 minutes
+
+export function invalidateFeedPool() {
+  _cachedPool = []
+  _cacheSession = null
+  _cacheTime = 0
+}
 
 function scorePost(post, sessionSeed) {
   const ageMs    = Date.now() - (post.createdAt?.toMillis?.() ?? Date.now())
@@ -127,6 +143,12 @@ function simpleHash(str) {
 }
 
 export async function getFeedPosts(cursor = null, currentUid = null, followingIds = []) {
+  // ── Return from cache on fresh loads within the TTL window ──
+  if (cursor === null && _cachedPool.length > 0 && Date.now() - _cacheTime < FEED_POOL_TTL) {
+    const page = _cachedPool.slice(0, FEED_PAGE_SIZE)
+    return { posts: page, nextCursor: FEED_PAGE_SIZE, hasMore: FEED_PAGE_SIZE < _cachedPool.length }
+  }
+
   // ── Return from cache on paginated requests ──
   if (cursor !== null && _cachedPool.length > 0) {
     const startIndex = cursor
@@ -199,6 +221,7 @@ export async function getFeedPosts(cursor = null, currentUid = null, followingId
   // ── 4. Cache for this session & return first page ──────────
   _cachedPool = scored
   _cacheSession = sessionSeed
+  _cacheTime = Date.now()
 
   const page = scored.slice(0, FEED_PAGE_SIZE)
   const nextCursor = FEED_PAGE_SIZE
@@ -243,6 +266,7 @@ export async function toggleLike(postId, userId) {
   const likeRef = doc(db, 'likes', likeId)
   const postRef = doc(db, 'posts', postId)
 
+  invalidatePostCounts(postId)
   const result = await runTransaction(db, async tx => {
     const [likeSnap, postSnap] = await Promise.all([tx.get(likeRef), tx.get(postRef)])
     if (likeSnap.exists()) {
@@ -303,6 +327,7 @@ export async function batchCheckLikes(postIds, userId) {
 // ─── Add a comment or reply ──────────────────────────────────
 // parentId = null means top-level; parentId = commentId means a reply
 export async function addCommentToPost(postId, { authorId, text, parentId = null, postAuthorId = null }) {
+  invalidatePostCounts(postId)
   const author = await getUserProfile(authorId)
   const commentsRef = collection(db, 'posts', postId, 'comments')
   const postRef     = doc(db, 'posts', postId)
@@ -368,5 +393,6 @@ export async function deleteComment(postId, commentId) {
   const totalDeleted = repliesSnap.docs.length + 1
 
   await batch.commit()
+  invalidatePostCounts(postId)
   return totalDeleted
 }
