@@ -1,8 +1,22 @@
 import {
   doc, setDoc, updateDoc, onSnapshot,
-  arrayUnion, collection, query, where,
+  arrayUnion, collection, query, where, getDocFromServer,
 } from 'firebase/firestore'
 import { db } from './config'
+import { checkCallPermission } from '../utils/callPrivacy'
+
+export function canUserCall(callerId, calleeId) {
+  return checkCallPermission(callerId, calleeId, {
+    readUser: async uid => {
+      const snap = await getDocFromServer(doc(db, 'users', uid))
+      return snap.exists() ? snap.data() : null
+    },
+    readFollow: async (followerId, followeeId) => {
+      const snap = await getDocFromServer(doc(db, 'follows', `${followerId}_${followeeId}`))
+      return snap.exists() && snap.data().followerId === followerId && snap.data().followeeId === followeeId
+    },
+  })
+}
 
 /** Free public STUN servers — no account needed */
 export const ICE_CONFIG = {
@@ -32,7 +46,7 @@ export async function createCallDoc({
     calleeId, calleeName, calleeUsername,
     calleePhotoURL: calleePhotoURL || '',
     calleeIsVerified: calleeIsVerified ?? false,
-    status: 'ringing', // ringing | active | declined | ended | missed
+    status: 'ringing', // ringing | active | declined | blocked | ended | missed
     offer: null,
     answer: null,
     callerIce: [],

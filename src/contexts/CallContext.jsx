@@ -1,11 +1,12 @@
 import { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react'
 import { useAuth } from './AuthContext'
 import {
-  createCallDoc, setCallOffer, setCallAnswer,
+  canUserCall, createCallDoc, setCallOffer, setCallAnswer,
   addCallerIce, addCalleeIce, setCallStatus,
   listenToCall, listenForIncomingCalls, ICE_CONFIG,
 } from '../firebase/calls'
 import Icon from '../components/Icon'
+import { CALL_BLOCKED_MESSAGE } from '../utils/callPrivacy'
 import toast from 'react-hot-toast'
 
 const CallContext = createContext(null)
@@ -23,6 +24,13 @@ export function CallProvider({ children }) {
   const [incomingCallData, setIncomingCallData] = useState(null)
 
   // ── Refs ─────────────────────────────────────────────────────
+  const callStateRef = useRef(callState)
+  const permissionCheckRef = useRef(false)
+  const incomingCallsRef = useRef([])
+  const userProfileRef = useRef(userProfile)
+  callStateRef.current = callState
+  userProfileRef.current = userProfile
+
   const callIdRef      = useRef(null)
   const isCallerRef    = useRef(false)
   const pcRef          = useRef(null)              // RTCPeerConnection
@@ -33,31 +41,72 @@ export function CallProvider({ children }) {
   const addedIceRef    = useRef(new Set())         // dedup remote ICE candidates
   const remoteAudioRef = useRef(null)              // <audio> element in AppShell
 
-  // ── Incoming call listener ───────────────────────────────────
+  // Recheck preferences before ringing, including calls from older clients.
   useEffect(() => {
     if (!currentUser?.uid) return
-    const unsub = listenForIncomingCalls(currentUser.uid, (calls) => {
-      if (calls.length === 0) return
-      if (callState !== 'idle') {
-        // Already busy — auto-decline extra calls
-        calls.forEach(c => setCallStatus(c.callId, 'declined').catch(() => {}))
-        return
+    let disposed = false
+    let generation = 0
+    let checking = false
+    const checkIncoming = async () => {
+      if (checking) return
+      checking = true
+      try {
+        for (const call of incomingCallsRef.current) {
+          if (disposed) return
+          if (callIdRef.current === call.callId) continue
+          const beforeCheck = generation
+          const profileBeforeCheck = userProfileRef.current
+          let allowed = false
+          try { allowed = await canUserCall(call.callerId, currentUser.uid) } catch { /* fail closed */ }
+          if (disposed) return
+          // A newer snapshot or profile save invalidates an in-flight check.
+          if (beforeCheck !== generation || profileBeforeCheck !== userProfileRef.current) continue
+          if (!incomingCallsRef.current.some(c => c.callId === call.callId)) continue
+          if (!allowed) {
+            await setCallStatus(call.callId, 'blocked').catch(() => {})
+            continue
+          }
+          if (callStateRef.current !== 'idle' || permissionCheckRef.current) {
+            await setCallStatus(call.callId, 'declined').catch(() => {})
+            continue
+          }
+          // Wait until the caller publishes an offer before showing Accept.
+          if (!call.offer) continue
+          callIdRef.current = call.callId
+          callStateRef.current = 'ringing_in'
+          setIncomingCallData(call)
+          setRemoteUser({
+            name: call.callerName, username: call.callerUsername,
+            photoURL: call.callerPhotoURL, isVerified: call.callerIsVerified,
+          })
+          setCallState('ringing_in')
+        }
+      } finally {
+        checking = false
       }
-      const call = calls[0]
-      callIdRef.current = call.callId
-      setIncomingCallData(call)
-      setRemoteUser({
-        name: call.callerName,
-        username: call.callerUsername,
-        photoURL: call.callerPhotoURL,
-        isVerified: call.callerIsVerified,
-      })
-      setCallState('ringing_in')
+    }
+    let draining = false
+    const unsub = listenForIncomingCalls(currentUser.uid, calls => {
+      generation += 1
+      incomingCallsRef.current = calls
+      if (draining) return
+      draining = true
+      const run = async () => {
+        try {
+          let revision
+          do {
+            revision = generation
+            await checkIncoming()
+          } while (!disposed && revision !== generation)
+        } finally {
+          draining = false
+        }
+      }
+      run().catch(() => {})
     })
     incomingUnsubRef.current = unsub
-    return () => unsub()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser?.uid])
+    return () => { disposed = true; unsub() }
+  }, [currentUser?.uid, userProfile?.callPrivacy])
 
   // ── Helpers ──────────────────────────────────────────────────
   const applyRemoteIce = useCallback((iceList = []) => {
@@ -108,6 +157,7 @@ export function CallProvider({ children }) {
     addedIceRef.current = new Set()
     callIdRef.current = null
     isCallerRef.current = false
+    callStateRef.current = 'idle'
     setCallState('idle')
     setRemoteUser(null)
     setIsMuted(false)
@@ -117,14 +167,47 @@ export function CallProvider({ children }) {
     setIncomingCallData(null)
   }, [])
 
+  // Keep a pending incoming call current when its caller cancels or the
+  // recipient changes their preference in Edit Profile. Active calls stay up.
+  useEffect(() => {
+    if (!incomingCallData || callState !== 'ringing_in' || !currentUser) return
+    let disposed = false
+    const callId = incomingCallData.callId
+    canUserCall(incomingCallData.callerId, currentUser.uid).then(async allowed => {
+      if (disposed || allowed || callIdRef.current !== callId) return
+      await setCallStatus(callId, 'blocked').catch(() => {})
+      if (!disposed && callIdRef.current === callId) cleanup()
+    }).catch(() => {
+      if (!disposed && callIdRef.current === callId) cleanup()
+    })
+    const unsub = listenToCall(callId, data => {
+      if (['ended', 'missed', 'blocked', 'declined'].includes(data.status) && callIdRef.current === callId) cleanup()
+    })
+    return () => { disposed = true; unsub() }
+  }, [incomingCallData, callState, currentUser, userProfile?.callPrivacy, cleanup])
+
   // ── startCall (caller) ───────────────────────────────────────
   const startCall = useCallback(async (calleeId, calleeProfile) => {
-    if (!currentUser || !userProfile || callState !== 'idle') return
+    if (!currentUser || !userProfile || callStateRef.current !== 'idle' || permissionCheckRef.current) return
+    permissionCheckRef.current = true
+    try {
+      if (!await canUserCall(currentUser.uid, calleeId)) {
+        toast.error(CALL_BLOCKED_MESSAGE)
+        return
+      }
+    } catch {
+      toast.error('Could not check call permissions. Please try again.')
+      return
+    } finally {
+      permissionCheckRef.current = false
+    }
+    if (callStateRef.current !== 'idle') return
 
     const callId = `${currentUser.uid}_${calleeId}_${Date.now()}`
     callIdRef.current = callId
     isCallerRef.current = true
 
+    callStateRef.current = 'ringing_out'
     setCallState('ringing_out')
     setRemoteUser({
       name: calleeProfile.name,
@@ -169,7 +252,8 @@ export function CallProvider({ children }) {
 
       // Listen for answer + callee ICE
       callUnsubRef.current = listenToCall(callId, async (data) => {
-        if (data.status === 'declined' || data.status === 'ended') {
+        if (['blocked', 'declined', 'ended'].includes(data.status)) {
+          if (data.status === 'blocked') toast.error(CALL_BLOCKED_MESSAGE)
           if (data.status === 'declined') toast('Call declined', { icon: <Icon name="phoneOff" size={18} /> })
           cleanup()
           return
@@ -186,7 +270,7 @@ export function CallProvider({ children }) {
 
       // Auto-cancel if no answer in 45 seconds
       setTimeout(() => {
-        if (callIdRef.current === callId && callState === 'ringing_out') {
+        if (callIdRef.current === callId && callStateRef.current === 'ringing_out') {
           setCallStatus(callId, 'missed').catch(() => {})
           toast('No answer', { icon: <Icon name="phoneOff" size={18} /> })
           cleanup()
@@ -217,6 +301,12 @@ export function CallProvider({ children }) {
     setIncomingCallData(null)
 
     try {
+      if (!await canUserCall(callData.callerId, currentUser.uid)) {
+        await setCallStatus(callId, 'blocked').catch(() => {})
+        toast('This call is blocked by your call setting.')
+        cleanup()
+        return
+      }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false })
       localStreamRef.current = stream
 
