@@ -15,6 +15,7 @@ import {
   writeBatch,
 } from 'firebase/firestore'
 import { db } from './config'
+import { createFeedSession, getSessionPage, FEED_PAGE_SIZE } from '../utils/rankedFeed'
 import { withPostCounts, invalidatePostCounts } from './counts'
 import { getUserProfile, updateStreak } from './users'
 import { createNotification } from './notifications'
@@ -78,156 +79,47 @@ export async function deletePost(postId) {
   invalidatePostCounts(postId)
 }
 
-// ─── Hybrid ranked feed ──────────────────────────────────────
-const FEED_POOL_SIZE   = 80   // raw posts fetched before scoring
-const FEED_PAGE_SIZE   = 5    // posts returned per call
-
-// Session cache: scored pool is built once per refresh, paginated from memory
-let _cachedPool   = []
-let _cacheSession = null  // unique key per session (reset on refresh / cursor=null)
-let _cacheTime    = 0     // when the pool was last built from Firestore
-
-// A fresh Home mount within this window reuses the pool instead of re-reading
-// every post + its like/comment records (the app's largest read cost).
-// Ranking and content are identical within the window; own posts/deletes
-// invalidate immediately, other users' new posts appear on the next build.
-const FEED_POOL_TTL = 3 * 60 * 1000 // 3 minutes
+// ─── Small-batch ranked feed ─────────────────────────────────
+const FEED_POOL_TTL = 3 * 60 * 1000
+let cachedFeed = null
 
 export function invalidateFeedPool() {
-  _cachedPool = []
-  _cacheSession = null
-  _cacheTime = 0
+  cachedFeed = null
 }
 
-function scorePost(post, sessionSeed) {
-  const ageMs    = Date.now() - (post.createdAt?.toMillis?.() ?? Date.now())
-  const ageHours = ageMs / 3_600_000
-
-  // ── Recency: strong boost for <6h, smooth decay to 0 at 72h ──
-  const recencyBonus = ageHours < 6
-    ? 60 - ageHours * 2            // 60→48 in first 6 hours
-    : Math.max(0, 48 * Math.exp(-0.04 * (ageHours - 6)))  // exponential decay
-
-  // ── Engagement signals ──
-  const likes    = post.likeCount    ?? 0
-  const comments = post.commentCount ?? 0
-  const engagement = likes * 3 + comments * 4
-
-  // ── Engagement density: engagement-per-hour (rewards quick virality) ──
-  const density = ageHours > 0.5 ? (likes + comments) / ageHours : (likes + comments) * 2
-
-  // ── Content type boost: carousel +10, image +8, quotes +5 ──
-  const typeBoost = post.type === 'carousel' ? 10
-                  : post.type === 'image' ? 8
-                  : post.type === 'quote' ? 5
-                  : 0
-
-  // ── Follow boost ──
-  const followBoost = post._isFollowed ? 20 : 0
-
-  // ── Controlled randomness: jitter ±12 so refreshes feel fresh ──
-  // Uses a deterministic-ish hash per post+session so pagination stays stable
-  const hash = simpleHash(post.id + sessionSeed)
-  const jitter = (hash % 2400 - 1200) / 100  // range: -12 to +12
-
-  return recencyBonus + engagement + density * 2 + typeBoost + followBoost + jitter
-}
-
-/** Simple numeric hash for deterministic randomness within a session */
-function simpleHash(str) {
-  let h = 0
-  for (let i = 0; i < str.length; i++) {
-    h = ((h << 5) - h + str.charCodeAt(i)) | 0
-  }
-  return Math.abs(h)
-}
-
-export async function getFeedPosts(cursor = null, currentUid = null, followingIds = []) {
-  // ── Return from cache on fresh loads within the TTL window ──
-  if (cursor === null && _cachedPool.length > 0 && Date.now() - _cacheTime < FEED_POOL_TTL) {
-    const page = _cachedPool.slice(0, FEED_PAGE_SIZE)
-    return { posts: page, nextCursor: FEED_PAGE_SIZE, hasMore: FEED_PAGE_SIZE < _cachedPool.length }
-  }
-
-  // ── Return from cache on paginated requests ──
-  if (cursor !== null && _cachedPool.length > 0) {
-    const startIndex = cursor
-    const page = _cachedPool.slice(startIndex, startIndex + FEED_PAGE_SIZE)
-    const nextCursor = startIndex + FEED_PAGE_SIZE
-    const hasMore = nextCursor < _cachedPool.length
-    return { posts: page, nextCursor, hasMore }
-  }
-
-  // ── Fresh fetch (first load or refresh) ──
-  const sessionSeed = String(Date.now()) + Math.random().toString(36).slice(2)
-  const seenIds = new Set()
-  const pool = []
-
-  // ── 1. Followed + self ────────────────────────────────────
-  const feedUids = currentUid
-    ? [...new Set([currentUid, ...followingIds])].slice(0, 90)
-    : []
-
-  if (feedUids.length > 0) {
-    const batches = []
-    for (let i = 0; i < feedUids.length; i += 30) {
-      batches.push(feedUids.slice(i, i + 30))
-    }
-    const batchResults = await Promise.all(
-      batches.map(batch => {
-        const q = query(
-          collection(db, 'posts'),
-          where('authorId', 'in', batch),
-          orderBy('createdAt', 'desc'),
-          limit(FEED_POOL_SIZE),
-        )
-        return getDocs(q)
+export async function getFeedPosts(cursor = null, currentUid = null, followingIds = [], { refresh = false } = {}) {
+  const feedUids = [...new Set([currentUid, ...followingIds].filter(Boolean))].slice(0, 90)
+  const key = JSON.stringify([currentUid, [...feedUids].sort()])
+  let session = cursor?.session
+  if (!session) {
+    if (!refresh && cachedFeed?.key === key && Date.now() - cachedFeed.time < FEED_POOL_TTL) {
+      session = cachedFeed.session
+    } else {
+      const sources = []
+      for (let i = 0; i < feedUids.length; i += 30) sources.push({ uids: feedUids.slice(i, i + 30) })
+      sources.push({ uids: null })
+      session = createFeedSession({
+        sources,
+        followingIds: feedUids,
+        seed: String(Date.now()) + Math.random().toString(36).slice(2),
+        countPosts: posts => withPostCounts(posts, { refresh }),
+        readSource: async source => {
+          const constraints = []
+          if (source.uids) constraints.push(where('authorId', 'in', source.uids))
+          constraints.push(orderBy('createdAt', 'desc'))
+          if (source.cursor) constraints.push(startAfter(source.cursor))
+          constraints.push(limit(FEED_PAGE_SIZE))
+          const snap = await getDocs(query(collection(db, 'posts'), ...constraints))
+          return { posts: snap.docs.map(d => ({ id: d.id, ...d.data() })),
+            cursor: snap.docs.at(-1) ?? source.cursor, done: snap.size < FEED_PAGE_SIZE }
+        },
       })
-    )
-    batchResults.forEach(snap => {
-      snap.docs.forEach(d => {
-        if (!seenIds.has(d.id)) {
-          seenIds.add(d.id)
-          pool.push({ id: d.id, ...d.data(), _isFollowed: true })
-        }
-      })
-    })
-  }
-
-  // ── 2. Trending fill (non-followed) ────────────────────────
-  const trendingQ = query(
-    collection(db, 'posts'),
-    orderBy('createdAt', 'desc'),
-    limit(FEED_POOL_SIZE),
-  )
-  const trendingSnap = await getDocs(trendingQ)
-  trendingSnap.docs.forEach(d => {
-    if (!seenIds.has(d.id)) {
-      seenIds.add(d.id)
-      pool.push({ id: d.id, ...d.data(), _isFollowed: false })
+      // Publish cache only after a successful first page, below.
     }
-  })
-
-  // ── 3. Score + sort ────────────────────────────────────────
-  const countedPool = await withPostCounts(pool)
-  const scored = countedPool.map(p => {
-    const s = scorePost(p, sessionSeed)
-    // Clean internal flags before returning
-    const { _isFollowed, ...clean } = p
-    return { ...clean, _score: s }
-  })
-  scored.sort((a, b) => b._score - a._score)
-
-  // ── 4. Cache for this session & return first page ──────────
-  _cachedPool = scored
-  _cacheSession = sessionSeed
-  _cacheTime = Date.now()
-
-  const page = scored.slice(0, FEED_PAGE_SIZE)
-  const nextCursor = FEED_PAGE_SIZE
-  const hasMore = nextCursor < scored.length
-
-  return { posts: page, nextCursor, hasMore }
+  }
+  const page = await getSessionPage(session, cursor?.offset ?? 0)
+  if (!cursor) cachedFeed = { key, session, time: Date.now() }
+  return { posts: await withPostCounts(page.posts), nextCursor: { session, offset: page.nextOffset }, hasMore: page.hasMore }
 }
 
 // ─── Get posts by a specific user ────────────────────────────
