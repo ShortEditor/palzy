@@ -8,7 +8,7 @@ import PostCard from '../components/PostCard'
 import StoriesBar from '../components/StoriesBar'
 import Icon from '../components/Icon'
 
-const SKELETON_COUNT = 5
+const SKELETON_COUNT = 7
 
 function PostSkeleton() {
   return (
@@ -43,6 +43,9 @@ export default function FeedPage() {
   const [hasMore, setHasMore]           = useState(true)
   const [loading, setLoading]           = useState(true)
   const [loadingMore, setLoadingMore]   = useState(false)
+  const [error, setError] = useState(null)
+  const requestRef = useRef(false)
+  const mountedRef = useRef(false)
 
   const loaderRef       = useRef(null)
   const authorMapRef    = useRef(authorMap)
@@ -53,28 +56,31 @@ export default function FeedPage() {
   useEffect(() => { authorMapRef.current = authorMap }, [authorMap])
   useEffect(() => { followingIdsRef.current = followingIds }, [followingIds])
 
-  // Load following list once on mount
-  useEffect(() => {
-    if (!currentUser?.uid) return
-    getFollowingIds(currentUser.uid).then(ids => setFollowingIds(ids)).catch(() => {})
-  }, [currentUser?.uid])
-
   // ─── Fetch a page of posts ──────────────────────────────────
-  const fetchPosts = useCallback(async (cur = null) => {
+  const fetchPosts = useCallback(async (cur = null, refresh = false) => {
+    if (!currentUser?.uid || requestRef.current) return
+    requestRef.current = true
+    setError(null)
     if (cur === null) setLoading(true); else setLoadingMore(true)
     try {
+      // Resolve follows before the first query, not after it has already started.
+      if (cur === null) {
+        const ids = await getFollowingIds(currentUser.uid)
+        followingIdsRef.current = ids
+        setFollowingIds(ids)
+      }
       const { posts: newPosts, nextCursor, hasMore: more } = await getFeedPosts(
         cur,
         currentUser.uid,
         followingIdsRef.current,
+        { refresh },
       )
 
       // Reset seen set on initial load
-      if (cur === null) seenIdsRef.current = new Set()
+      const seen = cur === null ? new Set() : seenIdsRef.current
 
       // Deduplicate: filter posts already rendered
-      const freshPosts = newPosts.filter(p => !seenIdsRef.current.has(p.id))
-      freshPosts.forEach(p => seenIdsRef.current.add(p.id))
+      const freshPosts = newPosts.filter(p => !seen.has(p.id))
 
       // Fetch any authors we haven't loaded yet (legacy posts without denormalized data)
       const missingUids = [...new Set(freshPosts.map(p => p.authorId))].filter(uid => !authorMapRef.current[uid])
@@ -85,43 +91,52 @@ export default function FeedPage() {
       // Batch check likes
       const newLikeMap = await batchCheckLikes(freshPosts.map(p => p.id), currentUser.uid)
 
+      if (!mountedRef.current) return
+      freshPosts.forEach(p => seen.add(p.id))
+      seenIdsRef.current = seen
       setAuthorMap(prev => ({ ...prev, ...newAuthorMap }))
       setLikeMap(prev => ({ ...prev, ...newLikeMap }))
       setPosts(prev => cur ? [...prev, ...freshPosts] : freshPosts)
       setCursor(nextCursor)
-      setHasMore(more && freshPosts.length > 0)
+      setHasMore(more)
     } catch (err) {
       console.error('Feed fetch error:', err)
+      if (mountedRef.current) setError('Could not load the feed. Please try again.')
     } finally {
-      setLoading(false)
-      setLoadingMore(false)
+      requestRef.current = false
+      if (mountedRef.current) {
+        setLoading(false)
+        setLoadingMore(false)
+      }
     }
-  }, [currentUser.uid])
+  }, [currentUser?.uid])
 
   // Initial load
-  useEffect(() => { fetchPosts(null) }, [])  // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    mountedRef.current = true
+    fetchPosts(null)
+    return () => { mountedRef.current = false }
+  }, [fetchPosts])
 
   // Infinite scroll via IntersectionObserver
   useEffect(() => {
     if (!loaderRef.current) return
     const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting && hasMore && !loadingMore && !loading) fetchPosts(cursor) },
+      ([entry]) => { if (entry.isIntersecting && hasMore && !loadingMore && !loading && !error && cursor) fetchPosts(cursor) },
       { threshold: 0.1 },
     )
     observer.observe(loaderRef.current)
     return () => observer.disconnect()
-  }, [cursor, hasMore, loadingMore, loading, fetchPosts])
+  }, [cursor, hasMore, loadingMore, loading, error, fetchPosts])
 
   // Called after creating a new post — prepend it locally to feed
   function handlePostCreated(newPost) {
     if (newPost) {
+      seenIdsRef.current.add(newPost.id)
       setPosts(prev => [newPost, ...prev])
     } else {
       // Fallback
-      setPosts([])
-      setCursor(null)
-      setHasMore(true)
-      fetchPosts(null)
+      fetchPosts(null, true)
     }
   }
 
@@ -135,6 +150,10 @@ export default function FeedPage() {
       {/* Page header */}
       <div className="page-header">
         <h1>Home</h1>
+        <button className="feed-refresh" type="button" disabled={loading || loadingMore}
+          onClick={() => fetchPosts(null, true)} aria-label="Refresh feed">
+          <Icon name="refresh" size={16} /> {loading ? 'Refreshing...' : 'Refresh'}
+        </button>
       </div>
 
       {/* 24-hour Stories Bar */}
@@ -143,6 +162,12 @@ export default function FeedPage() {
       {/* Create post bar */}
       <CreatePost onPostCreated={handlePostCreated} />
 
+      {error && (
+        <div role="alert" className="feed-error">
+          <span>{error}</span>
+          <button type="button" className="feed-refresh" onClick={() => fetchPosts(posts.length ? cursor : null, !posts.length)}>Retry</button>
+        </div>
+      )}
       {/* Feed */}
       {loading ? (
         Array.from({ length: SKELETON_COUNT }, (_, i) => <PostSkeleton key={i} />)

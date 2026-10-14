@@ -1675,3 +1675,15 @@ body, .clay-card, .clay-input, .sidebar, .topbar, .bottom-nav, .page-header,
 @media (max-width: 680px) {
   .quote-editor-grid { grid-template-columns: 1fr !important; }
 }
+
+/* Home refresh stays visible above the feed, including on small screens. */
+.feed-refresh {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  margin-left: auto; padding: 8px 12px; min-height: 40px;
+  border: 1px solid var(--border-subtle); border-radius: var(--radius-pill, 24px);
+  background: var(--bg-card); color: var(--text-primary); font: inherit;
+  font-size: var(--font-size-sm); cursor: pointer;
+}
+.feed-refresh:disabled { opacity: .55; cursor: wait; }
+.feed-refresh:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; }
+.feed-error { display: flex; align-items: center; gap: 12px; padding: var(--space-4); color: var(--text-primary); }
