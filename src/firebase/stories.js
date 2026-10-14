@@ -64,6 +64,7 @@ export async function createStory({ authorId, text = '', gradientId = 'neon', fo
 
   await updateDoc(userRef, { stories: updatedStories })
   invalidateUserCache(authorId)
+  invalidateStoriesCache(authorId)
 
   return newStory.id
 }
@@ -84,6 +85,17 @@ export async function deleteStory(storyId, authorId) {
 
   await updateDoc(userRef, { stories: updatedStories })
   invalidateUserCache(authorId)
+  invalidateStoriesCache(authorId)
+}
+
+// Stories bar reads up to 30 user docs per Home mount. Cache briefly so
+// repeat mounts cost nothing; own story create/delete invalidates at once.
+const STORIES_TTL = 5 * 60 * 1000 // 5 minutes
+const storiesCache = new Map() // currentUid -> { data, time }
+
+export function invalidateStoriesCache(uid) {
+  if (uid) storiesCache.delete(uid)
+  else storiesCache.clear()
 }
 
 /**
@@ -91,6 +103,15 @@ export async function deleteStory(storyId, authorId) {
  */
 export async function getActiveStories(currentUid, followingIds = []) {
   if (!currentUid) return []
+
+  const cached = storiesCache.get(currentUid)
+  if (cached && Date.now() - cached.time < STORIES_TTL) {
+    // Re-apply the 24h expiry filter so stories never outlive their window
+    const nowMs = Date.now()
+    return cached.data
+      .map(g => ({ ...g, stories: g.stories.filter(s => nowMs - (s.createdAt || 0) < TWENTY_FOUR_HOURS) }))
+      .filter(g => g.stories.length > 0)
+  }
 
   const uidsToFetch = [...new Set([currentUid, ...followingIds])].slice(0, 30)
   const now = Date.now()
@@ -135,6 +156,7 @@ export async function getActiveStories(currentUid, followingIds = []) {
       return bLatest - aLatest
     })
 
+    storiesCache.set(currentUid, { data: rawStories, time: Date.now() })
     return rawStories
   } catch (err) {
     console.error('getActiveStories error:', err)
