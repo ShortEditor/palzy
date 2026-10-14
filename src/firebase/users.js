@@ -11,6 +11,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore'
 import { db } from './config'
+import { DEFAULT_CALL_PRIVACY, normalizeCallPrivacy } from '../utils/callPrivacy'
 import { normalizeCollegePin, collegePinVariants } from '../utils/collegePin'
 
 // ─── Check if a username is already taken ────────────────────
@@ -50,6 +51,7 @@ export async function createUserProfile(uid, { username, name, photoURL, branch,
     showBranch,
     showYear,
     collegePin: normalizedPin,
+    callPrivacy: DEFAULT_CALL_PRIVACY,
     followerCount: 0,
     followingCount: 0,
     createdAt: serverTimestamp(),
@@ -79,7 +81,7 @@ export function invalidateUserCache(uid) {
 // ─── Allowed fields for profile updates (blocks privilege escalation) ─────
 const ALLOWED_PROFILE_FIELDS = new Set([
   'name', 'username', 'photoURL', 'bannerURL', 'bio',
-  'branch', 'year', 'showBranch', 'showYear', 'collegePin',
+  'branch', 'year', 'showBranch', 'showYear', 'collegePin', 'callPrivacy',
   'stories', 'streakCount', 'streakLastDate', 'streakBestEver',
 ])
 
@@ -89,6 +91,9 @@ export async function updateUserProfile(uid, updates) {
     const pin = normalizeCollegePin(updates.collegePin)
     if (!pin) throw new Error('Invalid college PIN format')
     updates = { ...updates, collegePin: pin }
+  }
+  if (Object.hasOwn(updates, 'callPrivacy')) {
+    updates = { ...updates, callPrivacy: normalizeCallPrivacy(updates.callPrivacy) }
   }
   const cleanUpdates = {}
   Object.keys(updates).forEach(key => {

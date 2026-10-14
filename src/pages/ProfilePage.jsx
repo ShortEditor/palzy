@@ -16,6 +16,8 @@ import FollowListModal from '../components/FollowListModal'
 import ImageCropModal from '../components/ImageCropModal'
 import toast from 'react-hot-toast'
 
+import { CALL_PRIVACY_OPTIONS, DEFAULT_CALL_PRIVACY, normalizeCallPrivacy } from '../utils/callPrivacy'
+
 const BRANCHES = ['CSE', 'ECE']
 const YEARS    = ['1st Year', '2nd Year', '3rd Year']
 
@@ -45,6 +47,8 @@ export default function ProfilePage() {
   const [saving, setSaving]         = useState(false)
   const [editShowBranch, setEditShowBranch] = useState(true)
   const [editShowYear, setEditShowYear]     = useState(true)
+
+  const [editCallPrivacy, setEditCallPrivacy] = useState(DEFAULT_CALL_PRIVACY)
 
   // Crop modal
   const [cropTarget, setCropTarget] = useState(null) // 'avatar' | 'banner' | null
@@ -105,6 +109,7 @@ export default function ProfilePage() {
   useEffect(() => { if (profile) fetchPosts(null) }, [profile])  // eslint-disable-line react-hooks/exhaustive-deps
 
   function openEdit() {
+    setEditCallPrivacy(normalizeCallPrivacy(profile.callPrivacy))
     setEditBio(profile.bio ?? '')
     setEditBranch(profile.branch ?? '')
     setEditYear(profile.year ?? '')
@@ -166,6 +171,7 @@ export default function ProfilePage() {
         photoURL,
         bannerURL,
         showBranch: editShowBranch,
+        callPrivacy: editCallPrivacy,
         showYear: editShowYear
       })
       if (isOwn) await refreshProfile()
@@ -177,6 +183,7 @@ export default function ProfilePage() {
         photoURL,
         bannerURL,
         showBranch: editShowBranch,
+        callPrivacy: editCallPrivacy,
         showYear: editShowYear
       }))
       setEditing(false)
@@ -498,6 +505,14 @@ export default function ProfilePage() {
                   {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
                 </select>
               </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="edit-call-privacy">Who can call me?</label>
+              <select id="edit-call-privacy" className="form-input form-select" value={editCallPrivacy} onChange={e => setEditCallPrivacy(e.target.value)} aria-describedby="call-privacy-hint">
+                {CALL_PRIVACY_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
+              <span id="call-privacy-hint" className="form-hint">By default, only people you follow can call you. Your followers cannot call unless you follow them back. Changes apply to new calls, not an active call.</span>
             </div>
 
             {/* Academic Visibility */}
