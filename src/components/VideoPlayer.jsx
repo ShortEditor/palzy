@@ -14,6 +14,7 @@ export default function VideoPlayer({ url, ratio, poster }) {
   const [src, setSrc] = useState(null)
   const [playing, setPlaying] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [hidden, setHidden] = useState(false)
   const boxRef = useRef(null)
   const videoRef = useRef(null)
   const barRef = useRef(null)
@@ -27,6 +28,27 @@ export default function VideoPlayer({ url, ratio, poster }) {
     }, { threshold: 0.25 })
     io.observe(boxRef.current)
     return () => io.disconnect()
+  }, [active])
+
+  // Best-effort deterrent: black out and pause while the page is hidden or unfocused.
+  useEffect(() => {
+    if (!active) return
+    const check = () => {
+      const away = document.hidden || !document.hasFocus()
+      setHidden(away)
+      if (away) videoRef.current?.pause()
+    }
+    const away = () => { setHidden(true); videoRef.current?.pause() }
+    document.addEventListener('visibilitychange', check)
+    window.addEventListener('blur', away)
+    window.addEventListener('pagehide', away)
+    window.addEventListener('focus', check)
+    return () => {
+      document.removeEventListener('visibilitychange', check)
+      window.removeEventListener('blur', away)
+      window.removeEventListener('pagehide', away)
+      window.removeEventListener('focus', check)
+    }
   }, [active])
 
   async function start() {
@@ -76,7 +98,7 @@ export default function VideoPlayer({ url, ratio, poster }) {
             onTimeUpdate={onTimeUpdate}
             onContextMenu={block}
             onDragStart={block}
-            style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000', pointerEvents: 'none' }}
+            style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000', pointerEvents: 'none', filter: hidden ? 'blur(30px) brightness(0)' : 'none' }}
           />
           {!playing && <span className="post-video-play"><Icon name="play" size={28} /></span>}
           <span className="post-video-bar"><span ref={barRef} /></span>
