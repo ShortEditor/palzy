@@ -74,3 +74,14 @@ export function captureVideoPoster(file, maxWidth = 640) {
     v.src = url
   })
 }
+
+/** Attributes that strip the native player UI and its download/PiP/cast options. */
+export const LOCKED_VIDEO_PROPS = {
+  controls: false,
+  controlsList: 'nodownload noplaybackrate noremoteplayback nofullscreen',
+  disablePictureInPicture: true,
+  disableRemotePlayback: true,
+  playsInline: true,
+  loop: true,
+  draggable: false,
+}

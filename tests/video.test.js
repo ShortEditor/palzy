@@ -34,3 +34,11 @@ test('s3 video references', () => {
   assert.equal(s3Key('https://x'), null)
   assert.equal(MAX_VIDEO_BYTES, 100 * 1024 * 1024)
 })
+
+import { LOCKED_VIDEO_PROPS } from '../src/utils/video.js'
+test('player strips native controls and download/PiP/cast options', () => {
+  assert.equal(LOCKED_VIDEO_PROPS.controls, false)
+  for (const f of ['nodownload', 'noremoteplayback', 'noplaybackrate']) assert.match(LOCKED_VIDEO_PROPS.controlsList, new RegExp(f))
+  assert.equal(LOCKED_VIDEO_PROPS.disablePictureInPicture, true)
+  assert.equal(LOCKED_VIDEO_PROPS.disableRemotePlayback, true)
+})
