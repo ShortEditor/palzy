@@ -9,6 +9,7 @@ import Icon from '../components/Icon'
 import VerifiedBadge from '../components/VerifiedBadge'
 import RichText from '../components/RichText'
 import ImageCarousel from '../components/ImageCarousel'
+import VideoPlayer from '../components/VideoPlayer'
 import toast from 'react-hot-toast'
 
 // ── Single comment / reply row ────────────────────────────────
@@ -293,6 +294,12 @@ export default function PostDetailPage() {
             text={post.content}
             style={{ fontSize: 'var(--font-size-xl)', lineHeight: 1.6, marginBottom: 'var(--space-4)' }}
           />
+        )}
+
+        {post.videoURL && (
+          <div style={{ marginBottom: 'var(--space-4)' }}>
+            <VideoPlayer url={post.videoURL} ratio={post.imageRatio} poster={post.videoPoster} />
+          </div>
         )}
 
         {post.imageURLs && post.imageURLs.length > 1 ? (
