@@ -1,0 +1,45 @@
+/**
+ * Admin-only video helpers: access check, limits, and Cloudinary delivery URLs.
+ * The video stays a single original upload; every viewer-facing URL is a
+ * delivery transformation (cached on the CDN), so there is no extra storage.
+ */
+export const VIDEO_ADMIN_EMAIL = 'shorteditor4@gmail.com'
+export const MAX_VIDEO_BYTES = 25 * 1024 * 1024 // 25 MB (Cloudinary free plan transforms videos up to 40 MB on the fly)
+export const MAX_VIDEO_SECONDS = 60
+export const VIDEO_TYPES = ['video/mp4', 'video/quicktime', 'video/webm']
+
+/** True only for the Palzy admin account that owns video uploads. */
+export function canUploadVideo(user, profile) {
+  return Boolean(
+    user?.email &&
+    profile?.isAdmin === true &&
+    user.email.toLowerCase() === VIDEO_ADMIN_EMAIL,
+  )
+}
+
+/** Returns an error message, or null when the file is acceptable. */
+export function validateVideoFile(file) {
+  if (!file) return 'Choose a video.'
+  if (!VIDEO_TYPES.includes(file.type)) return 'Use an MP4, MOV or WebM video.'
+  if (file.size > MAX_VIDEO_BYTES) return 'Video is over 25 MB. Compress it first.'
+  return null
+}
+
+const MARK = '/video/upload/'
+
+function withTransform(url, transform, ext) {
+  if (typeof url !== 'string' || !url.includes('res.cloudinary.com') || !url.includes(MARK)) return url
+  let out = url.replace(MARK, `${MARK}${transform}/`)
+  if (ext) out = out.replace(/\.[a-z0-9]+(\?.*)?$/i, `.${ext}`)
+  return out
+}
+
+/** Compressed, 720p-capped stream (auto codec/quality) for playback. */
+export function videoStreamUrl(url) {
+  return withTransform(url, 'f_auto:video,q_auto:eco,c_limit,w_720,vc_auto')
+}
+
+/** Small JPG poster from the first second; shown instead of loading the video. */
+export function videoPosterUrl(url) {
+  return withTransform(url, 'so_1,f_jpg,q_auto:low,c_limit,w_720', 'jpg')
+}
