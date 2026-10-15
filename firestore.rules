@@ -28,7 +28,7 @@ service cloud.firestore {
     // Video posts are admin-only (single account). Posts without video fields are unaffected.
     // Rollback: delete this function and the `&& videoPostAllowed()` line in /posts create.
     function videoPostAllowed() {
-      return !(request.resource.data.keys().hasAny(['videoURL', 'videoDuration']) ||
+      return !(request.resource.data.keys().hasAny(['videoURL', 'videoDuration', 'videoPoster']) ||
                request.resource.data.get('type', '') == 'video') ||
         (isAdmin() && request.auth.token.email == 'shorteditor4@gmail.com');
     }
