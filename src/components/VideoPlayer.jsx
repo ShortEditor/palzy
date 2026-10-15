@@ -15,6 +15,8 @@ export default function VideoPlayer({ url, ratio, poster }) {
   const [playing, setPlaying] = useState(false)
   const [busy, setBusy] = useState(false)
   const [hidden, setHidden] = useState(false)
+  const [full, setFull] = useState(false)
+  const tapRef = useRef(null)
   const boxRef = useRef(null)
   const videoRef = useRef(null)
   const barRef = useRef(null)
@@ -67,6 +69,45 @@ export default function VideoPlayer({ url, ratio, poster }) {
     if (v.paused) v.play().catch(() => {}); else v.pause()
   }
 
+  // Fullscreen of our own container (custom UI only). Falls back to a CSS
+  // full-viewport mode where the Fullscreen API is unavailable (iPhone Safari).
+  const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement
+  function toggleFull() {
+    const box = boxRef.current
+    if (!box) return
+    if (fsEl() === box) {
+      ;(document.exitFullscreen || document.webkitExitFullscreen)?.call(document)
+      return
+    }
+    if (full) { setFull(false); return }
+    const req = box.requestFullscreen || box.webkitRequestFullscreen
+    if (req) {
+      Promise.resolve(req.call(box)).catch(() => setFull(true))
+    } else {
+      setFull(true)
+    }
+  }
+
+  // Single tap = play/pause (delayed slightly); double tap = fullscreen.
+  function onTap() {
+    if (tapRef.current) {
+      clearTimeout(tapRef.current)
+      tapRef.current = null
+      toggleFull()
+      return
+    }
+    tapRef.current = setTimeout(() => { tapRef.current = null; toggle() }, 250)
+  }
+
+  useEffect(() => () => clearTimeout(tapRef.current), [])
+
+  useEffect(() => {
+    if (!full) return
+    const onKey = e => { if (e.key === 'Escape') setFull(false) }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [full])
+
   function onTimeUpdate() {
     const v = videoRef.current
     if (v && barRef.current && v.duration) barRef.current.style.width = `${(v.currentTime / v.duration) * 100}%`
@@ -78,13 +119,13 @@ export default function VideoPlayer({ url, ratio, poster }) {
   return (
     <div
       ref={boxRef}
-      className="post-image post-video"
-      style={{ aspectRatio: aspect }}
+      className={`post-image post-video${full ? ' post-video-full' : ''}`}
+      style={full ? undefined : { aspectRatio: aspect }}
       onClick={e => e.stopPropagation()}
       onContextMenu={block}
     >
       {active ? (
-        <div className="post-video-start" onClick={toggle} role="button" tabIndex={0} aria-label={playing ? 'Pause video' : 'Play video'}
+        <div className="post-video-start" onClick={onTap} role="button" tabIndex={0} aria-label={playing ? 'Pause video' : 'Play video'}
           onKeyDown={e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggle() } }}>
           <video
             ref={videoRef}
@@ -101,6 +142,10 @@ export default function VideoPlayer({ url, ratio, poster }) {
             style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000', pointerEvents: 'none', filter: hidden ? 'blur(30px) brightness(0)' : 'none' }}
           />
           {!playing && <span className="post-video-play"><Icon name="play" size={28} /></span>}
+          <button type="button" className="post-video-fs" aria-label="Toggle fullscreen"
+            onClick={e => { e.stopPropagation(); toggleFull() }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
+          </button>
           <span className="post-video-bar"><span ref={barRef} /></span>
         </div>
       ) : (
