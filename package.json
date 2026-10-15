@@ -10,10 +10,14 @@
     "preview": "vite preview",
     "test:pin": "node --test tests/collegePin.test.js",
     "test:rules": "npm install --no-save --package-lock=false @firebase/rules-unit-testing@5.0.1 && npx firebase-tools@14.15.2 emulators:exec --only firestore --project demo-palzy-pin --config firebase.test.json \"node --test --test-concurrency=1 tests/pinRules.test.js tests/counterRules.test.js tests/videoRules.test.js\"",
+    "test:video": "node --test tests/video.test.js tests/videoApi.test.js",
     "test:feed": "node --test tests/rankedFeed.test.js",
     "test:counters": "node --test tests/engagementCounts.test.js"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1152.0",
+    "@aws-sdk/s3-presigned-post": "^3.1152.0",
+    "@aws-sdk/s3-request-presigner": "^3.1152.0",
     "browser-image-compression": "^2.0.2",
     "date-fns": "^4.4.0",
     "firebase": "^12.15.0",
