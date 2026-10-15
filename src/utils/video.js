@@ -72,6 +72,7 @@ export function captureVideoPoster(file, maxWidth = 640) {
       } catch { done(null) }
     }
     v.src = url
+    setTimeout(() => done(null), 8000) // never block posting on a slow poster grab
   })
 }
 
