@@ -1,5 +1,5 @@
 import { auth } from '../firebase/config'
-import { isS3Video, s3Key } from './video'
+import { isS3Video, s3Key, s3ErrorCode } from './video'
 
 async function authHeader() {
   const token = await auth.currentUser?.getIdToken()
@@ -46,7 +46,7 @@ export async function uploadVideoToS3(file, onProgress) {
     const xhr = new XMLHttpRequest()
     xhr.open('POST', url)
     xhr.upload.onprogress = e => { if (e.lengthComputable) onProgress?.(Math.min(99, Math.round((e.loaded / e.total) * 100))) }
-    xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? (onProgress?.(100), resolve()) : reject(fail(`Video upload failed (storage ${xhr.status}).`)))
+    xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? (onProgress?.(100), resolve()) : reject(fail(`Video upload failed (storage ${xhr.status}${s3ErrorCode(xhr.responseText)}).`)))
     xhr.onerror = () => reject(fail('Video upload failed: network error while sending the file.'))
     xhr.ontimeout = () => reject(fail('Video upload timed out.'))
     xhr.send(form)
