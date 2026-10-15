@@ -24,7 +24,7 @@ const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000
 /**
  * Create a new Text 24h Story.
  */
-export async function createStory({ authorId, text = '', gradientId = 'neon', fontId = 'bold' }) {
+export async function createStory({ authorId, text = '', gradientId = 'neon', fontId = 'bold', imageURL = null }) {
   const userRef = doc(db, 'users', authorId)
   const snap = await getDoc(userRef)
   if (!snap.exists()) throw new Error('User profile does not exist')
@@ -50,6 +50,7 @@ export async function createStory({ authorId, text = '', gradientId = 'neon', fo
     authorPhotoURL: profile.photoURL || '',
     authorIsVerified: profile.isVerified ?? false,
     text: text.trim(),
+    ...(imageURL ? { imageURL } : {}),
     gradient: grad,
     gradientId,
     fontFamily: fontObj.family,
@@ -124,6 +125,15 @@ export async function getActiveStories(currentUid, followingIds = []) {
 
     const rawStories = []
     snaps.forEach(snap => {
+      // Housekeeping: drop my own expired stories from my profile doc (best effort).
+      if (snap.exists() && snap.id === currentUid) {
+        const mine = Array.isArray(snap.data().stories) ? snap.data().stories : []
+        if (mine.some(s => now - (s.createdAt || 0) >= TWENTY_FOUR_HOURS)) {
+          updateDoc(doc(db, 'users', currentUid), {
+            stories: mine.filter(s => now - (s.createdAt || 0) < TWENTY_FOUR_HOURS),
+          }).then(() => invalidateUserCache(currentUid)).catch(() => {})
+        }
+      }
       if (snap.exists()) {
         const profile = snap.data()
         const userStories = Array.isArray(profile.stories) ? profile.stories : []
