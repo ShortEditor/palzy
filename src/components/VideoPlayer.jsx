@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { videoPosterUrl, videoStreamUrl } from '../utils/video'
+import { isS3Video, videoPosterUrl, videoStreamUrl } from '../utils/video'
+import { getVideoPlayUrl } from '../utils/videoStorage'
 import Icon from './Icon'
 
 /**
@@ -7,8 +8,11 @@ import Icon from './Icon'
  * small poster image (lazy-loaded); the video file is not requested at all.
  * Once playing it pauses automatically when scrolled out of view.
  */
-export default function VideoPlayer({ url, ratio }) {
+export default function VideoPlayer({ url, ratio, poster }) {
   const [active, setActive] = useState(false)
+  const [src, setSrc] = useState(null)
+  const s3 = isS3Video(url)
+  const posterSrc = s3 ? poster : videoPosterUrl(url)
   const boxRef = useRef(null)
   const videoRef = useRef(null)
 
@@ -20,6 +24,13 @@ export default function VideoPlayer({ url, ratio }) {
     io.observe(boxRef.current)
     return () => io.disconnect()
   }, [active])
+
+  async function start() {
+    try {
+      setSrc(s3 ? await getVideoPlayUrl(url) : videoStreamUrl(url))
+      setActive(true)
+    } catch { /* stay on the poster; tapping again retries */ }
+  }
 
   const aspect = ratio ? ratio.replace(':', ' / ') : '16 / 9'
 
@@ -33,8 +44,8 @@ export default function VideoPlayer({ url, ratio }) {
       {active ? (
         <video
           ref={videoRef}
-          src={videoStreamUrl(url)}
-          poster={videoPosterUrl(url)}
+          src={src}
+          poster={posterSrc || undefined}
           controls
           autoPlay
           playsInline
@@ -46,10 +57,10 @@ export default function VideoPlayer({ url, ratio }) {
         <button
           type="button"
           className="post-video-start"
-          onClick={() => setActive(true)}
+          onClick={start}
           aria-label="Play video"
         >
-          <img src={videoPosterUrl(url)} alt="Video preview" loading="lazy" decoding="async" />
+          {posterSrc && <img src={posterSrc} alt="Video preview" loading="lazy" decoding="async" />}
           <span className="post-video-play"><Icon name="play" size={28} /></span>
         </button>
       )}
