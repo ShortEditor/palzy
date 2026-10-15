@@ -6,10 +6,18 @@ export const MAX_BYTES = 100 * 1024 * 1024
 export const TYPE_EXT = { 'video/mp4': 'mp4', 'video/quicktime': 'mov', 'video/webm': 'webm' }
 export const KEY_RE = /^videos\/[A-Za-z0-9_-]{1,64}\/[A-Za-z0-9_.-]{1,80}$/
 
+export function regionFromBucket(b) {
+  const m = /-([a-z]{2}-[a-z]+-\d)$/.exec(b || '')
+  return m ? m[1] : null
+}
+
 export function config() {
+  const bucket = process.env.PALZY_S3_BUCKET || process.env.AWS_S3_BUCKET
   return {
-    bucket: process.env.PALZY_S3_BUCKET || process.env.AWS_S3_BUCKET,
-    region: process.env.PALZY_AWS_REGION || process.env.AWS_REGION || 'ap-south-1',
+    bucket,
+    // Vercel overwrites AWS_REGION with the function region, so never trust it:
+    // take the region from the bucket name (…-ap-south-1) or an explicit override.
+    region: process.env.PALZY_AWS_REGION || regionFromBucket(bucket) || 'ap-south-1',
     accessKeyId: process.env.PALZY_AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.PALZY_AWS_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY,
   }
@@ -45,8 +53,22 @@ export async function verifyUser(req) {
   } catch { return null }
 }
 
-export function isAdminUser(u) {
-  return Boolean(u && u.emailVerified && u.email === ADMIN_EMAIL)
+/**
+ * Admin = the exact admin email AND users/{uid}.isAdmin === true, read from
+ * Firestore with the caller's own token (same check the app and rules use).
+ */
+export async function isAdminUser(u, req) {
+  if (!u || u.email !== ADMIN_EMAIL) return false
+  const project = process.env.VITE_FIREBASE_PROJECT_ID
+  const token = /^Bearer (.+)$/.exec(req?.headers?.authorization || '')?.[1]
+  if (!project || !token) return false
+  try {
+    const r = await fetch(`https://firestore.googleapis.com/v1/projects/${project}/databases/(default)/documents/users/${u.uid}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!r.ok) return false
+    return (await r.json()).fields?.isAdmin?.booleanValue === true
+  } catch { return false }
 }
 
 export function sameOrigin(req) {
