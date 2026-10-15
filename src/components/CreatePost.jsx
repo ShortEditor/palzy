@@ -388,7 +388,7 @@ export default function CreatePost({ onPostCreated }) {
           {/* ── Video preview (admin only) ───────────────────── */}
           {showVideo && videoPreview && (
             <div style={{ position: 'relative', marginTop: 'var(--space-2)' }}>
-              <video src={videoPreview} controls preload="metadata" playsInline style={{ width: '100%', maxHeight: 260, borderRadius: 'var(--radius-md)', background: '#000' }} />
+              <video src={videoPreview} preload="metadata" playsInline muted disablePictureInPicture controlsList="nodownload noremoteplayback" onContextMenu={e => e.preventDefault()} onClick={e => { const v = e.currentTarget; if (v.paused) v.play().catch(() => {}); else v.pause() }} style={{ cursor: 'pointer', width: '100%', maxHeight: 260, borderRadius: 'var(--radius-md)', background: '#000' }} />
               {uploadPct != null && (
                 <div role="progressbar" aria-valuenow={uploadPct} aria-valuemin={0} aria-valuemax={100} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 6, background: 'rgba(255,255,255,0.3)', borderRadius: 3 }}>
                   <div style={{ width: `${uploadPct}%`, height: '100%', background: 'var(--accent, #6c5ce7)', borderRadius: 3, transition: 'width .2s' }} />
