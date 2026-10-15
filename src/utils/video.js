@@ -86,3 +86,9 @@ export const LOCKED_VIDEO_PROPS = {
   loop: true,
   draggable: false,
 }
+
+/** Pulls the short <Code> (e.g. AccessDenied) from an S3 XML error; never the message body. */
+export function s3ErrorCode(xml) {
+  const m = /<Code>([A-Za-z]{3,40})<\/Code>/.exec(xml || '')
+  return m ? `: ${m[1]}` : ''
+}

@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { isAdminUser, KEY_RE, sameOrigin, regionFromBucket, config } from '../api/_lib.js'
+import { isAdminUser, KEY_RE, sameOrigin, regionFromBucket, config, ownKey } from '../api/_lib.js'
 import upload from '../api/video-upload.js'
 import playUrl from '../api/video-url.js'
 
@@ -63,3 +63,11 @@ test('play url needs a signed-in user and a valid key', async () => {
   assert.equal(r.code, 200); assert.match(r.body.url, /X-Amz-Signature=/)
 })
 test.after(() => { globalThis.fetch = realFetch })
+
+import { s3ErrorCode } from '../src/utils/video.js'
+test('S3 error code extraction and runtime-key filtering', () => {
+  assert.equal(s3ErrorCode('<?xml?><Error><Code>AccessDenied</Code><Message>secret detail</Message></Error>'), ': AccessDenied')
+  assert.equal(s3ErrorCode('nope'), '')
+  assert.equal(ownKey('ASIAXXXX'), undefined)
+  assert.equal(ownKey('AKIAXXXX'), 'AKIAXXXX')
+})
