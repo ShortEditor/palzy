@@ -4,7 +4,7 @@
  * delivery transformation (cached on the CDN), so there is no extra storage.
  */
 export const VIDEO_ADMIN_EMAIL = 'shorteditor4@gmail.com'
-export const MAX_VIDEO_BYTES = 25 * 1024 * 1024 // 25 MB (Cloudinary free plan transforms videos up to 40 MB on the fly)
+export const MAX_VIDEO_BYTES = 40 * 1024 * 1024 // 40 MB (Cloudinary free plan transforms videos up to 40 MB on the fly)
 export const MAX_VIDEO_SECONDS = 60
 export const VIDEO_TYPES = ['video/mp4', 'video/quicktime', 'video/webm']
 
@@ -21,7 +21,7 @@ export function canUploadVideo(user, profile) {
 export function validateVideoFile(file) {
   if (!file) return 'Choose a video.'
   if (!VIDEO_TYPES.includes(file.type)) return 'Use an MP4, MOV or WebM video.'
-  if (file.size > MAX_VIDEO_BYTES) return 'Video is over 25 MB. Compress it first.'
+  if (file.size > MAX_VIDEO_BYTES) return 'Video is over 40 MB. Compress it first.'
   return null
 }
 
