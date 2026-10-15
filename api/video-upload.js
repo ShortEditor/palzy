@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   if (!sameOrigin(req)) return res.status(403).json({ error: 'origin' })
   const user = await verifyUser(req)
   if (!user) return res.status(401).json({ error: 'auth' })
-  if (!isAdminUser(user)) return res.status(403).json({ error: 'admin only' })
+  if (!(await isAdminUser(user, req))) return res.status(403).json({ error: 'admin only' })
 
   const { contentType, size } = req.body || {}
   const ext = TYPE_EXT[contentType]
