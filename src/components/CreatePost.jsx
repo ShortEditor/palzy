@@ -21,6 +21,7 @@ export default function CreatePost({ onPostCreated }) {
   const [imagePreviews, setImagePreviews] = useState([]) // string[]
   const [imageRatio, setImageRatio] = useState('1:1')
   const [submitting, setSubmitting] = useState(false)
+  const [uploadPct, setUploadPct] = useState(null)
   const [showQuoteEditor, setShowQuoteEditor] = useState(false)
   const [isDoubt, setIsDoubt]       = useState(false)
   const [isNote, setIsNote]         = useState(false)
@@ -218,7 +219,7 @@ export default function CreatePost({ onPostCreated }) {
         if (posterBlob) videoPoster = await uploadImage(posterBlob, 'video-posters', currentUser.uid).catch(() => null)
         videoURL = useCloudinary
           ? await uploadVideo(videoFile, currentUser.uid)
-          : await uploadVideoToS3(videoFile)
+          : await uploadVideoToS3(videoFile, setUploadPct)
       }
 
       const tags = []
@@ -245,9 +246,10 @@ export default function CreatePost({ onPostCreated }) {
       onPostCreated?.(newPost)
     } catch (err) {
       console.error(err)
-      toast.error('Could not post. Try again.')
+      toast.error(err?.userMessage || 'Could not post. Try again.')
     } finally {
       setSubmitting(false)
+      setUploadPct(null)
     }
   }
 
@@ -387,6 +389,11 @@ export default function CreatePost({ onPostCreated }) {
           {showVideo && videoPreview && (
             <div style={{ position: 'relative', marginTop: 'var(--space-2)' }}>
               <video src={videoPreview} controls preload="metadata" playsInline style={{ width: '100%', maxHeight: 260, borderRadius: 'var(--radius-md)', background: '#000' }} />
+              {uploadPct != null && (
+                <div role="progressbar" aria-valuenow={uploadPct} aria-valuemin={0} aria-valuemax={100} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 6, background: 'rgba(255,255,255,0.3)', borderRadius: 3 }}>
+                  <div style={{ width: `${uploadPct}%`, height: '100%', background: 'var(--accent, #6c5ce7)', borderRadius: 3, transition: 'width .2s' }} />
+                </div>
+              )}
               <button type="button" className="carousel-thumb-remove" onClick={clearVideo} aria-label="Remove video" style={{ position: 'absolute', top: 6, right: 6 }}>
                 <Icon name="close" size={10} />
               </button>
@@ -466,7 +473,7 @@ export default function CreatePost({ onPostCreated }) {
                 {text.length > 0 ? charsLeft : ''}
               </span>
               <button id="btn-submit-post" type="button" className="btn btn-primary btn-sm" onClick={handleSubmit} disabled={isEmpty || isOverLimit || submitting} aria-label="Submit post">
-                {submitting ? <><div className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} /> Posting…</> : <><Icon name="send" size={14} /> Post</>}
+                {submitting ? <><div className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} /> {uploadPct != null ? `Uploading ${uploadPct}%` : 'Posting…'}</> : <><Icon name="send" size={14} /> Post</>}
               </button>
             </div>
           </div>
