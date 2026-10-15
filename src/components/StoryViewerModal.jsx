@@ -215,8 +215,15 @@ export default function StoryViewerModal({ userGroups = [], initialUserIndex = 0
           </div>
         </div>
 
+        {currentStory.imageURL && (
+          <img src={currentStory.imageURL} alt="Story" draggable={false} style={{
+            position: 'absolute', inset: 0, width: '100%', height: '100%',
+            objectFit: 'contain', background: '#000', zIndex: 0,
+          }} />
+        )}
+
         {/* Text Story Area */}
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 36 }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: currentStory.imageURL ? 'flex-end' : 'center', justifyContent: 'center', padding: currentStory.imageURL ? '36px 36px 70px' : 36, position: 'relative', zIndex: 1 }}>
           <div style={{
             color: '#ffffff',
             fontSize: fontSize,
