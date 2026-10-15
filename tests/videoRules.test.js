@@ -32,6 +32,8 @@ test('regular user cannot create video posts in any form', async () => {
   await assertFails(setDoc(doc(db, 'posts', 'v2'), { ...base('alice'), videoURL: 'x' }))
   await assertFails(setDoc(doc(db, 'posts', 'v3'), { ...base('alice'), type: 'video' }))
   await assertFails(setDoc(doc(db, 'posts', 'v4'), { ...base('alice'), videoDuration: 3 }))
+  await assertFails(setDoc(doc(db, 'posts', 'v8'), { ...base('alice'), videoPoster: 'x' }))
+  await assertFails(setDoc(doc(db, 'posts', 'v9'), { ...base('alice'), type: 'video', videoURL: 's3:videos/alice/a.mp4', videoPoster: 'x' }))
 })
 test('an isAdmin user with a different email cannot create video posts', async () => {
   await assertFails(setDoc(doc(as('admin2', 'other@x.com'), 'posts', 'v5'), video('admin2')))

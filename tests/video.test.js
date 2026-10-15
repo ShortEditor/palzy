@@ -25,3 +25,12 @@ test('delivery urls transform Cloudinary videos and leave others alone', () => {
   assert.match(videoPosterUrl(u), /\/video\/upload\/so_1,.*\/v123\/palzy\/videos\/a\.jpg$/)
   assert.equal(videoStreamUrl('https://example.com/a.mp4'), 'https://example.com/a.mp4')
 })
+
+import { isS3Video, s3Key } from '../src/utils/video.js'
+test('s3 video references', () => {
+  assert.equal(isS3Video('s3:videos/a/b.mp4'), true)
+  assert.equal(s3Key('s3:videos/a/b.mp4'), 'videos/a/b.mp4')
+  assert.equal(isS3Video('https://res.cloudinary.com/x'), false)
+  assert.equal(s3Key('https://x'), null)
+  assert.equal(MAX_VIDEO_BYTES, 100 * 1024 * 1024)
+})

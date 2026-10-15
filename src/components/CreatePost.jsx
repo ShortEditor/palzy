@@ -2,7 +2,8 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { createPost } from '../firebase/posts'
 import { uploadImage, uploadVideo } from '../utils/cloudinary'
-import { canUploadVideo, validateVideoFile, MAX_VIDEO_SECONDS } from '../utils/video'
+import { canUploadVideo, validateVideoFile, captureVideoPoster, MAX_VIDEO_SECONDS } from '../utils/video'
+import { uploadVideoToS3 } from '../utils/videoStorage'
 import { collection, query, where, limit, getDocs } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import Avatar from './Avatar'
@@ -209,9 +210,15 @@ export default function CreatePost({ onPostCreated }) {
       }
 
       let videoURL = null
+      let videoPoster = null
       if (videoFile) {
         if (!showVideo) throw new Error('Video uploads are admin only.')
-        videoURL = await uploadVideo(videoFile, currentUser.uid)
+        const useCloudinary = import.meta.env.VITE_VIDEO_STORAGE === 'cloudinary'
+        const posterBlob = await captureVideoPoster(videoFile)
+        if (posterBlob) videoPoster = await uploadImage(posterBlob, 'video-posters', currentUser.uid).catch(() => null)
+        videoURL = useCloudinary
+          ? await uploadVideo(videoFile, currentUser.uid)
+          : await uploadVideoToS3(videoFile)
       }
 
       const tags = []
@@ -227,6 +234,7 @@ export default function CreatePost({ onPostCreated }) {
         imageRatio: imageFiles.length > 0 ? imageRatio : null,
         videoURL,
         videoDuration: videoURL ? videoDuration : null,
+        videoPoster,
         tags,
       })
       setText('')
@@ -444,7 +452,7 @@ export default function CreatePost({ onPostCreated }) {
               {showVideo && (
                 <>
                   <input ref={videoInputRef} type="file" accept="video/mp4,video/quicktime,video/webm" style={{ display: 'none' }} onChange={handleVideoChange} id="create-post-video-input" />
-                  <button id="btn-add-video" type="button" className="btn btn-ghost btn-icon" onClick={() => videoInputRef.current?.click()} disabled={submitting} title={`Add video (max ${MAX_VIDEO_SECONDS}s, 25 MB)`} aria-label="Add video">
+                  <button id="btn-add-video" type="button" className="btn btn-ghost btn-icon" onClick={() => videoInputRef.current?.click()} disabled={submitting} title={`Add video (max ${MAX_VIDEO_SECONDS}s, 100 MB)`} aria-label="Add video">
                     <Icon name="play" size={20} />
                   </button>
                 </>

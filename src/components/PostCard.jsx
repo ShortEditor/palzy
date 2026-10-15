@@ -222,7 +222,7 @@ const PostCard = memo(function PostCard({ post, authorProfile, isLiked: initialL
         />
 
         {/* Post video (admin-posted) */}
-        {post.videoURL && <VideoPlayer url={post.videoURL} ratio={post.imageRatio} />}
+        {post.videoURL && <VideoPlayer url={post.videoURL} ratio={post.imageRatio} poster={post.videoPoster} />}
 
         {/* Post images — carousel or single */}
         {post.imageURLs && post.imageURLs.length > 1 ? (
