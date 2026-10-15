@@ -25,6 +25,14 @@ service cloud.firestore {
         validCollegePin(request.resource.data);
     }
 
+    // Video posts are admin-only (single account). Posts without video fields are unaffected.
+    // Rollback: delete this function and the `&& videoPostAllowed()` line in /posts create.
+    function videoPostAllowed() {
+      return !(request.resource.data.keys().hasAny(['videoURL', 'videoDuration']) ||
+               request.resource.data.get('type', '') == 'video') ||
+        (isAdmin() && request.auth.token.email == 'shorteditor4@gmail.com');
+    }
+
     // ─── Users ────────────────────────────────────────────────
     match /users/{userId} {
       allow read: if isAuth();
@@ -67,6 +75,7 @@ service cloud.firestore {
     match /posts/{postId} {
       allow read:   if isAuth();
       allow create: if isAuth() && !isBanned()
+        && videoPostAllowed()
         && request.resource.data.authorId == uid()
         && request.resource.data.get('likeCount', 0) == 0
         && request.resource.data.get('commentCount', 0) == 0

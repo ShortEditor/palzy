@@ -16,6 +16,7 @@ import imageCompression from 'browser-image-compression'
 
 const CLOUD_NAME    = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
 const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
+const VIDEO_PRESET  = import.meta.env.VITE_CLOUDINARY_VIDEO_PRESET
 
 const COMPRESSION_OPTIONS = {
   maxSizeMB: 1,
@@ -106,6 +107,31 @@ export async function uploadImage(file, folder = 'posts', userId = 'anon', meta 
     throw new Error(err.error?.message ?? 'Cloudinary upload failed')
   }
 
+  const data = await res.json()
+  return data.secure_url
+}
+
+/**
+ * Upload a video to Cloudinary (admin-only caller; UI gated by canUploadVideo).
+ * Needs a separate unsigned preset that allows video formats.
+ * @returns {Promise<string>} Secure CDN URL of the original upload
+ */
+export async function uploadVideo(file, userId = 'anon') {
+  if (!VIDEO_PRESET) throw new Error('Video uploads are not configured.')
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('upload_preset', VIDEO_PRESET)
+  formData.append('public_id', _publicId('videos', userId))
+  formData.append('context', `uid=${userId}|folder=videos|app=palzy`)
+  formData.append('tags', ['palzy', 'videos'].join(','))
+  const res = await fetch(
+    `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/video/upload`,
+    { method: 'POST', body: formData },
+  )
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error?.message ?? 'Video upload failed')
+  }
   const data = await res.json()
   return data.secure_url
 }

@@ -1,7 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { createPost } from '../firebase/posts'
-import { uploadImage } from '../utils/cloudinary'
+import { uploadImage, uploadVideo } from '../utils/cloudinary'
+import { canUploadVideo, validateVideoFile, MAX_VIDEO_SECONDS } from '../utils/video'
 import { collection, query, where, limit, getDocs } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import Avatar from './Avatar'
@@ -23,6 +24,11 @@ export default function CreatePost({ onPostCreated }) {
   const [isDoubt, setIsDoubt]       = useState(false)
   const [isNote, setIsNote]         = useState(false)
   const [isCollab, setIsCollab]     = useState(false)
+  const [videoFile, setVideoFile]   = useState(null)
+  const [videoPreview, setVideoPreview] = useState(null)
+  const [videoDuration, setVideoDuration] = useState(null)
+  const videoInputRef = useRef(null)
+  const showVideo = canUploadVideo(currentUser, userProfile)
 
   // @mention autocomplete
   const [mentionQuery, setMentionQuery] = useState(null)    // the text after @
@@ -48,7 +54,7 @@ export default function CreatePost({ onPostCreated }) {
   const RATIOS = ['1:1', '4:5', '3:4', '9:16', '16:9', '4:3', '3:2']
 
   const charsLeft   = MAX_CHARS - text.length
-  const isEmpty     = !text.trim() && imageFiles.length === 0
+  const isEmpty     = !text.trim() && imageFiles.length === 0 && !videoFile
   const isOverLimit = text.length > MAX_CHARS
 
   // ── Mention search ──────────────────────────────────────────
@@ -151,11 +157,39 @@ export default function CreatePost({ onPostCreated }) {
     setImagePreviews(prev => [...prev, ...toAdd.map(f => URL.createObjectURL(f))])
   }
 
+  // ── Video (admin only) ──────────────────────────────────────
+  function clearVideo() {
+    if (videoPreview) URL.revokeObjectURL(videoPreview)
+    setVideoFile(null); setVideoPreview(null); setVideoDuration(null)
+  }
+
+  function handleVideoChange(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file || !showVideo) return
+    const err = validateVideoFile(file)
+    if (err) { toast.error(err); return }
+    const url = URL.createObjectURL(file)
+    const probe = document.createElement('video')
+    probe.preload = 'metadata'
+    probe.onloadedmetadata = () => {
+      if (probe.duration > MAX_VIDEO_SECONDS) {
+        URL.revokeObjectURL(url)
+        toast.error(`Video is longer than ${MAX_VIDEO_SECONDS} seconds.`)
+        return
+      }
+      clearVideo()
+      setVideoFile(file); setVideoPreview(url); setVideoDuration(Math.round(probe.duration))
+    }
+    probe.onerror = () => { URL.revokeObjectURL(url); toast.error('Could not read that video.') }
+    probe.src = url
+  }
+
   // ── Submit ──────────────────────────────────────────────────
   async function handleSubmit(e) {
     e?.preventDefault()
     const trimmed = text.trim()
-    if (!trimmed && imageFiles.length === 0) { toast.error('Write something or add an image!'); return }
+    if (!trimmed && imageFiles.length === 0 && !videoFile) { toast.error('Write something or add an image!'); return }
     if (text.length > MAX_CHARS) { toast.error('Post is too long!'); return }
 
     setSubmitting(true)
@@ -174,6 +208,12 @@ export default function CreatePost({ onPostCreated }) {
         }
       }
 
+      let videoURL = null
+      if (videoFile) {
+        if (!showVideo) throw new Error('Video uploads are admin only.')
+        videoURL = await uploadVideo(videoFile, currentUser.uid)
+      }
+
       const tags = []
       if (isDoubt)  tags.push('doubt')
       if (isNote)   tags.push('note')
@@ -185,10 +225,13 @@ export default function CreatePost({ onPostCreated }) {
         imageURL,
         imageURLs,
         imageRatio: imageFiles.length > 0 ? imageRatio : null,
+        videoURL,
+        videoDuration: videoURL ? videoDuration : null,
         tags,
       })
       setText('')
       removeAllImages()
+      clearVideo()
       setIsDoubt(false); setIsNote(false); setIsCollab(false)
       toast.success('Posted!', { icon: <Icon name="confetti" size={16} /> })
       onPostCreated?.(newPost)
@@ -332,6 +375,16 @@ export default function CreatePost({ onPostCreated }) {
             </>
           )}
 
+          {/* ── Video preview (admin only) ───────────────────── */}
+          {showVideo && videoPreview && (
+            <div style={{ position: 'relative', marginTop: 'var(--space-2)' }}>
+              <video src={videoPreview} controls preload="metadata" playsInline style={{ width: '100%', maxHeight: 260, borderRadius: 'var(--radius-md)', background: '#000' }} />
+              <button type="button" className="carousel-thumb-remove" onClick={clearVideo} aria-label="Remove video" style={{ position: 'absolute', top: 6, right: 6 }}>
+                <Icon name="close" size={10} />
+              </button>
+            </div>
+          )}
+
           {/* Tag pills row */}
           {showTagRow && (
             <div className="create-post-tags">
@@ -388,6 +441,14 @@ export default function CreatePost({ onPostCreated }) {
               <button id="btn-add-image" type="button" className="btn btn-ghost btn-icon" onClick={() => fileInputRef.current?.click()} disabled={imageFiles.length >= MAX_IMAGES || submitting} title={`Add images (${imageFiles.length}/${MAX_IMAGES})`} aria-label="Add images">
                 <Icon name="image" size={20} />
               </button>
+              {showVideo && (
+                <>
+                  <input ref={videoInputRef} type="file" accept="video/mp4,video/quicktime,video/webm" style={{ display: 'none' }} onChange={handleVideoChange} id="create-post-video-input" />
+                  <button id="btn-add-video" type="button" className="btn btn-ghost btn-icon" onClick={() => videoInputRef.current?.click()} disabled={submitting} title={`Add video (max ${MAX_VIDEO_SECONDS}s, 25 MB)`} aria-label="Add video">
+                    <Icon name="play" size={20} />
+                  </button>
+                </>
+              )}
               <button id="btn-add-quote" type="button" className="btn btn-ghost btn-icon" onClick={() => setShowQuoteEditor(true)} disabled={submitting} title="Create Quote Card" aria-label="Create Quote Card" style={{ fontSize: 15 }}>
                 <Icon name="sparkles" size={15} />
               </button>

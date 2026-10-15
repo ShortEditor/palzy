@@ -1687,3 +1687,10 @@ body, .clay-card, .clay-input, .sidebar, .topbar, .bottom-nav, .page-header,
 .feed-refresh:disabled { opacity: .55; cursor: wait; }
 .feed-refresh:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; }
 .feed-error { display: flex; align-items: center; gap: 12px; padding: var(--space-4); color: var(--text-primary); }
+
+/* ── Admin video posts ── */
+.post-video { position: relative; max-height: 560px; }
+.post-video-start { position: relative; display: block; width: 100%; height: 100%; padding: 0; border: 0; background: #000; cursor: pointer; }
+.post-video-start img { width: 100%; height: 100%; max-height: none; object-fit: cover; display: block; }
+.post-card:hover .post-video-start img { transform: none; }
+.post-video-play { position: absolute; inset: 0; margin: auto; width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; background: rgba(0,0,0,0.55); }
