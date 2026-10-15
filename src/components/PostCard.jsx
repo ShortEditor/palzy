@@ -13,6 +13,7 @@ import FollowButton from './FollowButton'
 import RichText from './RichText'
 import ReactionBar from './ReactionBar'
 import ImageCarousel from './ImageCarousel'
+import VideoPlayer from './VideoPlayer'
 import toast from 'react-hot-toast'
 
 const PostCard = memo(function PostCard({ post, authorProfile, isLiked: initialLiked = false, userEmojiReaction = null, onDelete }) {
@@ -219,6 +220,9 @@ const PostCard = memo(function PostCard({ post, authorProfile, isLiked: initialL
           initialReaction={userEmojiReaction}
           emojiCounts={post.emojiCounts || {}}
         />
+
+        {/* Post video (admin-posted) */}
+        {post.videoURL && <VideoPlayer url={post.videoURL} ratio={post.imageRatio} />}
 
         {/* Post images — carousel or single */}
         {post.imageURLs && post.imageURLs.length > 1 ? (
