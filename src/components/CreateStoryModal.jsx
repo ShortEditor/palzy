@@ -3,6 +3,21 @@ import { useAuth } from '../contexts/AuthContext'
 import { createStory, STORY_GRADIENTS, STORY_FONTS } from '../firebase/stories'
 import toast from 'react-hot-toast'
 import Icon from './Icon'
+import { uploadImage } from '../utils/cloudinary'
+
+// Downscale to max 1080px on the long side and re-encode as JPEG (~100-250KB).
+async function shrinkImage(file, maxSide = 1080, quality = 0.82) {
+  const bmp = await createImageBitmap(file)
+  const scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height))
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.round(bmp.width * scale)
+  canvas.height = Math.round(bmp.height * scale)
+  canvas.getContext('2d').drawImage(bmp, 0, 0, canvas.width, canvas.height)
+  bmp.close?.()
+  const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', quality))
+  if (!blob) throw new Error('Could not process image')
+  return new File([blob], 'story.jpg', { type: 'image/jpeg' })
+}
 
 export default function CreateStoryModal({ isOpen, onClose, onCreated }) {
   const { currentUser } = useAuth()
@@ -11,6 +26,9 @@ export default function CreateStoryModal({ isOpen, onClose, onCreated }) {
   const [selectedFont, setSelectedFont] = useState(STORY_FONTS[0].id)
   const [loading, setLoading] = useState(false)
   const textareaRef = useRef(null)
+  const fileRef = useRef(null)
+  const [photo, setPhoto] = useState(null)       // compressed File
+  const [photoUrl, setPhotoUrl] = useState(null)  // local preview
 
   useEffect(() => {
     if (isOpen && textareaRef.current) {
@@ -28,15 +46,38 @@ export default function CreateStoryModal({ isOpen, onClose, onCreated }) {
   if (text.length > 120) fontSize = 18
   else if (text.length > 60) fontSize = 22
 
+  async function handlePick(e) {
+    const f = e.target.files?.[0]
+    e.target.value = ''
+    if (!f) return
+    if (!f.type.startsWith('image/')) { toast.error('Pick an image file.'); return }
+    try {
+      const small = await shrinkImage(f)
+      if (photoUrl) URL.revokeObjectURL(photoUrl)
+      setPhoto(small)
+      setPhotoUrl(URL.createObjectURL(small))
+    } catch {
+      toast.error('Could not read that image.')
+    }
+  }
+
+  function clearPhoto() {
+    if (photoUrl) URL.revokeObjectURL(photoUrl)
+    setPhoto(null)
+    setPhotoUrl(null)
+  }
+
   async function handleSubmit() {
-    if (!text.trim()) {
-      toast.error('Type a story status first!')
+    if (!text.trim() && !photo) {
+      toast.error('Add a photo or type a status first!')
       return
     }
 
     setLoading(true)
     try {
+      const imageURL = photo ? await uploadImage(photo, 'stories', currentUser.uid) : null
       await createStory({
+        imageURL,
         authorId: currentUser.uid,
         text: text.trim(),
         gradientId: selectedGrad,
@@ -45,6 +86,7 @@ export default function CreateStoryModal({ isOpen, onClose, onCreated }) {
 
       toast.success('Story shared!', { icon: <Icon name="confetti" size={16} /> })
       setText('')
+      clearPhoto()
       onCreated?.()
       onClose()
     } catch (err) {
@@ -99,6 +141,19 @@ export default function CreateStoryModal({ isOpen, onClose, onCreated }) {
 
         {/* Floating Quick Action Buttons */}
         <div style={{ display: 'flex', gap: 10 }}>
+          <input ref={fileRef} type="file" accept="image/*" onChange={handlePick} style={{ display: 'none' }} />
+          <button
+            onClick={() => (photo ? clearPhoto() : fileRef.current?.click())}
+            aria-label={photo ? 'Remove photo' : 'Add photo'}
+            style={{
+              background: 'rgba(0,0,0,0.3)', color: '#fff', border: 'none',
+              padding: '0 16px', height: 40, borderRadius: 20, cursor: 'pointer',
+              fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center',
+              justifyContent: 'center', gap: 4, backdropFilter: 'blur(10px)',
+            }}
+          >
+            <Icon name={photo ? 'close' : 'image'} size={14} /> {photo ? 'Remove' : 'Photo'}
+          </button>
           {/* Font cycler */}
           <button
             onClick={handleCycleFont}
@@ -128,14 +183,22 @@ export default function CreateStoryModal({ isOpen, onClose, onCreated }) {
         </div>
       </div>
 
+      {photoUrl && (
+        <img src={photoUrl} alt="Story preview" style={{
+          position: 'absolute', inset: 0, width: '100%', height: '100%',
+          objectFit: 'contain', background: '#000', zIndex: 0,
+        }} />
+      )}
+
       {/* Editor Main Canvas */}
       <div style={{
         flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        position: 'relative', width: '100%', maxWidth: 450, margin: '0 auto',
+        position: 'relative', width: '100%', maxWidth: 450, margin: '0 auto', zIndex: 1,
+        ...(photoUrl ? { alignItems: 'flex-end' } : {}),
       }}>
         <textarea
           ref={textareaRef}
-          placeholder="Type a status..."
+          placeholder={photo ? 'Add a caption...' : 'Type a status...'}
           value={text}
           onChange={e => setText(e.target.value)}
           maxLength={200}
@@ -163,7 +226,7 @@ export default function CreateStoryModal({ isOpen, onClose, onCreated }) {
       }}>
         <button
           onClick={handleSubmit}
-          disabled={loading || !text.trim()}
+          disabled={loading || (!text.trim() && !photo)}
           style={{
             background: '#ffffff',
             color: 'var(--brand-primary-cont)',
@@ -177,7 +240,7 @@ export default function CreateStoryModal({ isOpen, onClose, onCreated }) {
             display: 'flex',
             alignItems: 'center',
             gap: 6,
-            opacity: loading || !text.trim() ? 0.6 : 1,
+            opacity: loading || (!text.trim() && !photo) ? 0.6 : 1,
             transition: 'all 0.15s ease',
           }}
         >
