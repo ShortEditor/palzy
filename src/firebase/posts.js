@@ -30,7 +30,7 @@ function extractHashtags(text) {
 const POSTS_PER_PAGE = 15
 
 // ─── Create a new post ───────────────────────────────────────
-export async function createPost({ authorId, content, imageURL = null, imageURLs = null, imageRatio = null, videoURL = null, videoDuration = null, quoteMetadata = null, tags = [] }) {
+export async function createPost({ authorId, content, imageURL = null, imageURLs = null, imageRatio = null, videoURL = null, videoDuration = null, videoPoster = null, quoteMetadata = null, tags = [] }) {
   const author = await getUserProfile(authorId)
 
   // Determine post type
@@ -57,7 +57,7 @@ export async function createPost({ authorId, content, imageURL = null, imageURLs
     tags: tags.length > 0 ? tags : [],
     hashtags: extractHashtags(content?.trim() ?? ''),
     ...(quoteMetadata ? { quoteMetadata } : {}),
-    ...(videoURL ? { videoURL, videoDuration: videoDuration ?? null } : {}),
+    ...(videoURL ? { videoURL, videoDuration: videoDuration ?? null, ...(videoPoster ? { videoPoster } : {}) } : {}),
     // Carousel-specific fields
     ...(imageURLs && imageURLs.length > 1 ? { imageURLs, imageRatio: imageRatio || '1:1' } : {}),
     ...(imageRatio && type === 'image' ? { imageRatio } : {}),
