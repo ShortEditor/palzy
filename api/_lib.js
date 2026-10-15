@@ -11,6 +11,11 @@ export function regionFromBucket(b) {
   return m ? m[1] : null
 }
 
+// Vercel's runtime injects temporary "ASIA…" role keys into AWS_ACCESS_KEY_ID; those are not ours.
+export function ownKey(k) {
+  return k && !k.startsWith('ASIA') ? k : undefined
+}
+
 export function config() {
   const bucket = process.env.PALZY_S3_BUCKET || process.env.AWS_S3_BUCKET
   return {
@@ -18,7 +23,7 @@ export function config() {
     // Vercel overwrites AWS_REGION with the function region, so never trust it:
     // take the region from the bucket name (…-ap-south-1) or an explicit override.
     region: process.env.PALZY_AWS_REGION || regionFromBucket(bucket) || 'ap-south-1',
-    accessKeyId: process.env.PALZY_AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID,
+    accessKeyId: process.env.PALZY_AWS_ACCESS_KEY_ID || ownKey(process.env.AWS_ACCESS_KEY_ID),
     secretAccessKey: process.env.PALZY_AWS_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY,
   }
 }
